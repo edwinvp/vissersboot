@@ -12,9 +12,9 @@
     <OutputFileName>$(MSBuildProjectName)</OutputFileName>
     <OutputFileExtension>.elf</OutputFileExtension>
     <OutputDirectory>$(MSBuildProjectDirectory)\$(Configuration)</OutputDirectory>
-    <AssemblyName>Test1</AssemblyName>
-    <Name>Test1</Name>
-    <RootNamespace>Test1</RootNamespace>
+    <AssemblyName>vboot</AssemblyName>
+    <Name>vboot</Name>
+    <RootNamespace>vboot</RootNamespace>
     <ToolchainFlavour>Native</ToolchainFlavour>
     <KeepTimersRunning>true</KeepTimersRunning>
     <OverrideVtor>false</OverrideVtor>
@@ -119,7 +119,7 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Test1.cpp">
+    <Compile Include="vboot.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="uart.c">
