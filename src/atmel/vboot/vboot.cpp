@@ -96,9 +96,11 @@ void setup_capture_inputs()
 	PCICR |= (1 << PCIE2);
 	
 	// Configure timer 1 clock source
-	TCCR1B &= ~(1 << CS12);
-	TCCR1B &= ~(1 << CS11);
-	TCCR1B |= (1 << CS10);
+	// Set to use a clock source of clkio / 8.
+	// So 20 [ms] servo period will be 40000 timer ticks.	
+	TCCR1B &= ~_BV(CS12);
+	TCCR1B |= _BV(CS11);
+	TCCR1B &= ~_BV(CS10);
 }
 
 

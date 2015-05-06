@@ -14,3 +14,14 @@ Sample freq:
 1 van 10 niveaus:  (2 [ms] - 1 [ms]) / 10 = 0,1 [ms] --> 10 [kHz]
  
 
+clkIO = 16M 
+
+	1000 ms = 16000000 ticks
+
+/1
+	20 ms = 320.000 ticks
+	2 ms = 32000 ticks
+/8
+	20 ms = 40.000 ticks
+	2 ms = 4000 ticks
+	1 ms =  2000 ticks
