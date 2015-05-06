@@ -10,7 +10,7 @@
 #include <stdio.h>
 
 enum {
-	BLINK_DELAY_MS = 500,
+	BLINK_DELAY_MS = 125,
 };
 
 #include "uart.h"
@@ -32,6 +32,58 @@ ISR(USART_RX_vect){
 }
 
 
+ISR(PCINT0_vect)
+{
+
+}
+
+ISR(PCINT1_vect)
+{
+
+}
+
+
+volatile unsigned int pd6_rising;
+volatile unsigned int pd6_falling;
+volatile unsigned int pd6_pulse_duration;
+volatile unsigned int icnt;
+
+ISR(PCINT2_vect)
+{
+	unsigned int tmr_reg;
+
+	++icnt;
+	
+	tmr_reg = TCNT1;
+		
+	if (PIND & (1 << PIND6)) {
+		pd6_rising = tmr_reg;
+	} else {
+		pd6_falling = tmr_reg;		
+	
+		pd6_pulse_duration = pd6_falling - pd6_rising;
+	}
+	
+}
+
+void setup_capture_inputs()
+{
+	// Configure PD6 as input
+	DDRD &= ~(1 << DDB6);	
+	PORTD &= ~(1 << PORTD6);	
+	
+	PCMSK2 |= (1 << PCINT22);
+	
+	// Configure interrupt on logical state state on PD6 (so PCIE2)
+	PCICR |= (1 << PCIE2);
+	
+	// Configure timer 1 clock source
+	TCCR1B &= ~(1 << CS12);
+	TCCR1B &= ~(1 << CS11);
+	TCCR1B |= (1 << CS10);
+}
+
+
 int main (void)
 {
 	/* set pin 5 of PORTB for output*/
@@ -40,23 +92,21 @@ int main (void)
 	USART_Init();  // Initialise USART
 	sei();         // enable all interrupts	
 	
+	setup_capture_inputs();
 	
 	while(1) {
+		
 		/* set pin 5 high to turn led on */
 		PORTB |= _BV(PORTB5);
-		USART_SendByte('A');  // send value 
 		_delay_ms(BLINK_DELAY_MS);
-		
-		/* set pin 5 low to turn led off */
-		PORTB &= ~_BV(PORTB5);
-		USART_SendByte('B');  // send value
-		_delay_ms(BLINK_DELAY_MS);
-		
+
+		printf(" icnt=%d pd=%d \r\n", icnt, pd6_pulse_duration);
 
 		USART_SendByte(value);  // send value
+
+		/* set pin 5 low to turn led off */
+		PORTB &= ~_BV(PORTB5);
 		_delay_ms(BLINK_DELAY_MS);
-		
-		printf("zo kan het ook\r\n");
 		
 	}
 	
