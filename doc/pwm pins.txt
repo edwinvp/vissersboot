@@ -1,0 +1,16 @@
+PB3 OC2A rx4 (man/auto)
+PB2 OC1B rx1 (ML)
+PB1 OC1A rx2 (MR)
+PD3 OC2B rx3 (pos)
+
+PD6 AIN0 OC0A (ml)
+PD5 T1   (mr)
+
+
+Sample freq:
+
+1 periode = 20 [ms] = 50 [Hz]
+
+1 van 10 niveaus:  (2 [ms] - 1 [ms]) / 10 = 0,1 [ms] --> 10 [kHz]
+ 
+

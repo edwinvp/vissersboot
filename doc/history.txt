@@ -1,0 +1,36 @@
+
+< 4 mei 2015
+installeren/uitproberen software, doorlezen AVR documentatie etc.
+
+4 mei 2015
+- uitproberen USART, zenden tekst naar de PC 
+
+5 mei 2015
+- doorlezen servo docs
+- bekijken specs timers / capture/compare/pwm
+- probleem 1 (avr timer/capture): 
+ er is maar 1 capture pin, maar er zijn 4 servosignalen die gemeten dienen te worden.
+ mogelijke oplossing: 
+   meten m.b.v. interrupts (maar dan heb je alleen al een rate van 10 [kHz] 
+   nodig om 10 verschillende servoniveaus te detecteren). En > 100 [kHz] wordt wel wat gortig
+   voor een CPU van 16 [MHz].
+ beter oplossing:
+   interrupt on pin change gebruiken, en zo timen m.b.v. timer1 value
+   als er een pin verandert
+- probleem 2 (elektronica):
+ - tijdens het meten van signalen ging er iets mis, nu werkt 1 van de 
+   motorregelaars ineens niet meer (sluiting)
+ - hierdoor is de steekzekering van 15A doorgebrand
+ - boel aangesloten op een labvoeding, voor de rest werkt alles nog
+ - het defecte deel is een "Graupner Navy V 15R"
+
+
+
+
+
+
+
+
+
+
+
