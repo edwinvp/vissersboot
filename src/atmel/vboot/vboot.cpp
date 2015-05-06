@@ -44,9 +44,14 @@ ISR(PCINT1_vect)
 
 
 volatile unsigned int pd6_rising;
-volatile unsigned int pd6_falling;
 volatile unsigned int pd6_pulse_duration;
+
+volatile unsigned int pd5_rising;
+volatile unsigned int pd5_pulse_duration;
+
 volatile unsigned int icnt;
+
+volatile unsigned char old_pind = 0;
 
 ISR(PCINT2_vect)
 {
@@ -55,15 +60,23 @@ ISR(PCINT2_vect)
 	++icnt;
 	
 	tmr_reg = TCNT1;
-		
-	if (PIND & (1 << PIND6)) {
-		pd6_rising = tmr_reg;
-	} else {
-		pd6_falling = tmr_reg;		
 	
-		pd6_pulse_duration = pd6_falling - pd6_rising;
+	if ((PIND & _BV(PIND6)) ^ (old_pind & _BV(PIND6))) {				
+		if (PIND & _BV(PIND6)) 
+			pd6_rising = tmr_reg;
+		else
+			pd6_pulse_duration = tmr_reg - pd6_rising;
 	}
 	
+	if ((PIND & _BV(PIND5)) ^ (old_pind & _BV(PIND5))) {
+		if (PIND & _BV(PIND5))
+			pd5_rising = tmr_reg;
+		else
+			pd5_pulse_duration = tmr_reg - pd5_rising;
+	}
+	
+	
+	old_pind = PIND;
 }
 
 void setup_capture_inputs()
@@ -71,8 +84,13 @@ void setup_capture_inputs()
 	// Configure PD6 as input
 	DDRD &= ~(1 << DDB6);	
 	PORTD &= ~(1 << PORTD6);	
+	// Configure PD5 as input
+	DDRD &= ~(1 << DDB5);
+	PORTD &= ~(1 << PORTD5);
 	
-	PCMSK2 |= (1 << PCINT22);
+	// Enable on-pin-change for pins
+	PCMSK2 |= (1 << PCINT22); // PD6
+	PCMSK2 |= (1 << PCINT21); // PD5
 	
 	// Configure interrupt on logical state state on PD6 (so PCIE2)
 	PCICR |= (1 << PCIE2);
@@ -100,7 +118,7 @@ int main (void)
 		PORTB |= _BV(PORTB5);
 		_delay_ms(BLINK_DELAY_MS);
 
-		printf(" icnt=%d pd=%d \r\n", icnt, pd6_pulse_duration);
+		printf(" icnt=%05d pd6=%05d pd5=%05d \r\n", icnt, pd6_pulse_duration, pd5_pulse_duration);
 
 		USART_SendByte(value);  // send value
 
