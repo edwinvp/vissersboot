@@ -9,7 +9,7 @@
 #include <stdio.h>
 
 enum {
-	BLINK_DELAY_MS = 125,
+	BLINK_DELAY_MS = 10,
 };
 
 #include "uart.h"
@@ -40,85 +40,6 @@ ISR(PCINT1_vect)
 
 }
 
-volatile unsigned int ml_duty_cycle = 2000;
-volatile unsigned int mr_duty_cycle = 4000;
-
-void set_match_mode_a(bool set_signal)
-{
-	TCCR1A &= ~_BV(COM1A1);
-	TCCR1A |= _BV(COM1A0);		
-}
-
-void set_match_mode_b(bool set_signal)
-{
-#if 0
-	// Set/clear on match (Timer 1 B) depending on 'set_signal'
-	TCCR1A |= _BV(COM1B1);
-	
-	if (set_signal)
-		TCCR1A |= _BV(COM1B0);
-	else
-		TCCR1A &= ~_BV(COM1B0);		
-#else
-	TCCR1A &= ~_BV(COM1B1);
-	TCCR1A |= _BV(COM1B0);
-#endif
-		
-		
-}
-
-
-volatile unsigned int prev_tmr_a;
-
-ISR(TIMER1_COMPA_vect)
-{
-	unsigned int adj;
-	
-	unsigned int old_tmr;
-	
-	old_tmr = OCR1A;
-
-	//if (TCCR1A & _BV(COM1A0)) {
-	//if (PORTB & _BV(PINB1)) {
-	if ( (old_tmr - prev_tmr_a)  > 20000 )  {
-		// Now we need to tell when to make the signal low again
-		// the duration is the duty cycle of the pulse
-		//adj = ml_duty_cycle;		
-		//set_match_mode_a(false);
-		adj = 3000;
-	} else {
-		// Now we need to tell when to make the signal high again
-		// the duration is 40000 ticks (=20 [ms]) - duty cycle
-		//adj = 40000 - ml_duty_cycle;
-		//set_match_mode_a(true);		
-		adj = 37000;
-	}
-	
-	adj += old_tmr;
-
-	OCR1A = adj;
-}
-
-ISR(TIMER1_COMPB_vect)
-{
-/*
-	unsigned int adj;
-
-	if (TCCR1A & _BV(COM1B0)) {
-		// Now we need to tell when to make the signal low again
-		// the duration is the duty cycle of the pulse
-		adj = mr_duty_cycle;
-		set_match_mode_b(false);
-	} else {
-		// Now we need to tell when to make the signal high again
-		// the duration is 40000 ticks (=20 [ms]) - duty cycle
-		adj = 40000 - mr_duty_cycle;
-		set_match_mode_b(true);
-	}
-	
-	OCR1B = OCR1B + adj;
-*/	
-}
 
 volatile unsigned int pd6_rising;
 volatile unsigned int pd6_pulse_duration;
@@ -142,15 +63,21 @@ ISR(PCINT2_vect)
 	if ((PIND & _BV(PIND6)) ^ (old_pind & _BV(PIND6))) {				
 		if (PIND & _BV(PIND6)) 
 			pd6_rising = tmr_reg;
-		else
-			pd6_pulse_duration = tmr_reg - pd6_rising;
+		else {
+			pd6_pulse_duration = tmr_reg - pd6_rising;	
+			if (pd6_pulse_duration > 10000)
+				pd6_pulse_duration -= 25536;
+		}			
 	}
 	
 	if ((PIND & _BV(PIND5)) ^ (old_pind & _BV(PIND5))) {
 		if (PIND & _BV(PIND5))
 			pd5_rising = tmr_reg;
-		else
+		else {
 			pd5_pulse_duration = tmr_reg - pd5_rising;
+			if (pd5_pulse_duration > 10000)
+				pd5_pulse_duration -= 25536;			
+		}
 	}
 	
 	
@@ -187,20 +114,26 @@ void setup_pwm()
 	DDRB |= _BV(DDB1);
 	DDRB |= _BV(DDB2);
 	
-	set_match_mode_a(true);
-	set_match_mode_b(true);
-	
 
-	// Enable interrupts for out compare match A and B
-	TIMSK1 |= _BV(OCIE1A);
-	TIMSK1 |= _BV(OCIE1B);
+	// Set compare output mode to non-inverting (PWM) mode
+	TCCR1A |= _BV(COM1A1);
+	TCCR1A &= ~_BV(COM1A0);
+	TCCR1A |= _BV(COM1B1);
+	TCCR1A &= ~_BV(COM1B0);
 	
-	// Set normal mode
-	TCCR1B &= ~(_BV(WGM13));
-	TCCR1B &= ~(_BV(WGM12));
-	
-	TCCR1A &= ~(_BV(WGM11));
+	// Set mode 14 (Fast PWM, TOP=ICR1)
+	// WGM13 WGM12 WGM11 WGM10
+	// 1	 1	   1	 0
+		
+	TCCR1B |= _BV(WGM13);
+	TCCR1B |= _BV(WGM12);	
+	TCCR1A |= _BV(WGM11);
 	TCCR1A &= ~(_BV(WGM10));
+	
+	OCR1A = 3000;
+	OCR1B = 2000;
+	
+	ICR1 = 40000; // gives a 20 [ms] period
 	
 }
 
@@ -217,7 +150,11 @@ int main (void)
 	
 	while(1) {
 
-#if 0		
+		// Pass through setpoints
+		OCR1A = pd5_pulse_duration;
+		OCR1B = pd6_pulse_duration;
+
+
 		/* set pin 5 high to turn led on */
 		PORTB |= _BV(PORTB5);
 		_delay_ms(BLINK_DELAY_MS);
@@ -229,7 +166,6 @@ int main (void)
 		/* set pin 5 low to turn led off */
 		PORTB &= ~_BV(PORTB5);
 		_delay_ms(BLINK_DELAY_MS);
-#endif
 		
 	}
 	

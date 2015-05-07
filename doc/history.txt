@@ -4,6 +4,8 @@ installeren/uitproberen software, doorlezen AVR documentatie etc.
 
 4 mei 2015
 - uitproberen USART, zenden tekst naar de PC 
+- verder kennismaken met toolchain, waar zit wat, 
+hoe doe ik dingen die ik van andere platformen ken enz.
 
 5 mei 2015
 - doorlezen servo docs
@@ -23,9 +25,16 @@ installeren/uitproberen software, doorlezen AVR documentatie etc.
  - hierdoor is de steekzekering van 15A doorgebrand
  - boel aangesloten op een labvoeding, voor de rest werkt alles nog
  - het defecte deel is een "Graupner Navy V 15R"
+
 6 mei
 - ontvangen en capturen van 2 kanalen van de radiografische ontvanger in de Atmel
 - bestuderen PWM/compare mode van Timer 1
+
 7 mei
-- lukt half om een servosignaal op te wekken met Timer1,  het signaal ziet er op
- de scope eerst goed uit, maar wordt telkens met grote pauzes onderbroken door iets (?)
+- lukt half om een servosignaal op te wekken met Timer1,  het signaal ziet er op de scope eerst goed uit, 
+maar wordt telkens met grote pauzes onderbroken door iets (?)
+- na een aantal uur experimenteren blijkt dat de CPU niet snel genoeg is om met timer gestuurde interrupts een signaal op te wekken
+- overgestapt op "fast PWM", waarbij de hardware de signalen opwekt, dit werkt prima. 
+- nu is ook het ontvangstgedeelte dat de remote control uitleest eniszins aangepast,
+ omdat de werking van Timer1 aangepast is i.v.m. PWM voor de motorregelaars.
+
