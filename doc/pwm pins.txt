@@ -22,6 +22,7 @@ clkIO = 16M
 	20 ms = 320.000 ticks
 	2 ms = 32000 ticks
 /8
+	33 ms =	65.536 ticks
 	20 ms = 40.000 ticks
 	2 ms = 4000 ticks
 	1 ms =  2000 ticks

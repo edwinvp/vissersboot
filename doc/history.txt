@@ -23,14 +23,9 @@ installeren/uitproberen software, doorlezen AVR documentatie etc.
  - hierdoor is de steekzekering van 15A doorgebrand
  - boel aangesloten op een labvoeding, voor de rest werkt alles nog
  - het defecte deel is een "Graupner Navy V 15R"
-
-
-
-
-
-
-
-
-
-
-
+6 mei
+- ontvangen en capturen van 2 kanalen van de radiografische ontvanger in de Atmel
+- bestuderen PWM/compare mode van Timer 1
+7 mei
+- lukt half om een servosignaal op te wekken met Timer1,  het signaal ziet er op
+ de scope eerst goed uit, maar wordt telkens met grote pauzes onderbroken door iets (?)
