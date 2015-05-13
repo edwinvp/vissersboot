@@ -1,0 +1,11 @@
+atmel studio programmer external tool settings:
+
+
+Title:
+Usb to Serial Programmer: COM10
+
+Command:
+C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avrdude.exe
+
+Arguments:
+-C"/cygdrive/c/Program Files (x86)/Arduino/hardware/tools/avr/etc/avrdude.conf" -v -v -patmega328p -carduino -P\\.\COM10 -D -Uflash:w:"$(ProjectDir)Debug\$(ItemFileName).hex":i
