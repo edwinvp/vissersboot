@@ -30,9 +30,31 @@ ISR(USART_RX_vect){
 }
 
 
+volatile unsigned char old_pinb = 0;
+volatile unsigned int pb0_changes = 0;
+
+volatile unsigned int icnt;
+volatile unsigned int ocnt;
+
 ISR(PCINT0_vect)
 {
 
+	if ((PINB & _BV(PINB0)) ^ (old_pinb & _BV(PINB0))) {
+		ocnt=0;
+
+/*
+		if (PINB & _BV(PINB0))
+			;
+		else {
+			icnt=0;
+		}
+*/		
+	
+		pb0_changes++;	
+	}
+		
+	
+	old_pinb = PINB;
 }
 
 ISR(PCINT1_vect)
@@ -40,16 +62,24 @@ ISR(PCINT1_vect)
 
 }
 
-
 volatile unsigned int pd6_rising;
 volatile unsigned int pd6_pulse_duration;
 
 volatile unsigned int pd5_rising;
 volatile unsigned int pd5_pulse_duration;
 
-volatile unsigned int icnt;
 
 volatile unsigned char old_pind = 0;
+
+ISR(TIMER1_OVF_vect)
+{
+	++ocnt;
+	
+	if (ocnt>10) {	
+		ocnt=10;
+		pb0_changes = 0;
+	}
+}
 
 
 ISR(PCINT2_vect)
@@ -57,8 +87,9 @@ ISR(PCINT2_vect)
 	unsigned int tmr_reg;
 
 	++icnt;
-	
+		
 	tmr_reg = TCNT1;
+
 	
 	if ((PIND & _BV(PIND6)) ^ (old_pind & _BV(PIND6))) {				
 		if (PIND & _BV(PIND6)) 
@@ -84,6 +115,19 @@ ISR(PCINT2_vect)
 	old_pind = PIND;
 }
 
+void setup_gps_input()
+{
+	// Configure PB0 as input
+	DDRB &= ~_BV(DDB0);
+	PORTB &= ~_BV(PORTB0);
+	
+	// Enable on-pin-change for pin
+	PCMSK0 |= _BV(PCINT0);
+	
+	// Configure interrupt on logical state state on PB0 (so PCIE0)
+	PCICR |= _BV(PCIE0);	
+}
+
 void setup_capture_inputs()
 {
 	// Configure PD6 as input
@@ -106,6 +150,9 @@ void setup_capture_inputs()
 	TCCR1B &= ~_BV(CS12);
 	TCCR1B |= _BV(CS11);
 	TCCR1B &= ~_BV(CS10);
+	
+	// Enable timer 1 overflow interrupt
+	TIMSK1 |= _BV(TOIE1);
 }
 
 void setup_pwm()
@@ -146,7 +193,8 @@ int main (void)
 	sei();         // enable all interrupts	
 	
 	setup_capture_inputs();
-	setup_pwm();
+	setup_pwm();	
+	setup_gps_input();
 	
 	while(1) {
 
@@ -159,9 +207,11 @@ int main (void)
 		PORTB |= _BV(PORTB5);
 		_delay_ms(BLINK_DELAY_MS);
 
-		printf(" icnt=%05d pd6=%05d pd5=%05d \r\n", icnt, pd6_pulse_duration, pd5_pulse_duration);
-
-		USART_SendByte(value);  // send value
+		printf(" ocnt=%05d icnt=%05d \r\n", ocnt, icnt);
+		printf(" pd6=%05d pd5=%05d pb0_changes=%05d \r\n", 
+			pd6_pulse_duration, pd5_pulse_duration, pb0_changes);
+		
+		//USART_SendByte(value);  // send value
 
 		/* set pin 5 low to turn led off */
 		PORTB &= ~_BV(PORTB5);
