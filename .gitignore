@@ -1,1 +1,5 @@
 src/atmel/vboot/Debug
+*.cbproj.local
+__history
+src/vcl/soft_uart_simulation/Win32/
+src/vcl/soft_uart_simulation/soft_uart_sim.res
