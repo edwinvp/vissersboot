@@ -16,15 +16,10 @@ enum {
 #include "uart.h"
 
 volatile unsigned int icnt;
-volatile unsigned int ur_prev_t1;
-volatile unsigned int ur_prev_t1b;
-volatile unsigned char u_level=0;
-
 volatile unsigned long prog_ms = 0;
 
 unsigned int millis()
 {
-	prog_ms++;		
 	return prog_ms;
 }
 
@@ -63,7 +58,8 @@ volatile unsigned char old_pind = 0;
 
 ISR(TIMER1_OVF_vect)
 {
-		//
+	// Timer 1 overflow	
+	prog_ms += 20;	// timer was set to overflow each 20 [ms]	 	
 }
 
 
@@ -188,8 +184,7 @@ void setup_capture_inputs()
 	TCCR1B &= ~_BV(CS10);
 	
 	// Enable timer 1 overflow interrupt
-// Disabled temporary	
-//	TIMSK1 |= _BV(TOIE1);
+	TIMSK1 |= _BV(TOIE1);
 }
 
 void setup_pwm()
@@ -245,12 +240,13 @@ int main (void)
 
 	TinyGPS gps;
 	
+	unsigned long start_ms(0);
+	
 	while(1) {
 
 		// Pass through setpoints
 		OCR1A = pd5_pulse_duration;
 		OCR1B = pd6_pulse_duration;
-
 
 #if 0
 		printf(" icnt=%05d pd6=%05d pd5=%05d \r\n", 
@@ -274,7 +270,10 @@ int main (void)
 	
 		millis();
 
-		if (!(prog_ms%50000)) {
+	
+		unsigned long delta = prog_ms - start_ms;				
+		if (delta > 500) {
+			start_ms = prog_ms;				
 
 			blink = !blink;
 
