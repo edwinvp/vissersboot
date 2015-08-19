@@ -7,6 +7,7 @@
 //#include <avr/iom328.h>
 #include <avr/common.h>
 #include <stdio.h>
+#include "TinyGPS.h"
 
 enum {
 	BLINK_DELAY_MS = 25,
@@ -14,148 +15,36 @@ enum {
 
 #include "uart.h"
 
-volatile unsigned char value;
-/* This variable is volatile so both main and RX interrupt can use it.
-It could also be a uint8_t type */
-
-/* Interrupt Service Routine for Receive Complete
-NOTE: vector name changes with different AVRs see AVRStudio -
-Help - AVR-Libc reference - Library Reference - <avr/interrupt.h>: Interrupts
-for vector names other than USART_RXC_vect for ATmega32 */
-
-ISR(USART_RX_vect){
-	
-	value = UDR0;             //read UART register into value
-//	PORTB = ~value;          // output inverted value on LEDs (0=on)
-}
-
-
-volatile unsigned char old_pinb = 0;
 volatile unsigned int icnt;
 volatile unsigned int ur_prev_t1;
-volatile unsigned char u_level=0, wd_sync=255;
-volatile unsigned short wd_sreg=0;
+volatile unsigned int ur_prev_t1b;
+volatile unsigned char u_level=0;
 
-volatile unsigned char us_str[64];
-volatile unsigned char us_ptr=0;
+volatile unsigned long prog_ms = 0;
 
-void new_frame(unsigned short frame)
+unsigned int millis()
 {
-	char printable = frame;
-
-	if (frame<32)
-		printable = '.';
-
-	if (printable == '$')
-		us_ptr=0;
-
-	us_str[us_ptr] = printable;
-	us_ptr++;
-	us_str[us_ptr] = 0;
-
-	if (us_ptr==62)
-		us_ptr=0;
-
-	//printf("     (frame=%c (%02x))\n", printable,frame);
+	prog_ms++;		
+	return prog_ms;
 }
 
 
-void new_bit(int state)
+void copy_gps_pin(void)
 {
-	unsigned short wd_frame;
-	
-	wd_sreg >>= 1;
-	if (state)
-		wd_sreg |= 0x400;
-
-	if (wd_sync == 255) {
-		// not synchronized, wait for sync
-		// Wait until stop bit and idle to start bit has been seen
-		if ( (wd_sreg & 0x403) == 0x401) {
-			//printf("(sync)");
-			wd_frame = (wd_sreg >> 2);
-			new_frame(wd_frame);
-			wd_sync=0;
-		}
-
-	} else {
-
-		if (wd_sync >= 9) {
-			// By this time, we could have received a frame,
-			// check for stop bit and start condition
-			if ( (wd_sreg & 0x403) == 0x001) {
-				// Somehow didn't get a stop bit
-				//printf("(error)");
-				wd_sync=255;
-			} else if ( (wd_sreg & 0x403) == 0x401) {
-				// Frame detected
-				wd_frame = (wd_sreg >> 2);
-				new_frame(wd_frame);
-				wd_sync=0;
-			}
-		}
-
-		if (wd_sync >= 20) {
-			//printf("(lost)");
-			wd_sync=0;
-			state = 255;
-		}
-
-		wd_sync++;
+	if (PINB & _BV(PINB0))
+	{
+		PORTD |= _BV(PORTD7);
+	} else
+	{
+		PORTD &= ~_BV(PORTD7);
 	}
 
 }
 
 ISR(PCINT0_vect)
 {
-	unsigned short delta_t1,t1;
-	unsigned char u_new_level;
-	unsigned short num_bits=0,i=0;
-	
-	t1 = TCNT1;
-	
-	if ((PINB & _BV(PINB0)) ^ (old_pinb & _BV(PINB0))) {
-		
-		delta_t1 = t1 - ur_prev_t1;
-
-		u_new_level = (PINB & _BV(PINB0))!=0;
-	
-		// Pulse duration less than half bit? Invalid!
-		if (delta_t1 < 104)
-			num_bits=0;
-		else {
-			// calculate number of full bit lengths
-			num_bits=0;
-			while (delta_t1>208) {
-				delta_t1 -= 208;
-				num_bits++;
-			}	
-			//num_bits = delta_t1 / 208;
-
-			// allow last bit too be somewhat shorter than usual
-			if (delta_t1 >= 156)
-				num_bits++;
-		}
-
-		if (num_bits) {
-
-			for (i=0; i<num_bits; i++) {
-    			new_bit(u_level);
-			}
-
-		} else {
-			// line changed too fast, or not at all
-			wd_sync=255;
-		}
-
-		
-		u_level = u_new_level;
-		ur_prev_t1 = t1;
-	
-	}
-		
-	
-	old_pinb = PINB;
+	// For PD0 (UART RX) equal to current value of soft GPS pin
+	copy_gps_pin();	
 }
 
 ISR(PCINT1_vect)
@@ -181,7 +70,7 @@ ISR(TIMER1_OVF_vect)
 ISR(PCINT2_vect)
 {
 	unsigned int tmr_reg;
-
+	
 	++icnt;
 		
 	tmr_reg = TCNT1;
@@ -211,13 +100,61 @@ ISR(PCINT2_vect)
 	old_pind = PIND;
 }
 
-void setup_gps_input()
+volatile unsigned char value;
+/* This variable is volatile so both main and RX interrupt can use it.
+It could also be a uint8_t type */
+
+/* Interrupt Service Routine for Receive Complete
+NOTE: vector name changes with different AVRs see AVRStudio -
+Help - AVR-Libc reference - Library Reference - <avr/interrupt.h>: Interrupts
+for vector names other than USART_RXC_vect for ATmega32 */
+
+volatile unsigned char head = 0,tail = 0;
+#define FIFO_SIZE 32
+#define FIFO_MASK (FIFO_SIZE-1)
+volatile char uart_fifo[FIFO_SIZE];
+
+bool rb_avail()
 {
-	us_str[0]=0;
+	return (head != tail);
+}
+
+char rb_read()
+{
+	char data(0);
+	if (head != tail) {
+		data = uart_fifo[tail];
+		unsigned char new_tail(tail);
+		new_tail++;
+		new_tail &= FIFO_MASK;
+		tail = new_tail;		
+	}		
+	return data;
+}
+
+
+ISR(USART_RX_vect) {
+	value = UDR0;             //read UART register into value
 	
+	unsigned char new_head;
+	new_head = head + 1;
+	new_head &= FIFO_MASK;
+			
+	if (new_head != tail) {
+		uart_fifo[head] = value;													
+		head = new_head;		
+	}	
+}
+
+void setup_gps_input()
+{	
 	// Configure PB0 as input
 	DDRB &= ~_BV(DDB0);
 	PORTB &= ~_BV(PORTB0);
+	
+	// Setup PD7 as output
+	DDRD |= _BV(DDD7);
+	PORTD  &= ~_BV(PORTD7); // make zero
 	
 	// Enable on-pin-change for pin
 	PCMSK0 |= _BV(PCINT0);
@@ -236,8 +173,9 @@ void setup_capture_inputs()
 	PORTD &= ~_BV(PORTD5);
 	
 	// Enable on-pin-change for pins
-	PCMSK2 |= _BV(PCINT22); // PD6
-	PCMSK2 |= _BV(PCINT21); // PD5
+// Disabled temporary	
+//	PCMSK2 |= _BV(PCINT22); // PD6
+//	PCMSK2 |= _BV(PCINT21); // PD5
 	
 	// Configure interrupt on logical state state on PD6 (so PCIE2)
 	PCICR |= _BV(PCIE2);
@@ -250,7 +188,8 @@ void setup_capture_inputs()
 	TCCR1B &= ~_BV(CS10);
 	
 	// Enable timer 1 overflow interrupt
-	TIMSK1 |= _BV(TOIE1);
+// Disabled temporary	
+//	TIMSK1 |= _BV(TOIE1);
 }
 
 void setup_pwm()
@@ -278,12 +217,18 @@ void setup_pwm()
 	OCR1A = 3000;
 	OCR1B = 2000;
 	
-	ICR1 = 40000; // gives a 20 [ms] period
-	
+	ICR1 = 40000; // gives a 20 [ms] period	
+}
+
+void clear_stats(void) 
+{
+		//	
 }
 
 int main (void)
 {
+	bool blink(false);
+	
 	/* set pin 5 of PORTB for output*/
 	DDRB |= _BV(DDB5);
 	
@@ -293,6 +238,12 @@ int main (void)
 	setup_capture_inputs();
 	setup_pwm();	
 	setup_gps_input();
+
+	
+	clear_stats();
+
+
+	TinyGPS gps;
 	
 	while(1) {
 
@@ -301,21 +252,52 @@ int main (void)
 		OCR1B = pd6_pulse_duration;
 
 
-		/* set pin 5 high to turn led on */
-		PORTB |= _BV(PORTB5);
-		_delay_ms(BLINK_DELAY_MS);
-
+#if 0
 		printf(" icnt=%05d pd6=%05d pd5=%05d \r\n", 
 			icnt, pd6_pulse_duration, pd5_pulse_duration );
 		
-		printf(" us_str=%s\r\n", us_str);
+		printf(" us_str1=%s\r\n", us_str1);
+		printf(" us_str2=%s\r\n", us_str2);
+		printf(" us_str3=%s\r\n", us_str3);
 		
+		printf(" sns=%d sf=%d stf1=%d stf2=%d sl=%d \r\n",
+			stats_no_stop_bit, stats_frames, stats_too_fast1, stats_too_fast2, stats_lines );
+#endif			
+			
 		
-		//USART_SendByte(value);  // send value
+		copy_gps_pin();
 
-		/* set pin 5 low to turn led off */
-		PORTB &= ~_BV(PORTB5);
-		_delay_ms(BLINK_DELAY_MS);
+		// decode GPS serial stream	
+		while (rb_avail()) {
+			gps.encode(rb_read());
+		}
+	
+		millis();
+
+		if (!(prog_ms%50000)) {
+
+			blink = !blink;
+
+			if (blink) {
+				/* set pin 5 high to turn led on */
+				PORTB |= _BV(PORTB5);
+			} else {
+				/* set pin 5 low to turn led off */
+				PORTB &= ~_BV(PORTB5);
+			}			
+			
+			long lat, lon;
+			unsigned long fix_age; // returns +- latitude/longitude in degrees
+			gps.get_position(&lat, &lon, &fix_age);
+			if (fix_age == TinyGPS::GPS_INVALID_AGE)
+				printf("GPS-NO_FIX\r\n");
+			else if (fix_age > 150000)
+				printf("GPS-STALE\r\n");
+			else {
+				printf("GPS-OK age=%ld. lat=%ld lon=%ld \r\n",fix_age,lat,lon);			
+			}
+		}
+
 		
 	}
 	
