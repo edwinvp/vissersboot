@@ -2,6 +2,9 @@
 #define uartH
 
 #include "settings.h"
+#ifdef _WIN32
+#include "fakeio.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
