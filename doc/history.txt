@@ -38,3 +38,10 @@ maar wordt telkens met grote pauzes onderbroken door iets (?)
 - nu is ook het ontvangstgedeelte dat de remote control uitleest eniszins aangepast,
  omdat de werking van Timer1 aangepast is i.v.m. PWM voor de motorregelaars.
 
+juli/augustus
+- problemen met ontvangst gps
+- softgps werkt niet goed
+- gps omgeleid naar RX pin hardware UART, dat werkt wel
+- start ontwikkeling simulatieprogramma
+- toevoegen RC kanalen 3 en 4
+

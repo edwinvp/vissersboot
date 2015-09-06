@@ -51,5 +51,11 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
+
+
+	TDrawingArea da;
+	da.SetScreenDims(PaintBox1->Width,PaintBox1->Height);
+	da.RenderTo(PaintBox1->Canvas);
+
 }
 //---------------------------------------------------------------------------

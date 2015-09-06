@@ -128,9 +128,17 @@
         <PCHCompile Include="bootPCH.h">
             <BuildOrder>1</BuildOrder>
         </PCHCompile>
+        <CppCompile Include="drawing_area.cpp">
+            <DependentOn>drawing_area.h</DependentOn>
+            <BuildOrder>7</BuildOrder>
+        </CppCompile>
         <CppCompile Include="fakeio.cpp">
             <DependentOn>fakeio.h</DependentOn>
             <BuildOrder>5</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="gpsloc.cpp">
+            <DependentOn>gpsloc.h</DependentOn>
+            <BuildOrder>6</BuildOrder>
         </CppCompile>
         <CppCompile Include="mainform.cpp">
             <Form>MainFrm</Form>

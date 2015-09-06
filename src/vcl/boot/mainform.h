@@ -9,6 +9,8 @@
 #include <Vcl.Forms.hpp>
 #include <Vcl.ExtCtrls.hpp>
 //---------------------------------------------------------------------------
+#include "drawing_area.h"
+//---------------------------------------------------------------------------
 class TMainFrm : public TForm
 {
 __published:	// IDE-managed Components

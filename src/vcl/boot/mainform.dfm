@@ -2,8 +2,8 @@ object MainFrm: TMainFrm
   Left = 0
   Top = 0
   Caption = 'Main simulation form'
-  ClientHeight = 404
-  ClientWidth = 600
+  ClientHeight = 494
+  ClientWidth = 725
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,32 +17,32 @@ object MainFrm: TMainFrm
   object PaintBox1: TPaintBox
     Left = 0
     Top = 0
-    Width = 273
-    Height = 312
-    Align = alLeft
-    ExplicitLeft = 112
-    ExplicitTop = 72
-    ExplicitHeight = 217
+    Width = 423
+    Height = 402
+    Align = alClient
+    ExplicitLeft = 16
+    ExplicitTop = -6
   end
   object Splitter1: TSplitter
-    Left = 273
+    Left = 423
     Top = 0
     Width = 16
-    Height = 312
+    Height = 402
+    Align = alRight
     Beveled = True
-    ExplicitHeight = 362
+    ExplicitLeft = 417
+    ExplicitTop = 8
   end
   object Panel1: TPanel
-    Left = 289
+    Left = 439
     Top = 0
-    Width = 311
-    Height = 312
-    Align = alClient
+    Width = 286
+    Height = 402
+    Align = alRight
     TabOrder = 0
-    ExplicitLeft = 376
-    ExplicitTop = 152
-    ExplicitWidth = 121
-    ExplicitHeight = 177
+    ExplicitLeft = 289
+    ExplicitWidth = 311
+    ExplicitHeight = 312
     object GroupBox1: TGroupBox
       Left = 6
       Top = 207
@@ -124,12 +124,14 @@ object MainFrm: TMainFrm
   end
   object ListBox1: TListBox
     Left = 0
-    Top = 312
-    Width = 600
+    Top = 402
+    Width = 725
     Height = 92
     Align = alBottom
     ItemHeight = 13
     TabOrder = 1
+    ExplicitTop = 312
+    ExplicitWidth = 600
   end
   object Timer1: TTimer
     Interval = 100
