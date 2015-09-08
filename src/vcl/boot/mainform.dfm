@@ -17,14 +17,13 @@ object MainFrm: TMainFrm
   object PaintBox1: TPaintBox
     Left = 0
     Top = 0
-    Width = 423
+    Width = 264
     Height = 402
     Align = alClient
-    ExplicitLeft = 16
-    ExplicitTop = -6
+    ExplicitWidth = 289
   end
   object Splitter1: TSplitter
-    Left = 423
+    Left = 264
     Top = 0
     Width = 16
     Height = 402
@@ -34,15 +33,12 @@ object MainFrm: TMainFrm
     ExplicitTop = 8
   end
   object Panel1: TPanel
-    Left = 439
+    Left = 280
     Top = 0
-    Width = 286
+    Width = 445
     Height = 402
     Align = alRight
     TabOrder = 0
-    ExplicitLeft = 289
-    ExplicitWidth = 311
-    ExplicitHeight = 312
     object GroupBox1: TGroupBox
       Left = 6
       Top = 207
@@ -121,6 +117,22 @@ object MainFrm: TMainFrm
         TabOrder = 3
       end
     end
+    object Button1: TButton
+      Left = 6
+      Top = 338
+      Width = 89
+      Height = 41
+      Caption = 'Button1'
+      TabOrder = 3
+      OnClick = Button1Click
+    end
+    object Edit1: TEdit
+      Left = 6
+      Top = 306
+      Width = 419
+      Height = 21
+      TabOrder = 4
+    end
   end
   object ListBox1: TListBox
     Left = 0
@@ -130,8 +142,6 @@ object MainFrm: TMainFrm
     Align = alBottom
     ItemHeight = 13
     TabOrder = 1
-    ExplicitTop = 312
-    ExplicitWidth = 600
   end
   object Timer1: TTimer
     Interval = 100

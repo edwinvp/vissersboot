@@ -35,7 +35,8 @@ extern AnsiString prog_op;
 int printf(const char * fmt, ... );
 //---------------------------------------------------------------------------
 int main_init (void);
-void process (TinyGPS & gps);
+void process();
+void Fake_UART_ISR(unsigned UDR0);
 extern volatile unsigned long prog_ms;
 //---------------------------------------------------------------------------
 

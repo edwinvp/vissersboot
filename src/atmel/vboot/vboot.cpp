@@ -18,6 +18,10 @@
 
 #include "TinyGPS.h"
 
+#ifdef _WIN32
+TinyGPS gps;
+#endif
+
 enum {
 	BLINK_DELAY_MS = 25,
 };
@@ -180,6 +184,10 @@ char rb_read()
 
 #ifndef _WIN32
 ISR(USART_RX_vect) {
+#else
+void Fake_UART_ISR(unsigned UDR0) {
+#endif
+
 	value = UDR0;             //read UART register into value
 
 	unsigned char new_head;
@@ -191,7 +199,6 @@ ISR(USART_RX_vect) {
 		head = new_head;
 	}
 }
-#endif
 
 void setup_gps_input()
 {
@@ -287,7 +294,7 @@ void clear_stats(void)
 		//
 }
 
-void process (TinyGPS & gps)
+void process()
 {
 	// Pass through motor left and right setpoints to PWM module
 	OCR1A = pd5_pulse_duration;
@@ -362,7 +369,7 @@ int main (void)
 	TinyGPS gps;
 
 	while(1) {
-		process(gps);
+		process();
 	}
 #endif
 

@@ -27,7 +27,10 @@ __published:	// IDE-managed Components
 	TScrollBar *SbMotorV;
 	TScrollBar *SbManAuto;
 	TScrollBar *SbMotorH;
+	TButton *Button1;
+	TEdit *Edit1;
 	void __fastcall Timer1Timer(TObject *Sender);
+	void __fastcall Button1Click(TObject *Sender);
 private:	// User declarations
 public:		// User declarations
 	__fastcall TMainFrm(TComponent* Owner);

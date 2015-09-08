@@ -6,8 +6,6 @@
 #include "mainform.h"
 #include "fakeio.h"
 //---------------------------------------------------------------------------
-TinyGPS gps;
-//---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
 TMainFrm *MainFrm;
@@ -36,7 +34,7 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 		pb3_pulse_duration=0;
 	}
 
-	process(gps);
+	process();
 
 	if (prog_op.Length()) {
 		if (ListBox1->Items->Count > 5)
@@ -59,3 +57,19 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 
 }
 //---------------------------------------------------------------------------
+void __fastcall TMainFrm::Button1Click(TObject *Sender)
+{
+	TGpsLoc loc;
+	loc.lat = 48.117300;
+	loc.lon = 11.516667;
+
+	UnicodeString sRMC = loc.GetGPRMC();
+	Edit1->Text = sRMC;
+
+	for (int i(1);i<=sRMC.Length();++i) {
+		Fake_UART_ISR(sRMC[i]);
+		process();
+	}
+}
+//---------------------------------------------------------------------------
+
