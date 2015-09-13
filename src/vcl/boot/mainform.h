@@ -29,9 +29,14 @@ __published:	// IDE-managed Components
 	TScrollBar *SbMotorH;
 	TButton *Button1;
 	TEdit *Edit1;
+	TLabeledEdit *EdZoomFactor;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall Button1Click(TObject *Sender);
+	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+
 private:	// User declarations
+	TDrawingArea da;
+
 public:		// User declarations
 	__fastcall TMainFrm(TComponent* Owner);
 };

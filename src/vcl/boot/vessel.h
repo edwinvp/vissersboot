@@ -1,22 +1,20 @@
 //---------------------------------------------------------------------------
-
-#ifndef gpslocH
-#define gpslocH
+#ifndef vesselH
+#define vesselH
 //---------------------------------------------------------------------------
-#include <System.hpp>
+#include "gpsloc.h"
 //---------------------------------------------------------------------------
-class TGpsLoc
+class TVessel
 {
 public:
-	double lat; // North/South (degrees, positive = north)
-	double lon; // East/West (degrees, positive = east)
+	TGpsLoc position;
+	float heading;
+	float speed;
+	float motor_left;
+	float motor_right;
 
-	TGpsLoc();
-
-	UnicodeString GetGPRMC() const;
-	UnicodeString Lat2NMEA() const;
-	UnicodeString Lon2NMEA() const;
-
+	TVessel();
 };
+
 //---------------------------------------------------------------------------
 #endif

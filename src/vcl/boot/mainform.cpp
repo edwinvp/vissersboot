@@ -13,6 +13,9 @@ TMainFrm *MainFrm;
 __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	: TForm(Owner)
 {
+	//da.SetZoomFactor(8400000);
+	da.SetZoomFactor(10000);
+
 	main_init();
 }
 //---------------------------------------------------------------------------
@@ -49,11 +52,16 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
+	TVessel vessel;
+	vessel.heading = 40.0f;
+	vessel.position.lat = 51.9364818f;
+	vessel.position.lon = 4.5162849f;
 
 
-	TDrawingArea da;
+
 	da.SetScreenDims(PaintBox1->Width,PaintBox1->Height);
-	da.RenderTo(PaintBox1->Canvas);
+
+	da.RenderTo(PaintBox1->Canvas,vessel);
 
 }
 //---------------------------------------------------------------------------
@@ -69,6 +77,15 @@ void __fastcall TMainFrm::Button1Click(TObject *Sender)
 	for (int i(1);i<=sRMC.Length();++i) {
 		Fake_UART_ISR(sRMC[i]);
 		process();
+	}
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainFrm::OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift)
+
+{
+	if (Key==VK_RETURN) {
+		da.SetZoomFactor(EdZoomFactor->Text.ToDouble());
 	}
 }
 //---------------------------------------------------------------------------

@@ -1,22 +1,23 @@
 //---------------------------------------------------------------------------
 
-#ifndef gpslocH
-#define gpslocH
+#pragma hdrstop
+
+#include "vessel.h"
 //---------------------------------------------------------------------------
-#include <System.hpp>
+#pragma package(smart_init)
+
 //---------------------------------------------------------------------------
-class TGpsLoc
+TVessel::TVessel()
 {
-public:
-	double lat; // North/South (degrees, positive = north)
-	double lon; // East/West (degrees, positive = east)
+	position.lat = 0.0f;
+	position.lon = 0.0f;
 
-	TGpsLoc();
+	// heading: 0=North, 90=East, 180=South, 270=West
+	heading = 0.0f;
 
-	UnicodeString GetGPRMC() const;
-	UnicodeString Lat2NMEA() const;
-	UnicodeString Lon2NMEA() const;
-
-};
+	speed = 0.0f;
+	motor_left = 0.0f;
+	motor_right = 0.0f;
+}
 //---------------------------------------------------------------------------
-#endif
+

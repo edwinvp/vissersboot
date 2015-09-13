@@ -146,6 +146,10 @@
             <DependentOn>mainform.h</DependentOn>
             <BuildOrder>2</BuildOrder>
         </CppCompile>
+        <CppCompile Include="vessel.cpp">
+            <DependentOn>vessel.h</DependentOn>
+            <BuildOrder>8</BuildOrder>
+        </CppCompile>
         <FormResources Include="mainform.dfm"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>

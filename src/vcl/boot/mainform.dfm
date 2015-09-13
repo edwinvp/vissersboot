@@ -17,13 +17,13 @@ object MainFrm: TMainFrm
   object PaintBox1: TPaintBox
     Left = 0
     Top = 0
-    Width = 264
+    Width = 368
     Height = 402
     Align = alClient
-    ExplicitWidth = 289
+    ExplicitWidth = 344
   end
   object Splitter1: TSplitter
-    Left = 264
+    Left = 368
     Top = 0
     Width = 16
     Height = 402
@@ -33,12 +33,13 @@ object MainFrm: TMainFrm
     ExplicitTop = 8
   end
   object Panel1: TPanel
-    Left = 280
+    Left = 384
     Top = 0
-    Width = 445
+    Width = 341
     Height = 402
     Align = alRight
     TabOrder = 0
+    ExplicitLeft = 348
     object GroupBox1: TGroupBox
       Left = 6
       Top = 207
@@ -132,6 +133,18 @@ object MainFrm: TMainFrm
       Width = 419
       Height = 21
       TabOrder = 4
+    end
+    object EdZoomFactor: TLabeledEdit
+      Left = 112
+      Top = 235
+      Width = 121
+      Height = 21
+      EditLabel.Width = 69
+      EditLabel.Height = 13
+      EditLabel.Caption = 'EdZoomFactor'
+      TabOrder = 5
+      Text = '100'
+      OnKeyDown = OnZoomFactKeyDown
     end
   end
   object ListBox1: TListBox
