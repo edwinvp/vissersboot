@@ -39,7 +39,13 @@ object MainFrm: TMainFrm
     Height = 402
     Align = alRight
     TabOrder = 0
-    ExplicitLeft = 348
+    object Label1: TLabel
+      Left = 96
+      Top = 280
+      Width = 88
+      Height = 13
+      Caption = 'Full power: 5 km/u'
+    end
     object GroupBox1: TGroupBox
       Left = 6
       Top = 207
@@ -145,6 +151,26 @@ object MainFrm: TMainFrm
       TabOrder = 5
       Text = '100'
       OnKeyDown = OnZoomFactKeyDown
+    end
+    object SbMotorL: TScrollBar
+      Left = 270
+      Top = 79
+      Width = 25
+      Height = 194
+      Kind = sbVertical
+      Min = -100
+      PageSize = 0
+      TabOrder = 6
+    end
+    object SbMotorR: TScrollBar
+      Left = 294
+      Top = 79
+      Width = 25
+      Height = 194
+      Kind = sbVertical
+      Min = -100
+      PageSize = 0
+      TabOrder = 7
     end
   end
   object ListBox1: TListBox

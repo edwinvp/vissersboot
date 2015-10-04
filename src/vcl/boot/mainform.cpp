@@ -10,11 +10,19 @@
 #pragma resource "*.dfm"
 TMainFrm *MainFrm;
 //---------------------------------------------------------------------------
+#define pi 3.1415926535897932384626433832795f
+//---------------------------------------------------------------------------
 __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	: TForm(Owner)
 {
 	//da.SetZoomFactor(8400000);
 	da.SetZoomFactor(10000);
+
+	vessel.heading = 40.0f;
+	vessel.position.lat = 51.9364818f;
+	vessel.position.lon = 4.5162849f;
+	vessel.speed = 0;
+
 
 	main_init();
 }
@@ -52,12 +60,13 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
-	TVessel vessel;
-	vessel.heading = 40.0f;
-	vessel.position.lat = 51.9364818f;
-	vessel.position.lon = 4.5162849f;
 
+	vessel.motor_left = -(SbMotorL->Position / 100.0);
+	vessel.motor_right = -(SbMotorR->Position / 100.0);
 
+	vessel.CalcSpeedAndHeading();
+	vessel.Move(Timer1->Interval);
+	//vessel.heading += 0.2;
 
 	da.SetScreenDims(PaintBox1->Width,PaintBox1->Height);
 
