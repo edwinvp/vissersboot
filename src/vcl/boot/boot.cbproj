@@ -116,6 +116,10 @@
         <BCC_PCHName_Clang>bootPCH.h</BCC_PCHName_Clang>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="..\..\atmel\vboot\lat_lon.cpp">
+            <DependentOn>..\..\atmel\vboot\lat_lon.h</DependentOn>
+            <BuildOrder>9</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\atmel\vboot\TinyGPS.cpp">
             <BuildOrder>3</BuildOrder>
         </CppCompile>

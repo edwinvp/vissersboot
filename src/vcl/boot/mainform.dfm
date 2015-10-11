@@ -2,7 +2,7 @@ object MainFrm: TMainFrm
   Left = 0
   Top = 0
   Caption = 'Main simulation form'
-  ClientHeight = 494
+  ClientHeight = 583
   ClientWidth = 725
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,27 +18,30 @@ object MainFrm: TMainFrm
     Left = 0
     Top = 0
     Width = 368
-    Height = 402
+    Height = 432
     Align = alClient
     ExplicitWidth = 344
+    ExplicitHeight = 402
   end
   object Splitter1: TSplitter
     Left = 368
     Top = 0
     Width = 16
-    Height = 402
+    Height = 432
     Align = alRight
     Beveled = True
     ExplicitLeft = 417
     ExplicitTop = 8
+    ExplicitHeight = 402
   end
   object Panel1: TPanel
     Left = 384
     Top = 0
     Width = 341
-    Height = 402
+    Height = 432
     Align = alRight
     TabOrder = 0
+    ExplicitHeight = 402
     object Label1: TLabel
       Left = 96
       Top = 280
@@ -124,22 +127,6 @@ object MainFrm: TMainFrm
         TabOrder = 3
       end
     end
-    object Button1: TButton
-      Left = 6
-      Top = 338
-      Width = 89
-      Height = 41
-      Caption = 'Button1'
-      TabOrder = 3
-      OnClick = Button1Click
-    end
-    object Edit1: TEdit
-      Left = 6
-      Top = 306
-      Width = 419
-      Height = 21
-      TabOrder = 4
-    end
     object EdZoomFactor: TLabeledEdit
       Left = 112
       Top = 235
@@ -148,7 +135,7 @@ object MainFrm: TMainFrm
       EditLabel.Width = 69
       EditLabel.Height = 13
       EditLabel.Caption = 'EdZoomFactor'
-      TabOrder = 5
+      TabOrder = 3
       Text = '100'
       OnKeyDown = OnZoomFactKeyDown
     end
@@ -160,7 +147,7 @@ object MainFrm: TMainFrm
       Kind = sbVertical
       Min = -100
       PageSize = 0
-      TabOrder = 6
+      TabOrder = 4
     end
     object SbMotorR: TScrollBar
       Left = 294
@@ -170,14 +157,14 @@ object MainFrm: TMainFrm
       Kind = sbVertical
       Min = -100
       PageSize = 0
-      TabOrder = 7
+      TabOrder = 5
     end
   end
   object ListBox1: TListBox
     Left = 0
-    Top = 402
+    Top = 432
     Width = 725
-    Height = 92
+    Height = 151
     Align = alBottom
     ItemHeight = 13
     TabOrder = 1

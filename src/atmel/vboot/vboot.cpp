@@ -17,9 +17,16 @@
 #endif
 
 #include "TinyGPS.h"
+#include "lat_lon.h"
 
 #ifdef _WIN32
 TinyGPS gps;
+
+CLatLon gp_current;
+CLatLon gp_start;
+CLatLon gp_finish;
+float bearing_sp = 0;
+
 #endif
 
 enum {
@@ -30,7 +37,9 @@ enum {
 
 volatile unsigned long prog_ms = 0;
 
-unsigned long start_ms(0);
+unsigned long start1_ms(0);
+unsigned long start2_ms(0);
+
 bool blink(false);
 
 unsigned int millis()
@@ -300,12 +309,19 @@ void process()
 	OCR1A = pd5_pulse_duration;
 	OCR1B = pd6_pulse_duration;
 
-#if 1
+#if 0
 	// Display current servo signals as received (2000 ... 4000, 0 = no signal)
-	printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
-		pd6_pulse_duration, pd5_pulse_duration,
-		pd3_pulse_duration, pb3_pulse_duration);
+	unsigned long delta1 = prog_ms - start1_ms;
+	if (delta1 >= 100) {
+		start1_ms = prog_ms;
+		printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
+			pd6_pulse_duration, pd5_pulse_duration,
+			pd3_pulse_duration, pb3_pulse_duration);
+		}
 #endif
+
+	//bearing_sp = gp_start.bearingTo(gp_finish);
+	bearing_sp = gp_current.bearingTo(gp_finish);
 
 
 	copy_gps_pin();
@@ -317,9 +333,9 @@ void process()
 
 	millis();
 
-	unsigned long delta = prog_ms - start_ms;
-	if (delta > 500) {
-		start_ms = prog_ms;
+	unsigned long delta2 = prog_ms - start2_ms;
+	if (delta2 > 500) {
+		start2_ms = prog_ms;
 
 		blink = !blink;
 
@@ -340,6 +356,8 @@ void process()
 			printf("GPS-STALE\r\n");
 		else {
 			printf("GPS-OK age=%ld. lat=%ld lon=%ld \r\n",fix_age,lat,lon);
+
+			gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
 		}
 	}
 }

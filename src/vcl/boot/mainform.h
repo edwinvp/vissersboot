@@ -27,19 +27,21 @@ __published:	// IDE-managed Components
 	TScrollBar *SbMotorV;
 	TScrollBar *SbManAuto;
 	TScrollBar *SbMotorH;
-	TButton *Button1;
-	TEdit *Edit1;
 	TLabeledEdit *EdZoomFactor;
 	TLabel *Label1;
 	TScrollBar *SbMotorL;
 	TScrollBar *SbMotorR;
 	void __fastcall Timer1Timer(TObject *Sender);
-	void __fastcall Button1Click(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 
 private:	// User declarations
 	TDrawingArea da;
 	TVessel vessel;
+	TDrawPoint start,finish;
+
+	void __fastcall SendVesselPosToAtmel();
+	void __fastcall AddLocations();
+	void __fastcall AddRefLocations();
 
 public:		// User declarations
 	__fastcall TMainFrm(TComponent* Owner);

@@ -6,14 +6,16 @@
 #include "gpsloc.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
-
+//---------------------------------------------------------------------------
+#define pi 3.1415926535897932384626433832795
+//---------------------------------------------------------------------------
 TGpsLoc::TGpsLoc() : lat(0), lon(0)
 {
 }
 
-UnicodeString TGpsLoc::Lat2NMEA() const
+UnicodeString TGpsLoc::MakeDegreeAndMinutes(double angle) const
 {
-	float absolute = fabs(lat);
+	float absolute = fabs(angle);
 	int degrees = (int)absolute;
 	float mins = (absolute - degrees) * 60.0f;
 
@@ -23,6 +25,12 @@ UnicodeString TGpsLoc::Lat2NMEA() const
 
 	UnicodeString s;
 	s.printf(L"%02d%s%.5f",degrees, extra.c_str(), mins);
+	return s;
+}
+
+UnicodeString TGpsLoc::Lat2NMEA() const
+{
+	UnicodeString s = MakeDegreeAndMinutes(lat);
 
 	if (lat>=0)
 		s+=L",N";
@@ -34,18 +42,7 @@ UnicodeString TGpsLoc::Lat2NMEA() const
 
 UnicodeString TGpsLoc::Lon2NMEA() const
 {
-	float absolute = fabs(lon);
-	int degrees = (int)absolute;
-	float mins = (absolute - degrees) * 60.0f;
-
-	UnicodeString extra;
-	if (mins < 10)
-		extra += L"00";
-	else if (mins < 100)
-		extra += L"0";
-
-	UnicodeString s;
-	s.printf(L"%03d%s%.5f",degrees, extra.c_str(), mins);
+	UnicodeString s = MakeDegreeAndMinutes(lon);
 
 	if (lon>=0)
 		s+=L",E";
@@ -73,3 +70,19 @@ UnicodeString TGpsLoc::GetGPRMC() const
 
 	return s;
 }
+
+double TGpsLoc::toRadians(double deg)
+{
+	return deg / 180.0 * pi;
+}
+
+double TGpsLoc::lonRadians() const
+{
+	return toRadians(lon);
+}
+
+double TGpsLoc::latRadians() const
+{
+	return toRadians(lat);
+}
+

@@ -23,8 +23,80 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	vessel.position.lon = 4.5162849f;
 	vessel.speed = 0;
 
+	AddLocations();
+
+	da.SetCenterLoc(start.loc);
 
 	main_init();
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::AddRefLocations()
+{
+	TDrawPoint zero,utrecht,amsterdam,rotterdam;
+
+	// zero loc
+	zero.clr = clBlack;
+	zero.loc.lat = 0;
+	zero.loc.lon = 0;
+	da.AddDrawPoint(zero);
+	// Utrecht
+	utrecht.clr = clYellow;
+	utrecht.loc.lat = 52.0906949f;
+	utrecht.loc.lon = 5.1220616f;
+	da.AddDrawPoint(utrecht);
+	// Amsterdam
+	amsterdam.clr = clRed;
+	amsterdam.loc.lat = 52.3788516f;
+	amsterdam.loc.lon = 4.9004368f;
+	da.AddDrawPoint(amsterdam);
+	// Rotterdam
+	rotterdam.clr = clGreen;
+	rotterdam.loc.lat = 51.9290846f;
+	rotterdam.loc.lon = 4.4931016f;
+	da.AddDrawPoint(rotterdam);
+
+	// Kralingse plas
+	TDrawPoint kp1, kp2, kp3,kp4;
+	// kp1  kp2
+	// kp3  kp4
+	kp1.clr = clBlue;
+	kp2.clr = clBlue;
+	kp3.clr = clBlue;
+	kp4.clr = clBlue;
+	kp1.loc.lat = 51.9413472f;
+	kp1.loc.lon = 4.513745f;
+	kp2.loc.lat = 51.9380235f;
+	kp2.loc.lon = 4.5250358f;
+	kp3.loc.lat = 51.9340276f;
+	kp3.loc.lon = 4.5056552f;
+	kp4.loc.lat = 51.9281928f;
+	kp4.loc.lon = 4.5183095f;
+	da.AddDrawPoint(kp1);
+	da.AddDrawPoint(kp2);
+	da.AddDrawPoint(kp3);
+	da.AddDrawPoint(kp4);
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::AddLocations()
+{
+	AddRefLocations();
+
+	// startpunt navigatie: ergens midden in de Kralingse plas
+	start.clr = clWhite;
+	start.loc.lat = 51.9364818f;
+	start.loc.lon = 4.5162849f;
+	da.AddDrawPoint(start);
+	// eindpunt/finish navigatie: wat verder weg (voor de tuin)
+	finish.clr = clWhite;
+	finish.loc.lat = 51.932278f;
+	finish.loc.lon = 4.521163f;
+	da.AddDrawPoint(finish);
+
+	gp_start.lat = start.loc.lat;
+	gp_start.lon = start.loc.lon;
+	gp_finish.lat = finish.loc.lat;
+	gp_finish.lon = finish.loc.lon;
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
@@ -45,6 +117,8 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 		pb3_pulse_duration=0;
 	}
 
+	// run atmel program
+	SendVesselPosToAtmel();
 	process();
 
 	if (prog_op.Length()) {
@@ -60,6 +134,7 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
+	vessel.bearing_sp = bearing_sp;
 
 	vessel.motor_left = -(SbMotorL->Position / 100.0);
 	vessel.motor_right = -(SbMotorR->Position / 100.0);
@@ -74,15 +149,17 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 
 }
 //---------------------------------------------------------------------------
-void __fastcall TMainFrm::Button1Click(TObject *Sender)
+void __fastcall TMainFrm::SendVesselPosToAtmel()
 {
-	TGpsLoc loc;
-	loc.lat = 48.117300;
-	loc.lon = 11.516667;
+	TGpsLoc loc = vessel.position;
+//	loc.lat = -89.0;
+//	loc.lon = -179.0;
 
+	// Convert current location to a GPS string parseable by
+	// the TinyGPS library.
 	UnicodeString sRMC = loc.GetGPRMC();
-	Edit1->Text = sRMC;
 
+	// Send as fake UART message
 	for (int i(1);i<=sRMC.Length();++i) {
 		Fake_UART_ISR(sRMC[i]);
 		process();

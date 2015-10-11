@@ -4,6 +4,7 @@
 //---------------------------------------------------------------------------
 #include <System.hpp>
 #include "TinyGPS.h"
+#include "lat_lon.h"
 //---------------------------------------------------------------------------
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;
@@ -39,5 +40,12 @@ void process();
 void Fake_UART_ISR(unsigned UDR0);
 extern volatile unsigned long prog_ms;
 //---------------------------------------------------------------------------
+extern CLatLon gp_current;
+extern CLatLon gp_start;
+extern CLatLon gp_finish;
+//---------------------------------------------------------------------------
+extern float bearing_sp;
+//---------------------------------------------------------------------------
+
 
 #endif

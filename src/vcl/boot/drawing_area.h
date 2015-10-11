@@ -4,6 +4,7 @@
 #define drawing_areaH
 //---------------------------------------------------------------------------
 #include <Graphics.hpp>
+#include <vector>
 #include "gpsloc.h"
 #include "vessel.h"
 //---------------------------------------------------------------------------
@@ -29,6 +30,15 @@ public:
 	TSphericalPos() : colatitude(0), r(0), longitude(0), visible(true) {};
 };
 //---------------------------------------------------------------------------
+class TDrawPoint
+{
+public:
+	TColor clr;
+	TGpsLoc loc;
+
+	TDrawPoint() : clr(clBlack) {};
+};
+//---------------------------------------------------------------------------
 class TDrawingArea
 {
 private:
@@ -39,6 +49,8 @@ private:
 	float radius_of_world;
 	float real_earth_radius; // meters
 	double focal_length;
+
+	std::vector<TDrawPoint> draw_points;
 
 	TColor gps_point_col;
 
@@ -59,6 +71,8 @@ private:
 public:
 	TDrawingArea();
 	~TDrawingArea();
+
+	void AddDrawPoint(TDrawPoint dp);
 
 	void SetZoomFactor(float new_zoom);
 	void SetCenterLoc(TGpsLoc loc);
