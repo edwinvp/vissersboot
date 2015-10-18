@@ -56,8 +56,8 @@ void TVessel::CalcSpeedAndHeading()
 	// 3. add vectors togethers
 	// 4. apply new heading and speed
 
-	float speed_adj = 0.0005;
-	float corner_adj = 0.01;
+	float speed_adj = 0.00005;
+	float corner_adj = 0.02;
 
 	// 1. Left motor (on positive throttle) causes a clockwise turn
 	float ml_heading = corner_adj * ml * 90.0;

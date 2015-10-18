@@ -99,6 +99,14 @@ void __fastcall TMainFrm::AddLocations()
 
 }
 //---------------------------------------------------------------------------
+float __fastcall TMainFrm::Pwm2MotorFact(int dc)
+{
+	if (!dc)
+		return 0.0f;
+	else
+		return (dc-3000)/1000.0f;
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 {
 	prog_ms += Timer1->Interval;
@@ -136,8 +144,13 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 
 	vessel.bearing_sp = bearing_sp;
 
-	vessel.motor_left = -(SbMotorL->Position / 100.0);
-	vessel.motor_right = -(SbMotorR->Position / 100.0);
+	float avr_motor_l(0),avr_motor_r(0);
+
+	avr_motor_l = Pwm2MotorFact(OCR1A);
+	avr_motor_r = Pwm2MotorFact(OCR1B);
+
+	vessel.motor_left = avr_motor_l -(SbMotorL->Position / 100.0);
+	vessel.motor_right = avr_motor_r -(SbMotorR->Position / 100.0);
 
 	vessel_path.push_back(vessel.position);
 

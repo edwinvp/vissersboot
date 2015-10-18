@@ -55,6 +55,7 @@ private:	// User declarations
 	void __fastcall SendVesselPosToAtmel();
 	void __fastcall AddLocations();
 	void __fastcall AddRefLocations();
+	float __fastcall Pwm2MotorFact(int dc);
 
 public:		// User declarations
 	__fastcall TMainFrm(TComponent* Owner);

@@ -26,6 +26,7 @@ CLatLon gp_current;
 CLatLon gp_start;
 CLatLon gp_finish;
 float bearing_sp = 0;
+float gps_cmg = 0; // gps course made good
 
 #endif
 
@@ -292,7 +293,7 @@ void setup_pwm()
 	TCCR1A &= ~(_BV(WGM10));
 
 	OCR1A = 3000;
-	OCR1B = 2000;
+	OCR1B = 3000;
 
 	ICR1 = 40000; // gives a 20 [ms] period
 #endif
@@ -303,22 +304,65 @@ void clear_stats(void)
 		//
 }
 
+float clip_motor(float mtr)
+{
+	if (mtr>1.0)
+		return 1.0;
+	else if (mtr<-1.0)
+		return -1.0;
+	else
+		return mtr;
+}
+
+void auto_steer()
+{
+	float motor_l(0), motor_r(0);
+
+	float max_speed(0.6f);
+
+	float bearing_error = bearing_sp - gps_cmg;
+
+    float max_correct(0.9*max_speed);
+
+	motor_l = max_speed;
+	motor_r = max_speed;
+
+	float adjust = bearing_error;
+
+	if (adjust > max_correct)
+		adjust = max_correct;
+	else if (adjust < -max_correct)
+		adjust = -max_correct;
+
+	motor_l += adjust;
+	motor_r -= adjust;
+
+	motor_l = clip_motor(motor_l);
+	motor_r = clip_motor(motor_r);
+
+	OCR1A = 3000.0f + (motor_l * 1000.0);
+	OCR1B = 3000.0f + (motor_r * 1000.0);
+}
+
 void process()
 {
 	// Pass through motor left and right setpoints to PWM module
-	OCR1A = pd5_pulse_duration;
-	OCR1B = pd6_pulse_duration;
+	//OCR1A = pd5_pulse_duration;
+	//OCR1B = pd6_pulse_duration;
 
-#if 0
-	// Display current servo signals as received (2000 ... 4000, 0 = no signal)
 	unsigned long delta1 = prog_ms - start1_ms;
 	if (delta1 >= 100) {
 		start1_ms = prog_ms;
+
+#if 0
+		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
 		printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
 			pd6_pulse_duration, pd5_pulse_duration,
 			pd3_pulse_duration, pb3_pulse_duration);
-		}
 #endif
+
+		auto_steer();
+		}
 
 	//bearing_sp = gp_start.bearingTo(gp_finish);
 	bearing_sp = gp_current.bearingTo(gp_finish);
@@ -351,6 +395,7 @@ void process()
 		unsigned long fix_age; // returns +- latitude/longitude in degrees
 		gps.get_position(&lat, &lon, &fix_age);
 		course = gps.course();
+		gps_cmg = course / 100.0f;
 		if (fix_age == TinyGPS::GPS_INVALID_AGE)
 			printf("GPS-NO_FIX\r\n");
 		else if (fix_age > 150000)
