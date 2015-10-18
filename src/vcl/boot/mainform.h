@@ -31,13 +31,26 @@ __published:	// IDE-managed Components
 	TLabel *Label1;
 	TScrollBar *SbMotorL;
 	TScrollBar *SbMotorR;
+	TPanel *PnlLegenda;
+	TShape *Shape1;
+	TLabel *Label2;
+	TLabel *Label3;
+	TShape *Shape2;
+	TShape *Shape3;
+	TLabel *Label4;
+	TLabel *Label5;
+	TLabel *Label6;
+	TLabel *Label7;
+	TButton *BtnZero;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
+	void __fastcall BtnZeroClick(TObject *Sender);
 
 private:	// User declarations
 	TDrawingArea da;
 	TVessel vessel;
 	TDrawPoint start,finish;
+	std::vector<TGpsLoc> vessel_path;
 
 	void __fastcall SendVesselPosToAtmel();
 	void __fastcall AddLocations();

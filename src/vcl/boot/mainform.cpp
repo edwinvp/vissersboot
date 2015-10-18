@@ -139,13 +139,15 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	vessel.motor_left = -(SbMotorL->Position / 100.0);
 	vessel.motor_right = -(SbMotorR->Position / 100.0);
 
+	vessel_path.push_back(vessel.position);
+
 	vessel.CalcSpeedAndHeading();
 	vessel.Move(Timer1->Interval);
 	//vessel.heading += 0.2;
 
 	da.SetScreenDims(PaintBox1->Width,PaintBox1->Height);
 
-	da.RenderTo(PaintBox1->Canvas,vessel);
+	da.RenderTo(PaintBox1->Canvas,vessel,vessel_path);
 
 }
 //---------------------------------------------------------------------------
@@ -157,7 +159,7 @@ void __fastcall TMainFrm::SendVesselPosToAtmel()
 
 	// Convert current location to a GPS string parseable by
 	// the TinyGPS library.
-	UnicodeString sRMC = loc.GetGPRMC();
+	UnicodeString sRMC = loc.GetGPRMC(vessel.heading);
 
 	// Send as fake UART message
 	for (int i(1);i<=sRMC.Length();++i) {
@@ -173,6 +175,13 @@ void __fastcall TMainFrm::OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftSt
 	if (Key==VK_RETURN) {
 		da.SetZoomFactor(EdZoomFactor->Text.ToDouble());
 	}
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainFrm::BtnZeroClick(TObject *Sender)
+{
+	SbMotorL->Position=0;
+	SbMotorR->Position=0;
 }
 //---------------------------------------------------------------------------
 

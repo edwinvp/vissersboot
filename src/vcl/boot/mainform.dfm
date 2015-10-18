@@ -41,13 +41,33 @@ object MainFrm: TMainFrm
     Height = 432
     Align = alRight
     TabOrder = 0
-    ExplicitHeight = 402
     object Label1: TLabel
       Left = 96
       Top = 280
       Width = 88
       Height = 13
       Caption = 'Full power: 5 km/u'
+    end
+    object Label5: TLabel
+      Left = 280
+      Top = 40
+      Width = 33
+      Height = 13
+      Caption = 'Motors'
+    end
+    object Label6: TLabel
+      Left = 272
+      Top = 56
+      Width = 13
+      Height = 13
+      Caption = 'ML'
+    end
+    object Label7: TLabel
+      Left = 300
+      Top = 56
+      Width = 15
+      Height = 13
+      Caption = 'MR'
     end
     object GroupBox1: TGroupBox
       Left = 6
@@ -158,6 +178,64 @@ object MainFrm: TMainFrm
       Min = -100
       PageSize = 0
       TabOrder = 5
+    end
+    object PnlLegenda: TPanel
+      Left = 6
+      Top = 299
+      Width = 209
+      Height = 73
+      TabOrder = 6
+      object Shape1: TShape
+        Left = 16
+        Top = 16
+        Width = 25
+        Height = 9
+        Brush.Color = clSilver
+      end
+      object Label2: TLabel
+        Left = 47
+        Top = 12
+        Width = 75
+        Height = 13
+        Caption = 'Vessel points to'
+      end
+      object Label3: TLabel
+        Left = 47
+        Top = 32
+        Width = 124
+        Height = 13
+        Caption = 'Initial bearing (Haversine)'
+      end
+      object Shape2: TShape
+        Left = 16
+        Top = 36
+        Width = 25
+        Height = 9
+        Brush.Color = clBlue
+      end
+      object Shape3: TShape
+        Left = 16
+        Top = 55
+        Width = 25
+        Height = 9
+        Brush.Color = clMaroon
+      end
+      object Label4: TLabel
+        Left = 47
+        Top = 51
+        Width = 113
+        Height = 13
+        Caption = 'GPS Course Made Good'
+      end
+    end
+    object BtnZero: TButton
+      Left = 272
+      Top = 279
+      Width = 57
+      Height = 26
+      Caption = 'Zero'
+      TabOrder = 7
+      OnClick = BtnZeroClick
     end
   end
   object ListBox1: TListBox

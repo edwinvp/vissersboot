@@ -54,7 +54,8 @@ void TDrawingArea::AddDrawPoint(TDrawPoint dp)
 	draw_points.push_back(dp);
 }
 //---------------------------------------------------------------------------
-void TDrawingArea::RenderTo(TCanvas * canv, TVessel & vessel)
+void TDrawingArea::RenderTo(TCanvas * canv, TVessel & vessel,
+	const std::vector<TGpsLoc> & vessel_path)
 {
 	if (!bmp->Width || !bmp->Height)
 		return;
@@ -69,6 +70,20 @@ void TDrawingArea::RenderTo(TCanvas * canv, TVessel & vessel)
 		gps_point_col = draw_points[idx].clr;
 		PlotGpsPoint(draw_points[idx].loc);
 	}
+
+	bool bFirst(true);
+	TGpsLoc a,b;
+	for (unsigned int idx(0);idx<vessel_path.size();++idx) {
+		b = vessel_path[idx];
+		if (bFirst) {
+			bFirst=false;
+		} else {
+			PlotGpsLine(a,b);
+		}
+		a = b;
+	}
+
+
 
 #if 1
 /*	PlotGpsPoint(zero);
@@ -236,6 +251,20 @@ TScreenPos TDrawingArea::LatLon2XY(TGpsLoc loc)
 	scr.visible = sp.visible;
 
 	return scr;
+}
+//---------------------------------------------------------------------------
+void TDrawingArea::PlotGpsLine(const TGpsLoc a,const TGpsLoc b)
+{
+	TScreenPos sp_a = LatLon2XY(a);
+	TScreenPos sp_b = LatLon2XY(b);
+
+	if (sp_a.visible && sp_b.visible) {
+		bmp->Canvas->Pen->Color = clBlack;
+		bmp->Canvas->Brush->Color = gps_point_col;
+		bmp->Canvas->MoveTo(sp_a.x,sp_a.y);
+		bmp->Canvas->LineTo(sp_b.x,sp_b.y);
+	}
+
 }
 //---------------------------------------------------------------------------
 void TDrawingArea::PlotGpsPoint(TGpsLoc loc)

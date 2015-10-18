@@ -52,12 +52,24 @@ UnicodeString TGpsLoc::Lon2NMEA() const
 	return s;
 }
 
-UnicodeString TGpsLoc::GetGPRMC() const
+UnicodeString TGpsLoc::CMG2NMEA(float course_made_good) const
 {
 	UnicodeString s;
-	s.printf(L"$GPRMC,123519,A,%s,%s,000.0,000.0,230394,003.1,W",
+	s.printf(L"%0.1f",course_made_good);
+	while (s.Length()<5) {
+		s=L"0" + s;
+	}
+
+	return s;
+}
+
+UnicodeString TGpsLoc::GetGPRMC(float course_made_good) const
+{
+	UnicodeString s;
+	s.printf(L"$GPRMC,123519,A,%s,%s,000.0,%s,230394,003.1,W",
 		Lat2NMEA().c_str(),
-		Lon2NMEA().c_str() );
+		Lon2NMEA().c_str(),
+		CMG2NMEA(course_made_good).c_str() );
 
 	int checksum = 0;
 	for (int i = 2; i <= s.Length(); i++)

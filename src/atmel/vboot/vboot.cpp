@@ -347,15 +347,17 @@ void process()
 			PORTB &= ~_BV(PORTB5);
 		}
 
-		long lat, lon;
+		long lat, lon, course;
 		unsigned long fix_age; // returns +- latitude/longitude in degrees
 		gps.get_position(&lat, &lon, &fix_age);
+		course = gps.course();
 		if (fix_age == TinyGPS::GPS_INVALID_AGE)
 			printf("GPS-NO_FIX\r\n");
 		else if (fix_age > 150000)
 			printf("GPS-STALE\r\n");
 		else {
-			printf("GPS-OK age=%ld. lat=%ld lon=%ld \r\n",fix_age,lat,lon);
+			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",fix_age,lat,lon,
+				course);
 
 			gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
 		}

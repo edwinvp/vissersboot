@@ -77,12 +77,14 @@ public:
 	void SetZoomFactor(float new_zoom);
 	void SetCenterLoc(TGpsLoc loc);
 	void SetScreenDims(int w, int h);
-	void RenderTo(TCanvas * canv, TVessel & vessel);
+	void RenderTo(TCanvas * canv, TVessel & vessel,
+		const std::vector<TGpsLoc> & vessel_path);
 
 	TScreenPos LatLon2XY(TGpsLoc loc);
 	TGpsLoc XY2LatLon(TScreenPos sp);
 
 	void PlotGpsPoint(TGpsLoc loc);
+	void PlotGpsLine(const TGpsLoc a,const TGpsLoc b);
 	void PlotVessel(TVessel & vessel);
 	void Rings();
 
