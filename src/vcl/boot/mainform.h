@@ -43,9 +43,11 @@ __published:	// IDE-managed Components
 	TLabel *Label7;
 	TButton *BtnZero;
 	TCheckBox *CbValidGps;
+	TButton *BtnAutoMode;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);
+	void __fastcall BtnAutoModeClick(TObject *Sender);
 
 private:	// User declarations
 	TDrawingArea da;

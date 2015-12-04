@@ -243,7 +243,18 @@ object MainFrm: TMainFrm
       Width = 225
       Height = 33
       Caption = 'Send valid GPS position to AVR program'
+      Checked = True
+      State = cbChecked
       TabOrder = 8
+    end
+    object BtnAutoMode: TButton
+      Left = 221
+      Top = 341
+      Width = 105
+      Height = 33
+      Caption = 'Force Auto Mode'
+      TabOrder = 9
+      OnClick = BtnAutoModeClick
     end
   end
   object ListBox1: TListBox

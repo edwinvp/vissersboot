@@ -14,10 +14,11 @@
 #define JOY_MAX 4000 /* joystick down or right */
 #define JOY_BAND 500 /* max deviation for centre detection) */
 
-// Minimum time of goto/store joystick to be out of center to be recognized
-// as valid command pulse.
-#define MIN_GOTO_STORE_MIN_DURATION 100
-#define MIN_GOTO_STORE_ACCEPT_TIME 3000
+// Minimum/maximum time of goto/store joystick to be out of center,
+// in order to be recognized as valid command pulse.
+#define MIN_JOY_PULSE_DURATION 100
+#define MAX_JOY_PULSE_DURATION 3000
+#define JOY_CMD_ACCEPT_TIME 2000
 
 // Time after last GPS valid update until current fix consired stale
 #define GPS_STALE_TIME 5000
@@ -35,8 +36,8 @@ enum TMainState {
 	msConfirmStorePosX,
 	msClear1,
 	msClear2,
-	msCmdError,
-
+	msCmdErrorMan,
+	msCmdErrorAuto,
 	msLast
 };
 

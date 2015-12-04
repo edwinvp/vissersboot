@@ -31,7 +31,6 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	VarForm = new TVarForm(Application);
 	VarForm->Show();
 
-
 	main_init();
 }
 //---------------------------------------------------------------------------
@@ -99,9 +98,12 @@ void __fastcall TMainFrm::AddLocations()
 
 	gp_start.lat = start.loc.lat;
 	gp_start.lon = start.loc.lon;
+
+	gp_mem_1.lat = finish.loc.lat;
+	gp_mem_1.lon = finish.loc.lon;
+
 	gp_finish.lat = finish.loc.lat;
 	gp_finish.lon = finish.loc.lon;
-
 }
 //---------------------------------------------------------------------------
 float __fastcall TMainFrm::Pwm2MotorFact(int dc)
@@ -126,7 +128,9 @@ UnicodeString MainStateToText(TMainState s)
 	case msClear1: return L"msClear1";
 	case msClear2: return L"msClear2";
 
-	case msCmdError: return L"msCmdError";
+	case msCmdErrorMan: return L"msCmdErrorMan";
+	case msCmdErrorAuto: return L"msCmdErrorAuto";
+
 	default:
 		return L"???";
 	}
@@ -201,8 +205,7 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"main_state = " + MainStateToText(main_state));
 	VarForm->AddLine(L"state_time = " + IntToStr((int)state_time));
-	VarForm->AddLine(L"joy_goto_cnt = " + IntToStr(joy_goto_cnt));
-	VarForm->AddLine(L"joy_store_cnt = " + IntToStr(joy_store_cnt));
+	VarForm->AddLine(L"joy_pulses = " + IntToStr(joy_pulses));
 
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"pd3 pd = " + FloatToStr(pd3_pulse_duration));
@@ -211,6 +214,10 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"pd6 pd = " + FloatToStr(pd6_pulse_duration));
 
 	VarForm->AddLine(L"---");
+	VarForm->AddLine(L"p_add = " + FloatToStr(p_add));
+	VarForm->AddLine(L"i_add = " + FloatToStr(i_add));
+	VarForm->AddLine(L"d_add = " + FloatToStr(d_add));
+
 
 	VarForm->Update();
 
@@ -250,6 +257,12 @@ void __fastcall TMainFrm::BtnZeroClick(TObject *Sender)
 {
 	SbMotorL->Position=0;
 	SbMotorR->Position=0;
+}
+//---------------------------------------------------------------------------
+
+void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
+{
+	main_state = msAutoMode;
 }
 //---------------------------------------------------------------------------
 

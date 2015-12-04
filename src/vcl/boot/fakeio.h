@@ -43,17 +43,23 @@ extern volatile unsigned long global_ms_timer;
 //---------------------------------------------------------------------------
 extern TMainState main_state; // (main) sequencer state
 extern unsigned long state_time; // time elapsed in this state machine step [ms]
-extern int joy_goto_cnt; // number of times the man/auto joystick has been pushed up
-extern int joy_store_cnt;  // number of times the man/auto joystick has been pushed down
+extern int joy_pulses; // # times the goto/store joystick has been pushed up/down
 //---------------------------------------------------------------------------
 extern CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
 extern CLatLon gp_mem_2; // memorized GPS position 2
 extern CLatLon gp_mem_3; // memorized GPS position 3
+//---------------------------------------------------------------------------
 extern CLatLon gp_current; // current GPS position (may be stale or invalid!)
 extern CLatLon gp_start; // GPS position when auto steering was switched on
 extern CLatLon gp_finish; // auto steering target GPS position
 //---------------------------------------------------------------------------
 extern float bearing_sp;
 //---------------------------------------------------------------------------
+// PID registers
+extern float p_add;
+extern float i_add;
+extern float d_add;
+//---------------------------------------------------------------------------
+
 #endif
 

@@ -24,13 +24,12 @@
 // VARIABLES
 // ----------------------------------------------------------------------------
 
+// State machine current step, next step
 TMainState main_state,next_state;
+// Time elapsed in current state machine step [ms]
+unsigned long state_time = 0;
 
-unsigned long state_time = 0; // time elapsed in this state machine step [ms]
-
-// Number of times the goto/store joystick axis has been pushed up or down
-int joy_goto_cnt = 0; // # of goto commands
-int joy_store_cnt = 0;  // # of store commands
+int joy_pulses = 0; // # times the goto/store joystick has been pushed up/down
 
 TMessageMode msg_mode;
 
@@ -59,6 +58,12 @@ bool slow_blink(false);
 bool slow_blink_prev(false);
 bool fast_blink(false);
 bool led_signal(false);
+
+// PID controller vars
+float p_add(0);
+float i_add(0);
+float d_add(0);
+
 
 // Global [ms] timer
 volatile unsigned long global_ms_timer = 0;
@@ -340,28 +345,56 @@ float clip_motor(float mtr)
 		return mtr;
 }
 // ----------------------------------------------------------------------------
+float simple_pid(float pv, float sp,
+	bool enable_p, float Kp,
+	bool enable_i, float Ki,
+	bool enable_d, float Kd)
+{
+	float cv(0.0);
+
+	float err = bearing_sp - gps_cmg;
+
+	p_add = Kp * err;
+	i_add += Ki * err;
+	d_add = 0.0;
+
+	cv = 0;
+	if (enable_p)
+		cv += p_add;
+	if (enable_i)
+		cv += i_add;
+	if (enable_d)
+		cv += d_add;
+
+	return cv;
+}
+
+// ----------------------------------------------------------------------------
 void auto_steer()
 {
 	float motor_l(0), motor_r(0);
 
 	float max_speed(0.6f);
-
-	float bearing_error = bearing_sp - gps_cmg;
-
 	float max_correct(0.9*max_speed);
+
+	float cv = simple_pid(
+		gps_cmg, // process-value (GPS course)
+		bearing_sp, // set point (bearing from Haversine)
+		true, 0.01, // P-action
+		true, 0.0005, // I-action
+		false, 0.0  // D-action
+		);
 
 	motor_l = max_speed;
 	motor_r = max_speed;
 
-	float adjust = bearing_error;
+	if (cv > max_correct)
+		cv = max_correct;
+	else if (cv < -max_correct)
+		cv = -max_correct;
 
-	if (adjust > max_correct)
-		adjust = max_correct;
-	else if (adjust < -max_correct)
-		adjust = -max_correct;
-
-	motor_l += adjust;
-	motor_r -= adjust;
+	motor_l += cv;
+	motor_r -= cv;
 
 	motor_l = clip_motor(motor_l);
 	motor_r = clip_motor(motor_r);
@@ -448,19 +481,21 @@ void store_waypoint(int memory_no)
 // ----------------------------------------------------------------------------
 void step_manual_mode()
 {
+	p_add=0;
+	i_add=0;
+	d_add=0;
+
 	// In manual mode
 	if (joy_in_goto()) {
-		joy_goto_cnt = 0;
-		joy_store_cnt = 0;
+		joy_pulses = 0;
 
 		if (gps_valid)
 			next_state = msCountJoyGoto;
 		else
-			next_state = msCmdError;
+			next_state = msCmdErrorMan;
 
 	} else if (joy_in_store()) {
-		joy_goto_cnt = 0;
-		joy_store_cnt = 0;
+		joy_pulses = 0;
 		next_state = msCountJoyStore;
 	} else if (joy_in_clear()) {
 		next_state = msClear1;
@@ -469,6 +504,15 @@ void step_manual_mode()
 // ----------------------------------------------------------------------------
 void step_auto_mode()
 {
+	// Blink LED fast when 'special' goto/store/clear command is given.
+	// We are now in auto mode and that is allowed only in manual mode.
+	if (!joy_in_goto_store_center() ||
+		joy_in_clear()) {
+		next_state = msCmdErrorAuto;
+	}
+
+	// Go to manual mode if GPS signal is absent for too long,
+	// or joystick is put in manual control mode.
 	if (joy_in_manual() || !gps_valid) {
 		next_state = msManualMode;
 	}
@@ -477,15 +521,16 @@ void step_auto_mode()
 void step_count_goto()
 {
 	if (joy_in_store())
-		next_state = msCmdError;
+		next_state = msCmdErrorMan; // attempt to run 'opposite' command
 	else if (joy_in_goto_store_center()) {
-		if (state_time > MIN_GOTO_STORE_MIN_DURATION) {
-			joy_goto_cnt++;
+		if (state_time > MIN_JOY_PULSE_DURATION) {
+			// pulse valid, count
+			joy_pulses++;
 			next_state = msCountJoyGotoRetn;
 		} else
-			next_state = msCmdError;
-	} else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME)
-		next_state = msCmdError;
+			next_state = msCmdErrorMan; // pulse wasn't long enough
+	} else if (state_time > MAX_JOY_PULSE_DURATION)
+		next_state = msCmdErrorMan; // joystick takes too long to go back center
 }
 // ----------------------------------------------------------------------------
 void step_count_goto_retn()
@@ -493,9 +538,9 @@ void step_count_goto_retn()
 	if (joy_in_goto())
 		next_state = msCountJoyGoto;
 	else if (joy_in_store())
-		next_state = msCmdError;
-	else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME && !slow_blink) {
-		blink_times = joy_goto_cnt;
+		next_state = msCmdErrorMan;
+	else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
+		blink_times = joy_pulses;
 		next_state = msConfirmGotoPosX;
 	}
 }
@@ -503,15 +548,16 @@ void step_count_goto_retn()
 void step_count_store()
 {
 	if (joy_in_goto())
-		next_state = msCmdError;
+		next_state = msCmdErrorMan;
 	else if (joy_in_goto_store_center()) {
-		if (state_time > MIN_GOTO_STORE_MIN_DURATION) {
-			joy_store_cnt++;
+		if (state_time > MIN_JOY_PULSE_DURATION) {
+			// pulse valid, count
+			joy_pulses++;
 			next_state = msCountJoyStoreRetn;
 		} else
-			next_state = msCmdError;
-	} else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME)
-		next_state = msCmdError;
+			next_state = msCmdErrorMan; // pulse wasn't long enough
+	} else if (state_time > MAX_JOY_PULSE_DURATION)
+		next_state = msCmdErrorMan; // joystick takes too long to go back center
 }
 // ----------------------------------------------------------------------------
 void step_count_store_retn()
@@ -519,9 +565,9 @@ void step_count_store_retn()
 	if (joy_in_store())
 		next_state = msCountJoyStore;
 	else if (joy_in_store())
-		next_state = msCmdError;
-	else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME && !slow_blink) {
-		blink_times = joy_store_cnt;
+		next_state = msCmdErrorMan;
+	else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
+		blink_times = joy_pulses;
 		next_state = msConfirmStorePosX;
 	}
 }
@@ -529,7 +575,7 @@ void step_count_store_retn()
 void step_clear1()
 {
 	if (!joy_in_clear())
-		next_state = msCmdError;
+		next_state = msCmdErrorMan;
 	else if (state_time > 1000) {
 		next_state = msClear2;
 	}
@@ -545,10 +591,10 @@ void step_clear2()
 	}
 
 	if (state_time > 5000)
-		next_state = msCmdError;
+		next_state = msCmdErrorMan;
 }
 // ----------------------------------------------------------------------------
-void step_cmd_error()
+void step_cmd_error_man()
 {
 	if (state_time > 2000) {
 		if (joy_in_goto_store_center() && !joy_in_clear()) {
@@ -557,28 +603,40 @@ void step_cmd_error()
 	}
 }
 // ----------------------------------------------------------------------------
+void step_cmd_error_auto()
+{
+	bool bLetGoOfJoyStick = joy_in_goto_store_center() && !joy_in_clear();
+
+	if (state_time > 1000 || bLetGoOfJoyStick) {
+		next_state = msAutoMode;
+	}
+}
+// ----------------------------------------------------------------------------
 void step_confirm_goto_pos_x()
 {
 	if (blink_times > 3)
-		next_state = msCmdError;
+		next_state = msCmdErrorMan;
 	else if (blink_times == 0) {
 
-		if (set_finish(joy_goto_cnt))
+		if (set_finish(joy_pulses)) {
+			printf("Set finish to # %d\r\n", joy_pulses);
 			next_state = msAutoMode;
-		else
-			next_state = msCmdError;
+		} else
+			next_state = msCmdErrorMan;
 	}
 }
 // ----------------------------------------------------------------------------
 void step_confirm_store_pos_x()
 {
 	if (blink_times > 3)
-		next_state = msCmdError;
+		next_state = msCmdErrorMan;
 	else if (blink_times == 0) {
-		store_waypoint(joy_store_cnt);
+		printf("Store waypoint # %d\r\n", joy_pulses);
+		store_waypoint(joy_pulses);
 		next_state = msManualMode;
 	}
 }
+// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // Main state machine
@@ -624,18 +682,26 @@ void state_mach()
 		step_clear2();
 		break;
 
-	case msCmdError:
-		step_cmd_error();
+	case msCmdErrorMan:
+		step_cmd_error_man();
 		break;
+
+	case msCmdErrorAuto:
+		step_cmd_error_auto();
+		break;
+
 	default:
 		// should never get here
 		next_state = msManualMode;
 	}
 
 	if (main_state != next_state) {
+		// Transitioning, reset step time and enter new step
 		state_time = 0;
 		main_state = next_state;
 	} else {
+		// we're in the 100 [ms] process,
+		// so we can increase step time like this...
 		state_time += 100;
 	}
 }
@@ -710,7 +776,8 @@ void update_led()
 		}
 		break;
 
-	case msCmdError:
+	case msCmdErrorMan:
+	case msCmdErrorAuto: // deliberate fall-through
 		// Blink LED fast when an invalid command is given,
 		led_signal = fast_blink;
 		break;
