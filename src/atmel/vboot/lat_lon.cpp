@@ -63,3 +63,9 @@ UnicodeString CLatLon::ToString() const
 	return L"lat: " + FloatToStr(lat) + L" lon: " + FloatToStr(lon);
 }
 #endif
+
+void CLatLon::clear()
+{
+	lat=0;
+	lon=0;
+}

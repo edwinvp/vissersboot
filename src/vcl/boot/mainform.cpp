@@ -117,12 +117,15 @@ UnicodeString MainStateToText(TMainState s)
 	switch (s) {
 	case msManualMode: return L"msManualMode";
 	case msAutoMode: return L"msAutoMode";
-	case msCountJoyUp: return L"msCountJoyUp";
+	case msCountJoyGoto: return L"msCountJoyGoto";
 	case msConfirmGotoPosX: return L"msConfirmGotoPosX";
-	case msCountJoyDown: return L"msCountJoyDown";
-	case msConfirmSavePosX: return L"msConfirmSavePosX";
-	case msCountJoyUpRetn: return L"msCountJoyUpRetn";
-	case msCountJoyDownRetn: return L"msCountJoyDownRetn";
+	case msCountJoyStore: return L"msCountJoyStore";
+	case msConfirmStorePosX: return L"msConfirmStorePosX";
+	case msCountJoyGotoRetn: return L"msCountJoyGotoRetn";
+	case msCountJoyStoreRetn: return L"msCountJoyStoreRetn";
+	case msClear1: return L"msClear1";
+	case msClear2: return L"msClear2";
+
 	case msCmdError: return L"msCmdError";
 	default:
 		return L"???";
@@ -197,6 +200,10 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"gp_current = " + gp_current.ToString());
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"main_state = " + MainStateToText(main_state));
+	VarForm->AddLine(L"state_time = " + IntToStr((int)state_time));
+	VarForm->AddLine(L"joy_goto_cnt = " + IntToStr(joy_goto_cnt));
+	VarForm->AddLine(L"joy_store_cnt = " + IntToStr(joy_store_cnt));
+
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"pd3 pd = " + FloatToStr(pd3_pulse_duration));
 	VarForm->AddLine(L"pb3 pd = " + FloatToStr(pb3_pulse_duration));

@@ -42,6 +42,9 @@ void Fake_UART_ISR(unsigned UDR0);
 extern volatile unsigned long global_ms_timer;
 //---------------------------------------------------------------------------
 extern TMainState main_state; // (main) sequencer state
+extern unsigned long state_time; // time elapsed in this state machine step [ms]
+extern int joy_goto_cnt; // number of times the man/auto joystick has been pushed up
+extern int joy_store_cnt;  // number of times the man/auto joystick has been pushed down
 //---------------------------------------------------------------------------
 extern CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
 extern CLatLon gp_mem_2; // memorized GPS position 2
@@ -52,6 +55,5 @@ extern CLatLon gp_finish; // auto steering target GPS position
 //---------------------------------------------------------------------------
 extern float bearing_sp;
 //---------------------------------------------------------------------------
-
-
 #endif
+

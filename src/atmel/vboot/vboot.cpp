@@ -24,14 +24,21 @@
 // VARIABLES
 // ----------------------------------------------------------------------------
 
-TMainState main_state;
+TMainState main_state,next_state;
+
+unsigned long state_time = 0; // time elapsed in this state machine step [ms]
+
+// Number of times the goto/store joystick axis has been pushed up or down
+int joy_goto_cnt = 0; // # of goto commands
+int joy_store_cnt = 0;  // # of store commands
+
 TMessageMode msg_mode;
 
-// Memorized GPS
+// Memorized GPS positions
 CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
 CLatLon gp_mem_2; // memorized GPS position 2
 CLatLon gp_mem_3; // memorized GPS position 3
-
+// Current / destination GPS positions
 CLatLon gp_current; // current GPS position (may be stale or invalid!)
 CLatLon gp_start; // GPS position when auto steering was switched on
 CLatLon gp_finish; // auto steering target GPS position
@@ -42,11 +49,16 @@ TinyGPS gps;
 bool gps_valid = false;
 float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
+
 // Auto steering related
 float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
 
 // LED control related
-bool led_blink(false);
+int blink_times(0);
+bool slow_blink(false);
+bool slow_blink_prev(false);
+bool fast_blink(false);
+bool led_signal(false);
 
 // Global [ms] timer
 volatile unsigned long global_ms_timer = 0;
@@ -202,6 +214,7 @@ char rb_read()
 	}		
 	return data;
 }
+// ----------------------------------------------------------------------------
 
 #ifndef _WIN32
 ISR(USART_RX_vect) {
@@ -312,7 +325,7 @@ void setup_pwm()
 // ----------------------------------------------------------------------------
 void clear_stats(void)
 {
-		//
+	//
 }
 // ----------------------------------------------------------------------------
 float clip_motor(float mtr)
@@ -377,38 +390,198 @@ bool joy_in_min(unsigned int j)
 	return j < (JOY_MIN + JOY_BAND);
 }
 // ----------------------------------------------------------------------------
+bool joy_in_goto()
+{
+	return joy_in_max(pd3_pulse_duration);
+}
+// ----------------------------------------------------------------------------
+bool joy_in_store()
+{
+	return joy_in_min(pd3_pulse_duration);
+}
+// ----------------------------------------------------------------------------
+bool joy_in_goto_store_center()
+{
+	return joy_in_center(pd3_pulse_duration);
+}
+// ----------------------------------------------------------------------------
+bool joy_in_manual()
+{
+	return joy_in_min(pb3_pulse_duration);
+}
+// ----------------------------------------------------------------------------
+bool joy_in_clear()
+{
+	return joy_in_max(pb3_pulse_duration);
+}
+
+// ----------------------------------------------------------------------------
+// State machine steps
+// ----------------------------------------------------------------------------
+void step_manual_mode()
+{
+	// In manual mode
+	if (joy_in_goto()) {
+		joy_goto_cnt = 0;
+		joy_store_cnt = 0;
+
+		if (gps_valid)
+			next_state = msCountJoyGoto;
+		else
+			next_state = msCmdError;
+
+	} else if (joy_in_store()) {
+		joy_goto_cnt = 0;
+		joy_store_cnt = 0;
+		next_state = msCountJoyStore;
+	} else if (joy_in_clear()) {
+		next_state = msClear1;
+	}
+}
+// ----------------------------------------------------------------------------
+void step_auto_mode()
+{
+	if (joy_in_manual() || !gps_valid) {
+		next_state = msManualMode;
+	}
+
+}
+// ----------------------------------------------------------------------------
+void step_count_goto()
+{
+	if (joy_in_store())
+		next_state = msCmdError;
+	else if (joy_in_goto_store_center()) {
+		if (state_time > MIN_GOTO_STORE_MIN_DURATION) {
+			joy_goto_cnt++;
+			next_state = msCountJoyGotoRetn;
+		} else
+			next_state = msCmdError;
+	} else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME)
+		next_state = msCmdError;
+}
+// ----------------------------------------------------------------------------
+void step_count_goto_retn()
+{
+	if (joy_in_goto())
+		next_state = msCountJoyGoto;
+	else if (joy_in_store())
+		next_state = msCmdError;
+	else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME && !slow_blink) {
+		blink_times = joy_goto_cnt;
+		next_state = msConfirmGotoPosX;
+	}
+}
+// ----------------------------------------------------------------------------
+void step_count_store()
+{
+	if (joy_in_goto())
+		next_state = msCmdError;
+}
+// ----------------------------------------------------------------------------
+void step_count_store_retn()
+{
+	if (joy_in_goto())
+		next_state = msCmdError;
+}
+// ----------------------------------------------------------------------------
+void step_clear1()
+{
+	if (!joy_in_clear())
+		next_state = msCmdError;
+	else if (state_time > 1000) {
+		next_state = msClear2;
+	}
+}
+// ----------------------------------------------------------------------------
+void step_clear2()
+{
+	if (!joy_in_clear()) {
+		gp_mem_1.clear();
+		gp_mem_2.clear();
+		gp_mem_3.clear();
+		next_state = msManualMode;
+	}
+
+	if (state_time > 5000)
+		next_state = msCmdError;
+}
+// ----------------------------------------------------------------------------
+void step_cmd_error()
+{
+	if (state_time > 2000) {
+		if (joy_in_goto_store_center() && !joy_in_clear()) {
+			next_state = msManualMode;
+		}
+	}
+}
+// ----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
 // Main state machine
 // ----------------------------------------------------------------------------
 void state_mach()
 {
 	// next state defaults to current state (unchanged)
-	TMainState next_state(main_state);
+	next_state = main_state;
 
 	switch (main_state) {
 	case msManualMode: // manual control mode
+		step_manual_mode();
 		break;
 	case msAutoMode: // automatic waypoint mode
+		step_auto_mode();
 		break;
-	case msCountJoyUp: // count joystick 'up' command
+
+	case msCountJoyGoto: // count joystick 'up' (goto pos.) command
+		step_count_goto();
 		break;
-	case msCountJoyUpRetn:
+	case msCountJoyGotoRetn:
+		step_count_goto_retn();
 		break;
 	case msConfirmGotoPosX:
+
+		if (blink_times > 3)
+			next_state = msCmdError;
+		else if (blink_times == 0)
+			next_state = msAutoMode;
+
 		break;
-	case msCountJoyDown: // count joystick 'down' command
+
+	case msCountJoyStore: // count joystick 'down' (store pos.) command
+		step_count_store();
 		break;
-	case msCountJoyDownRetn:
+	case msCountJoyStoreRetn:
+		step_count_store_retn();
 		break;
-	case msConfirmSavePosX:
+	case msConfirmStorePosX:
+		if (blink_times == 0)
+			next_state = msManualMode;
+
 		break;
+
+	case msClear1:
+		step_clear1();
+		break;
+
+	case msClear2:
+		step_clear2();
+		break;
+
 	case msCmdError:
+		step_cmd_error();
 		break;
 	default:
 		// should never get here
 		next_state = msManualMode;
 	}
 
-	main_state = next_state;
+	if (main_state != next_state) {
+		state_time = 0;
+		main_state = next_state;
+	} else {
+		state_time += 100;
+	}
 }
 // ----------------------------------------------------------------------------
 // Handles GPS input
@@ -463,15 +636,76 @@ void periodic_msg()
 	}
 }
 // ----------------------------------------------------------------------------
+// Update LED
+// ----------------------------------------------------------------------------
+void update_led()
+{
+	fast_blink = !fast_blink;
+
+	switch (main_state) {
+	/* in manual/auto mode, just show status of GPS receiver */
+	case msManualMode:
+	case msAutoMode: // deliberate fall-through
+		if (gps_valid) {
+			// Steady LED on GPS signal okay
+			led_signal = true;
+		} else {
+			// Slowly blink LED when there is no GPS reception
+			led_signal = slow_blink;
+		}
+		break;
+
+	case msCmdError:
+		// Blink LED fast when an invalid command is given,
+		led_signal = fast_blink;
+		break;
+
+	case msConfirmGotoPosX:
+	case msConfirmStorePosX: // deliberate fall-through
+
+		if (slow_blink_prev && !slow_blink) {
+			// We just blinked once
+			if (blink_times > 0)
+				blink_times--;
+		}
+
+		if (blink_times > 0) {
+			led_signal = slow_blink;
+		} else
+			led_signal = false;
+
+		slow_blink_prev = slow_blink;
+		break;
+
+	default:
+		led_signal = false;
+	}
+
+	// Update LED output (PORTB pin 5)
+	if (led_signal) {
+		// turn led on
+		PORTB |= _BV(PORTB5);
+	} else {
+		// turn led off
+		PORTB &= ~_BV(PORTB5);
+	}
+}
+
+// ----------------------------------------------------------------------------
 // 100 [ms] process
 // ----------------------------------------------------------------------------
 void process_100ms()
 {
+	// Run main state machine
+	state_mach();
+
 	// Steering
 	if (main_state == msAutoMode)
 		auto_steer();
 	else
 		manual_steering();
+
+	update_led();
 
 	periodic_msg();
 }
@@ -480,15 +714,7 @@ void process_100ms()
 // ----------------------------------------------------------------------------
 void process_500ms()
 {
-	led_blink = !led_blink;
-
-	if (led_blink) {
-		/* set pin 5 high to turn led on */
-		PORTB |= _BV(PORTB5);
-	} else {
-		/* set pin 5 low to turn led off */
-		PORTB &= ~_BV(PORTB5);
-	}
+	slow_blink = !slow_blink;
 
 	// returns +- latitude/longitude in degrees
 	gps.get_position(&gps_lat, &gps_lon, &gps_fix_age);
@@ -498,7 +724,7 @@ void process_500ms()
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE) {
 		// No gps fix
 		gps_valid = false;
-	} else if (gps_fix_age > 10000) {
+	} else if (gps_fix_age > GPS_STALE_TIME) {
 		// Stale GPS position
 		gps_valid = false;
 	} else {
@@ -521,8 +747,6 @@ void process()
 	// Calculate initial bearing with Haversine function
 	bearing_sp = gp_current.bearingTo(gp_finish);
 
-	// Run main state machine
-	state_mach();
 
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;

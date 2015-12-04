@@ -21,6 +21,7 @@ public:
 	double lonRadians() const;
 
 	float bearingTo(const CLatLon & point);
+	void clear();
 
 #ifdef _WIN32
 	UnicodeString ToString() const;
