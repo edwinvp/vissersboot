@@ -102,6 +102,9 @@ void __fastcall TMainFrm::AddLocations()
 	gp_mem_1.lat = finish.loc.lat;
 	gp_mem_1.lon = finish.loc.lon;
 
+	gp_mem_2.lat = start.loc.lat;
+	gp_mem_2.lon = start.loc.lon;
+
 	gp_finish.lat = finish.loc.lat;
 	gp_finish.lon = finish.loc.lon;
 }
@@ -202,6 +205,9 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"gp_mem_3 = " + gp_mem_3.ToString());
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"gp_current = " + gp_current.ToString());
+	VarForm->AddLine(L"distance_m = "+ FloatToStr(distance_m));
+	VarForm->AddLine(L"arrived = "+ IntToStr((int)arrived));
+
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"main_state = " + MainStateToText(main_state));
 	VarForm->AddLine(L"state_time = " + IntToStr((int)state_time));

@@ -54,6 +54,8 @@ extern CLatLon gp_start; // GPS position when auto steering was switched on
 extern CLatLon gp_finish; // auto steering target GPS position
 //---------------------------------------------------------------------------
 extern float bearing_sp;
+extern float distance_m; // distance to finish from current gps pos
+extern bool arrived; // TRUE when arriving at the waypoint
 //---------------------------------------------------------------------------
 // PID registers
 extern float p_add;

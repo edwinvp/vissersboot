@@ -51,6 +51,8 @@ long gps_lat, gps_lon, gps_course;
 
 // Auto steering related
 float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
+float distance_m = 0; // distance to finish from current gps pos
+bool arrived(false); // TRUE when arriving at the waypoint
 
 // LED control related
 int blink_times(0);
@@ -374,30 +376,40 @@ void auto_steer()
 {
 	float motor_l(0), motor_r(0);
 
-	float max_speed(0.6f);
+	float max_speed(0.8f);
 	float max_correct(0.9*max_speed);
 
-	float cv = simple_pid(
+	float pid_cv = simple_pid(
 		gps_cmg, // process-value (GPS course)
 		bearing_sp, // set point (bearing from Haversine)
-		true, 0.01, // P-action
-		true, 0.0005, // I-action
+		true, 0.02, // P-action
+		true, 0.0000005, // I-action
 		false, 0.0  // D-action
 		);
 
 	motor_l = max_speed;
 	motor_r = max_speed;
 
-	if (cv > max_correct)
-		cv = max_correct;
-	else if (cv < -max_correct)
-		cv = -max_correct;
+	float cv_clipped(0.0);
 
-	motor_l += cv;
-	motor_r -= cv;
+	if (pid_cv > max_correct)
+		cv_clipped = max_correct;
+	else if (pid_cv < -max_correct)
+		cv_clipped = -max_correct;
+	else
+		cv_clipped = pid_cv;
+
+	motor_l += cv_clipped;
+	motor_r -= cv_clipped;
 
 	motor_l = clip_motor(motor_l);
 	motor_r = clip_motor(motor_r);
+
+	if (arrived) {
+		motor_l = 0;
+		motor_r = 0;
+	}
+
 
 	OCR1A = (float)JOY_CENTER + (motor_l * 1000.0);
 	OCR1B = (float)JOY_CENTER + (motor_r * 1000.0);
@@ -514,6 +526,11 @@ void step_auto_mode()
 	// Go to manual mode if GPS signal is absent for too long,
 	// or joystick is put in manual control mode.
 	if (joy_in_manual() || !gps_valid) {
+		next_state = msManualMode;
+	}
+
+	if (arrived) {
+		printf("Arrived!\r\n");
 		next_state = msManualMode;
 	}
 }
@@ -766,7 +783,6 @@ void update_led()
 	switch (main_state) {
 	/* in manual/auto mode, just show status of GPS receiver */
 	case msManualMode:
-	case msAutoMode: // deliberate fall-through
 		if (gps_valid) {
 			// Steady LED on GPS signal okay
 			led_signal = true;
@@ -774,6 +790,10 @@ void update_led()
 			// Slowly blink LED when there is no GPS reception
 			led_signal = slow_blink;
 		}
+		break;
+
+	case msAutoMode:
+		led_signal = arrived;
 		break;
 
 	case msCmdErrorMan:
@@ -868,6 +888,13 @@ void process()
 
 	// Calculate initial bearing with Haversine function
 	bearing_sp = gp_current.bearingTo(gp_finish);
+
+
+	distance_m =
+		TinyGPS::distance_between (gp_finish.lat, gp_finish.lon,
+			gp_current.lat, gp_current.lon);
+	arrived = distance_m < 10;
+
 
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;
