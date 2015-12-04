@@ -22,6 +22,7 @@ public:
 
 	float bearingTo(const CLatLon & point);
 	void clear();
+	bool empty();
 
 #ifdef _WIN32
 	UnicodeString ToString() const;

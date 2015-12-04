@@ -69,3 +69,8 @@ void CLatLon::clear()
 	lat=0;
 	lon=0;
 }
+
+bool CLatLon::empty()
+{
+	return (lat==0) && (lon==0);
+}

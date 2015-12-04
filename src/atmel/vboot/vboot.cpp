@@ -222,8 +222,11 @@ ISR(USART_RX_vect) {
 void Fake_UART_ISR(unsigned UDR0) {
 #endif
 
-	value = UDR0;             //read UART register into value
+	// Read UART register (the received byte)
+	// into `value`
+	value = UDR0;
 
+	// Store byte in FIFO (if FIFO isn't full)
 	unsigned char new_head;
 	new_head = head + 1;
 	new_head &= FIFO_MASK;
@@ -299,7 +302,6 @@ void setup_pwm()
 	// Configure PB1 & PB2 as outputs
 	DDRB |= _BV(DDB1);
 	DDRB |= _BV(DDB2);
-
 
 	// Set compare output mode to non-inverting (PWM) mode
 	TCCR1A |= _BV(COM1A1);
@@ -414,6 +416,32 @@ bool joy_in_clear()
 {
 	return joy_in_max(pb3_pulse_duration);
 }
+// ----------------------------------------------------------------------------
+bool set_finish(int memory_no)
+{
+	gp_finish.clear();
+
+	if (memory_no >= 1 && memory_no <= 3) {
+		switch (memory_no) {
+		case 1: gp_finish = gp_mem_1; break;
+		case 2: gp_finish = gp_mem_2; break;
+		case 3: gp_finish = gp_mem_3; break;
+		}
+	}
+
+	return !gp_finish.empty();
+}
+// ----------------------------------------------------------------------------
+void store_waypoint(int memory_no)
+{
+	if (memory_no >= 1 && memory_no <= 3) {
+		switch (memory_no) {
+		case 1: gp_mem_1 = gp_current; break;
+		case 2: gp_mem_2 = gp_current; break;
+		case 3: gp_mem_3 = gp_current; break;
+		}
+	}
+}
 
 // ----------------------------------------------------------------------------
 // State machine steps
@@ -444,7 +472,6 @@ void step_auto_mode()
 	if (joy_in_manual() || !gps_valid) {
 		next_state = msManualMode;
 	}
-
 }
 // ----------------------------------------------------------------------------
 void step_count_goto()
@@ -477,12 +504,26 @@ void step_count_store()
 {
 	if (joy_in_goto())
 		next_state = msCmdError;
+	else if (joy_in_goto_store_center()) {
+		if (state_time > MIN_GOTO_STORE_MIN_DURATION) {
+			joy_store_cnt++;
+			next_state = msCountJoyStoreRetn;
+		} else
+			next_state = msCmdError;
+	} else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME)
+		next_state = msCmdError;
 }
 // ----------------------------------------------------------------------------
 void step_count_store_retn()
 {
-	if (joy_in_goto())
+	if (joy_in_store())
+		next_state = msCountJoyStore;
+	else if (joy_in_store())
 		next_state = msCmdError;
+	else if (state_time > MIN_GOTO_STORE_ACCEPT_TIME && !slow_blink) {
+		blink_times = joy_store_cnt;
+		next_state = msConfirmStorePosX;
+	}
 }
 // ----------------------------------------------------------------------------
 void step_clear1()
@@ -516,6 +557,28 @@ void step_cmd_error()
 	}
 }
 // ----------------------------------------------------------------------------
+void step_confirm_goto_pos_x()
+{
+	if (blink_times > 3)
+		next_state = msCmdError;
+	else if (blink_times == 0) {
+
+		if (set_finish(joy_goto_cnt))
+			next_state = msAutoMode;
+		else
+			next_state = msCmdError;
+	}
+}
+// ----------------------------------------------------------------------------
+void step_confirm_store_pos_x()
+{
+	if (blink_times > 3)
+		next_state = msCmdError;
+	else if (blink_times == 0) {
+		store_waypoint(joy_store_cnt);
+		next_state = msManualMode;
+	}
+}
 
 // ----------------------------------------------------------------------------
 // Main state machine
@@ -540,12 +603,7 @@ void state_mach()
 		step_count_goto_retn();
 		break;
 	case msConfirmGotoPosX:
-
-		if (blink_times > 3)
-			next_state = msCmdError;
-		else if (blink_times == 0)
-			next_state = msAutoMode;
-
+		step_confirm_goto_pos_x();
 		break;
 
 	case msCountJoyStore: // count joystick 'down' (store pos.) command
@@ -555,9 +613,7 @@ void state_mach()
 		step_count_store_retn();
 		break;
 	case msConfirmStorePosX:
-		if (blink_times == 0)
-			next_state = msManualMode;
-
+		step_confirm_store_pos_x();
 		break;
 
 	case msClear1:
@@ -632,7 +688,6 @@ void periodic_msg()
 				gps_fix_age, gps_lat, gps_lon, gps_course);
 		}
 		break;
-
 	}
 }
 // ----------------------------------------------------------------------------
@@ -746,7 +801,6 @@ void process()
 
 	// Calculate initial bearing with Haversine function
 	bearing_sp = gp_current.bearingTo(gp_finish);
-
 
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;
