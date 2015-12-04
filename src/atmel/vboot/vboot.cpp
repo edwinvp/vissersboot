@@ -46,6 +46,7 @@ CLatLon gp_finish; // auto steering target GPS position
 unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
 TinyGPS gps;
 bool gps_valid = false;
+bool gps_valid_prev = false;
 float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
 
@@ -73,6 +74,8 @@ volatile unsigned long global_ms_timer = 0;
 // Timing for periodic processes
 unsigned long t_100ms_start_ms(0);
 unsigned long t_500ms_start_ms(0);
+
+bool shown_stats(false);
 
 // ----------------------------------------------------------------------------
 // PWM/JOYSTICK/MOTOR vars
@@ -325,11 +328,28 @@ void setup_pwm()
 	TCCR1A |= _BV(WGM11);
 	TCCR1A &= ~(_BV(WGM10));
 
-	OCR1A = JOY_MID;
-	OCR1B = JOY_MID;
+	OCR1A = JOY_CENTER;
+	OCR1B = JOY_CENTER;
 
 	ICR1 = 40000; // gives a 20 [ms] period
 #endif
+}
+// ----------------------------------------------------------------------------
+void print_gps_msg()
+{
+	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
+		printf("GPS-NO_FIX\r\n");
+	else if (gps_fix_age > GPS_STALE_TIME)
+		printf("GPS-STALE\r\n");
+	else {
+			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
+			gps_fix_age, gps_lat, gps_lon, gps_course);
+	}
+}
+// ----------------------------------------------------------------------------
+void print_stats()
+{
+	print_gps_msg();
 }
 // ----------------------------------------------------------------------------
 void clear_stats(void)
@@ -510,6 +530,7 @@ void step_manual_mode()
 		joy_pulses = 0;
 		next_state = msCountJoyStore;
 	} else if (joy_in_clear()) {
+		shown_stats = false;
 		next_state = msClear1;
 	}
 }
@@ -593,6 +614,10 @@ void step_clear1()
 {
 	if (!joy_in_clear())
 		next_state = msCmdErrorMan;
+	else if (!shown_stats) {
+		print_stats();
+		shown_stats=true;
+	}
 	else if (state_time > 1000) {
 		next_state = msClear2;
 	}
@@ -762,14 +787,7 @@ void periodic_msg()
 		break;
 
 	case mmGps:
-		if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-			printf("GPS-NO_FIX\r\n");
-		else if (gps_fix_age > 150000)
-			printf("GPS-STALE\r\n");
-		else {
-			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
-				gps_fix_age, gps_lat, gps_lon, gps_course);
-		}
+		print_gps_msg();
 		break;
 	}
 }
@@ -873,7 +891,15 @@ void process_500ms()
 		// GPS-OK
 		gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
 		gps_valid= true;
+		
 	}
+	
+	if (!gps_valid_prev && gps_valid)
+		printf("GPS up\r\n");
+	if (gps_valid_prev && !gps_valid)
+		printf("GPS down\r\n");
+	
+	gps_valid_prev = gps_valid;
 }
 
 // ----------------------------------------------------------------------------
