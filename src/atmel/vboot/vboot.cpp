@@ -18,37 +18,69 @@
 
 #include "TinyGPS.h"
 #include "lat_lon.h"
-
-#ifdef _WIN32
-TinyGPS gps;
-
-CLatLon gp_current;
-CLatLon gp_start;
-CLatLon gp_finish;
-float bearing_sp = 0;
-float gps_cmg = 0; // gps course made good
-
-#endif
-
-enum {
-	BLINK_DELAY_MS = 25,
-};
-
 #include "uart.h"
 
-volatile unsigned long prog_ms = 0;
+// ----------------------------------------------------------------------------
+// VARIABLES
+// ----------------------------------------------------------------------------
 
-unsigned long start1_ms(0);
-unsigned long start2_ms(0);
+TMainState main_state;
+TMessageMode msg_mode;
 
-bool blink(false);
+// Memorized GPS
+CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
+CLatLon gp_mem_2; // memorized GPS position 2
+CLatLon gp_mem_3; // memorized GPS position 3
 
+CLatLon gp_current; // current GPS position (may be stale or invalid!)
+CLatLon gp_start; // GPS position when auto steering was switched on
+CLatLon gp_finish; // auto steering target GPS position
+
+// GPS input related
+unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
+TinyGPS gps;
+bool gps_valid = false;
+float gps_cmg = 0; // gps course made good
+long gps_lat, gps_lon, gps_course;
+// Auto steering related
+float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
+
+// LED control related
+bool led_blink(false);
+
+// Global [ms] timer
+volatile unsigned long global_ms_timer = 0;
+
+// Timing for periodic processes
+unsigned long t_100ms_start_ms(0);
+unsigned long t_500ms_start_ms(0);
+
+// ----------------------------------------------------------------------------
+// PWM/JOYSTICK/MOTOR vars
+// ----------------------------------------------------------------------------
+// ML - Motor Left (in)
+volatile unsigned int pd6_rising;
+volatile unsigned int pd6_pulse_duration;
+// MR - Motor Right (in)
+volatile unsigned int pd5_rising;
+volatile unsigned int pd5_pulse_duration;
+// Pos (RX channel 3)
+volatile unsigned int pd3_rising;
+volatile unsigned int pd3_pulse_duration;
+// Man/auto (RX channel 4)
+volatile unsigned int pb3_rising;
+volatile unsigned int pb3_pulse_duration;
+// Old PORTD values for PORTD servo signal detection
+volatile unsigned char old_pind = 0;
+// Old PORTB values for PORTD servo signal detection
+volatile unsigned char old_pinb = 0;
+// ----------------------------------------------------------------------------
+// Global millisecond timer value needed for TinyGps
 unsigned int millis()
 {
-	return prog_ms;
+	return global_ms_timer;
 }
-
-
+// ----------------------------------------------------------------------------
 void copy_gps_pin(void)
 {
 #ifndef _WIN32
@@ -61,34 +93,13 @@ void copy_gps_pin(void)
 	}
 #endif
 }
-
-// ML - Motor Left (in)
-volatile unsigned int pd6_rising;
-volatile unsigned int pd6_pulse_duration;
-
-// MR - Motor Right (in)
-volatile unsigned int pd5_rising;
-volatile unsigned int pd5_pulse_duration;
-
-// Pos (RX channel 3)
-volatile unsigned int pd3_rising;
-volatile unsigned int pd3_pulse_duration;
-
-// Man/auto (RX channel 4)
-volatile unsigned int pb3_rising;
-volatile unsigned int pb3_pulse_duration;
-
-// Old PORTD values for PORTD servo signal detection
-volatile unsigned char old_pind = 0;
-// Old PORTB values for PORTD servo signal detection
-volatile unsigned char old_pinb = 0;
-
+// ----------------------------------------------------------------------------
 ISR(TIMER1_OVF_vect)
 {
 	// Timer 1 overflow
-	prog_ms += 20;	// timer was set to overflow each 20 [ms]
+	global_ms_timer += 20;	// timer was set to overflow each 20 [ms]
 }
-
+// ----------------------------------------------------------------------------
 #ifndef _WIN32
 ISR(PCINT0_vect)
 {
@@ -112,12 +123,12 @@ ISR(PCINT0_vect)
 
 	old_pinb = PINB;
 }
-
+// ----------------------------------------------------------------------------
 ISR(PCINT1_vect)
 {
 
 }
-
+// ----------------------------------------------------------------------------
 ISR(PCINT2_vect)
 {
 	unsigned int tmr_reg;
@@ -159,7 +170,7 @@ ISR(PCINT2_vect)
 	old_pind = PIND;
 }
 #endif
-
+// ----------------------------------------------------------------------------
 volatile unsigned char value;
 /* This variable is volatile so both main and RX interrupt can use it.
 It could also be a uint8_t type */
@@ -173,12 +184,12 @@ volatile unsigned char head = 0,tail = 0;
 #define FIFO_SIZE 32
 #define FIFO_MASK (FIFO_SIZE-1)
 volatile char uart_fifo[FIFO_SIZE];
-
+// ----------------------------------------------------------------------------
 bool rb_avail()
 {
 	return (head != tail);
 }
-
+// ----------------------------------------------------------------------------
 char rb_read()
 {
 	char data(0);
@@ -209,7 +220,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 		head = new_head;
 	}
 }
-
+// ----------------------------------------------------------------------------
 void setup_gps_input()
 {
 #ifndef _WIN32
@@ -228,7 +239,7 @@ void setup_gps_input()
 	PCICR |= _BV(PCIE0);
 #endif
 }
-
+// ----------------------------------------------------------------------------
 void setup_capture_inputs()
 {
 #ifndef _WIN32
@@ -268,7 +279,7 @@ void setup_capture_inputs()
 	TIMSK1 |= _BV(TOIE1);
 #endif
 }
-
+// ----------------------------------------------------------------------------
 void setup_pwm()
 {
 #ifndef _WIN32
@@ -292,18 +303,18 @@ void setup_pwm()
 	TCCR1A |= _BV(WGM11);
 	TCCR1A &= ~(_BV(WGM10));
 
-	OCR1A = 3000;
-	OCR1B = 3000;
+	OCR1A = JOY_MID;
+	OCR1B = JOY_MID;
 
 	ICR1 = 40000; // gives a 20 [ms] period
 #endif
 }
-
+// ----------------------------------------------------------------------------
 void clear_stats(void)
 {
 		//
 }
-
+// ----------------------------------------------------------------------------
 float clip_motor(float mtr)
 {
 	if (mtr>1.0)
@@ -313,7 +324,7 @@ float clip_motor(float mtr)
 	else
 		return mtr;
 }
-
+// ----------------------------------------------------------------------------
 void auto_steer()
 {
 	float motor_l(0), motor_r(0);
@@ -322,7 +333,7 @@ void auto_steer()
 
 	float bearing_error = bearing_sp - gps_cmg;
 
-    float max_correct(0.9*max_speed);
+	float max_correct(0.9*max_speed);
 
 	motor_l = max_speed;
 	motor_r = max_speed;
@@ -340,75 +351,207 @@ void auto_steer()
 	motor_l = clip_motor(motor_l);
 	motor_r = clip_motor(motor_r);
 
-	OCR1A = 3000.0f + (motor_l * 1000.0);
-	OCR1B = 3000.0f + (motor_r * 1000.0);
+	OCR1A = (float)JOY_CENTER + (motor_l * 1000.0);
+	OCR1B = (float)JOY_CENTER + (motor_r * 1000.0);
 }
+// ----------------------------------------------------------------------------
+// Joystick center detect
+// ----------------------------------------------------------------------------
+bool joy_in_center(unsigned int j)
+{
+	return (j > (JOY_CENTER - JOY_BAND/2)) &&
+		(j < (JOY_CENTER + JOY_BAND/2));
+}
+// ----------------------------------------------------------------------------
+// Joystick down/right detect
+// ----------------------------------------------------------------------------
+bool joy_in_max(unsigned int j)
+{
+	return j > (JOY_MAX - JOY_BAND);
+}
+// ----------------------------------------------------------------------------
+// Joystick up/left detect
+// ----------------------------------------------------------------------------
+bool joy_in_min(unsigned int j)
+{
+	return j < (JOY_MIN + JOY_BAND);
+}
+// ----------------------------------------------------------------------------
+// Main state machine
+// ----------------------------------------------------------------------------
+void state_mach()
+{
+	// next state defaults to current state (unchanged)
+	TMainState next_state(main_state);
 
-void process()
+	switch (main_state) {
+	case msManualMode: // manual control mode
+		break;
+	case msAutoMode: // automatic waypoint mode
+		break;
+	case msCountJoyUp: // count joystick 'up' command
+		break;
+	case msCountJoyUpRetn:
+		break;
+	case msConfirmGotoPosX:
+		break;
+	case msCountJoyDown: // count joystick 'down' command
+		break;
+	case msCountJoyDownRetn:
+		break;
+	case msConfirmSavePosX:
+		break;
+	case msCmdError:
+		break;
+	default:
+		// should never get here
+		next_state = msManualMode;
+	}
+
+	main_state = next_state;
+}
+// ----------------------------------------------------------------------------
+// Handles GPS input
+// ----------------------------------------------------------------------------
+void run_gps_input()
+{
+	// Soft pass through of gps pin due to the fact
+	// we don't have a second UART/USART and the GPS module
+	// is connected to an I/O-pin with limited (input capture)
+	// features.
+	copy_gps_pin();
+
+	// get bytes received by uart,
+	// and decode GPS serial stream
+	while (rb_avail()) {
+		gps.encode(rb_read());
+	}
+}
+// ----------------------------------------------------------------------------
+// Manual mode (joystick 'pass through' steering)
+// ----------------------------------------------------------------------------
+void manual_steering()
 {
 	// Pass through motor left and right setpoints to PWM module
-	//OCR1A = pd5_pulse_duration;
-	//OCR1B = pd6_pulse_duration;
-
-	unsigned long delta1 = prog_ms - start1_ms;
-	if (delta1 >= 100) {
-		start1_ms = prog_ms;
-
-#if 0
+	OCR1A = pd5_pulse_duration;
+	OCR1B = pd6_pulse_duration;
+}
+// ----------------------------------------------------------------------------
+// Periodic message
+// ----------------------------------------------------------------------------
+void periodic_msg()
+{
+	switch (msg_mode) {
+	case mmServoCapture:
 		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
 		printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
 			pd6_pulse_duration, pd5_pulse_duration,
 			pd3_pulse_duration, pb3_pulse_duration);
-#endif
+		break;
 
-		auto_steer();
-		}
-
-	//bearing_sp = gp_start.bearingTo(gp_finish);
-	bearing_sp = gp_current.bearingTo(gp_finish);
-
-
-	copy_gps_pin();
-
-	// decode GPS serial stream
-	while (rb_avail()) {
-		gps.encode(rb_read());
-	}
-
-	millis();
-
-	unsigned long delta2 = prog_ms - start2_ms;
-	if (delta2 > 500) {
-		start2_ms = prog_ms;
-
-		blink = !blink;
-
-		if (blink) {
-			/* set pin 5 high to turn led on */
-			PORTB |= _BV(PORTB5);
-		} else {
-			/* set pin 5 low to turn led off */
-			PORTB &= ~_BV(PORTB5);
-		}
-
-		long lat, lon, course;
-		unsigned long fix_age; // returns +- latitude/longitude in degrees
-		gps.get_position(&lat, &lon, &fix_age);
-		course = gps.course();
-		gps_cmg = course / 100.0f;
-		if (fix_age == TinyGPS::GPS_INVALID_AGE)
+	case mmGps:
+		if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
 			printf("GPS-NO_FIX\r\n");
-		else if (fix_age > 150000)
+		else if (gps_fix_age > 150000)
 			printf("GPS-STALE\r\n");
 		else {
-			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",fix_age,lat,lon,
-				course);
-
-			gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
+			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
+				gps_fix_age, gps_lat, gps_lon, gps_course);
 		}
+		break;
+
+	}
+}
+// ----------------------------------------------------------------------------
+// 100 [ms] process
+// ----------------------------------------------------------------------------
+void process_100ms()
+{
+	// Steering
+	if (main_state == msAutoMode)
+		auto_steer();
+	else
+		manual_steering();
+
+	periodic_msg();
+}
+// ----------------------------------------------------------------------------
+// 500 [ms] process
+// ----------------------------------------------------------------------------
+void process_500ms()
+{
+	led_blink = !led_blink;
+
+	if (led_blink) {
+		/* set pin 5 high to turn led on */
+		PORTB |= _BV(PORTB5);
+	} else {
+		/* set pin 5 low to turn led off */
+		PORTB &= ~_BV(PORTB5);
+	}
+
+	// returns +- latitude/longitude in degrees
+	gps.get_position(&gps_lat, &gps_lon, &gps_fix_age);
+	gps_course = gps.course();
+	gps_cmg = gps_course / 100.0f;
+
+	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE) {
+		// No gps fix
+		gps_valid = false;
+	} else if (gps_fix_age > 10000) {
+		// Stale GPS position
+		gps_valid = false;
+	} else {
+		// GPS-OK
+		gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
+		gps_valid= true;
 	}
 }
 
+// ----------------------------------------------------------------------------
+// MAIN PROCESS
+// ----------------------------------------------------------------------------
+void process()
+{
+	unsigned long delta(0);
+
+	// Handle UART (GPS) input
+	run_gps_input();
+
+	// Calculate initial bearing with Haversine function
+	bearing_sp = gp_current.bearingTo(gp_finish);
+
+	// Run main state machine
+	state_mach();
+
+	// Time to run 100 [ms] process?
+	delta = global_ms_timer - t_100ms_start_ms;
+	if (delta >= 100) {
+		t_100ms_start_ms = global_ms_timer;
+		process_100ms();
+	}
+
+	// Time to run 500 [ms] process?
+	delta = global_ms_timer - t_500ms_start_ms;
+	if (delta > 500) {
+		t_500ms_start_ms = global_ms_timer;
+		process_500ms();
+	}
+}
+// ----------------------------------------------------------------------------
+// Main loop (AVR only, do not use within simulator)
+// ----------------------------------------------------------------------------
+void main_loop()
+{
+	TinyGPS gps;
+
+	while(1) {
+		process();
+	}
+}
+// ----------------------------------------------------------------------------
+// MAIN/STARTUP
+// ----------------------------------------------------------------------------
 #ifdef _WIN32
 int main_init (void)
 #else
@@ -419,24 +562,29 @@ int main (void)
 	/* set pin 5 of PORTB for output*/
 	DDRB |= _BV(DDB5);
 
+	// Setup serial (UART) input
 	USART_Init();  // Initialize USART
 #endif
 	sei();         // enable all interrupts
 
+	// Setup other peripherals
 	setup_capture_inputs();
 	setup_pwm();
 	setup_gps_input();
 
+	// Initial state machine / modes
+	main_state = msManualMode;
+	msg_mode = mmNone;
 
 	clear_stats();
 
 #ifndef _WIN32
-	TinyGPS gps;
-
-	while(1) {
-		process();
-	}
+	main_loop();
 #endif
 
 	return 0;
 }
+// ----------------------------------------------------------------------------
+// EOF
+// ----------------------------------------------------------------------------
+

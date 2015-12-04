@@ -104,6 +104,7 @@
         <ILINK_TranslatedLibraryPath>$(BDSLIB)\$(PLATFORM)\debug\$(LANGDIR);$(ILINK_TranslatedLibraryPath)</ILINK_TranslatedLibraryPath>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <LinkPackageImports>rtl.bpi;vcl.bpi</LinkPackageImports>
@@ -150,11 +151,18 @@
             <DependentOn>mainform.h</DependentOn>
             <BuildOrder>2</BuildOrder>
         </CppCompile>
+        <CppCompile Include="var_form.cpp">
+            <Form>VarForm</Form>
+            <FormType>dfm</FormType>
+            <DependentOn>var_form.h</DependentOn>
+            <BuildOrder>10</BuildOrder>
+        </CppCompile>
         <CppCompile Include="vessel.cpp">
             <DependentOn>vessel.h</DependentOn>
             <BuildOrder>8</BuildOrder>
         </CppCompile>
         <FormResources Include="mainform.dfm"/>
+        <FormResources Include="var_form.dfm"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

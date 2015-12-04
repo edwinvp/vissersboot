@@ -42,6 +42,7 @@ __published:	// IDE-managed Components
 	TLabel *Label6;
 	TLabel *Label7;
 	TButton *BtnZero;
+	TCheckBox *CbValidGps;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);

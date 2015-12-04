@@ -5,14 +5,17 @@
 #include <System.hpp>
 #include "TinyGPS.h"
 #include "lat_lon.h"
+#include "settings.h"
 //---------------------------------------------------------------------------
 typedef unsigned char uint8_t;
 typedef unsigned short int uint16_t;
 //---------------------------------------------------------------------------
+// Dummy definitions for simulator...
+// ...so there will be no UART compile error
 struct FILE
 {
 };
-//---------------------------------------------------------------------------
+// ...and no problems for this missing AVR function as well
 void sei();
 //---------------------------------------------------------------------------
 #define PORTB5 5
@@ -27,9 +30,7 @@ extern volatile unsigned int pd6_pulse_duration; // left motor (in)
 extern volatile unsigned int pd5_pulse_duration; // right motor (in)
 extern volatile unsigned int pd3_pulse_duration; // Pos (RX channel 3)
 extern volatile unsigned int pb3_pulse_duration; // Man/auto (RX channel 4)
-
 //---------------------------------------------------------------------------
-
 extern uint8_t PORTB;
 extern AnsiString prog_op;
 //---------------------------------------------------------------------------
@@ -38,11 +39,16 @@ int printf(const char * fmt, ... );
 int main_init (void);
 void process();
 void Fake_UART_ISR(unsigned UDR0);
-extern volatile unsigned long prog_ms;
+extern volatile unsigned long global_ms_timer;
 //---------------------------------------------------------------------------
-extern CLatLon gp_current;
-extern CLatLon gp_start;
-extern CLatLon gp_finish;
+extern TMainState main_state; // (main) sequencer state
+//---------------------------------------------------------------------------
+extern CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
+extern CLatLon gp_mem_2; // memorized GPS position 2
+extern CLatLon gp_mem_3; // memorized GPS position 3
+extern CLatLon gp_current; // current GPS position (may be stale or invalid!)
+extern CLatLon gp_start; // GPS position when auto steering was switched on
+extern CLatLon gp_finish; // auto steering target GPS position
 //---------------------------------------------------------------------------
 extern float bearing_sp;
 //---------------------------------------------------------------------------

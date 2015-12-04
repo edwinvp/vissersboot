@@ -1,7 +1,10 @@
 //---------------------------------------------------------------------------
-
 #ifndef lat_lonH
 #define lat_lonH
+//---------------------------------------------------------------------------
+#ifdef _WIN32
+#include <System.hpp>
+#endif
 //---------------------------------------------------------------------------
 class CLatLon
 {
@@ -18,6 +21,10 @@ public:
 	double lonRadians() const;
 
 	float bearingTo(const CLatLon & point);
+
+#ifdef _WIN32
+	UnicodeString ToString() const;
+#endif
 
 };
 //---------------------------------------------------------------------------

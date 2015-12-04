@@ -1,5 +1,8 @@
 ﻿//---------------------------------------------------------------------------
 #include <math.h>
+#ifdef _WIN32
+#include <Vcl.h>
+#endif
 
 #pragma hdrstop
 
@@ -53,3 +56,10 @@ float CLatLon::bearingTo(const CLatLon & point) {
 
 	return fmod(toDegrees(theta)+360,360);
 };
+
+#ifdef _WIN32
+UnicodeString CLatLon::ToString() const
+{
+	return L"lat: " + FloatToStr(lat) + L" lon: " + FloatToStr(lon);
+}
+#endif

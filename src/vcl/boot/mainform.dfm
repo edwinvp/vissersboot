@@ -237,6 +237,14 @@ object MainFrm: TMainFrm
       TabOrder = 7
       OnClick = BtnZeroClick
     end
+    object CbValidGps: TCheckBox
+      Left = 32
+      Top = 384
+      Width = 225
+      Height = 33
+      Caption = 'Send valid GPS position to AVR program'
+      TabOrder = 8
+    end
   end
   object ListBox1: TListBox
     Left = 0
@@ -248,7 +256,7 @@ object MainFrm: TMainFrm
     TabOrder = 1
   end
   object Timer1: TTimer
-    Interval = 100
+    Interval = 40
     OnTimer = Timer1Timer
     Left = 128
     Top = 128

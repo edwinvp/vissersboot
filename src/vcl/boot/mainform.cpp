@@ -5,6 +5,7 @@
 
 #include "mainform.h"
 #include "fakeio.h"
+#include "var_form.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -26,6 +27,10 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	AddLocations();
 
 	da.SetCenterLoc(start.loc);
+
+	VarForm = new TVarForm(Application);
+	VarForm->Show();
+
 
 	main_init();
 }
@@ -107,9 +112,26 @@ float __fastcall TMainFrm::Pwm2MotorFact(int dc)
 		return (dc-3000)/1000.0f;
 }
 //---------------------------------------------------------------------------
+UnicodeString MainStateToText(TMainState s)
+{
+	switch (s) {
+	case msManualMode: return L"msManualMode";
+	case msAutoMode: return L"msAutoMode";
+	case msCountJoyUp: return L"msCountJoyUp";
+	case msConfirmGotoPosX: return L"msConfirmGotoPosX";
+	case msCountJoyDown: return L"msCountJoyDown";
+	case msConfirmSavePosX: return L"msConfirmSavePosX";
+	case msCountJoyUpRetn: return L"msCountJoyUpRetn";
+	case msCountJoyDownRetn: return L"msCountJoyDownRetn";
+	case msCmdError: return L"msCmdError";
+	default:
+		return L"???";
+	}
+}
+//---------------------------------------------------------------------------
 void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 {
-	prog_ms += Timer1->Interval;
+	global_ms_timer += Timer1->Interval;
 
 	if (CbRemoteCtrlOn->Checked) {
 		pd5_pulse_duration=SbMotorV->Position;
@@ -162,6 +184,30 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 
 	da.RenderTo(PaintBox1->Canvas,vessel,vessel_path);
 
+
+	VarForm->ClearLines();
+
+	VarForm->AddLine(L"vessel.motor_left = " + FormatFloat(L"0.00",vessel.motor_left));
+	VarForm->AddLine(L"vessel.motor_right = " + FormatFloat(L"0.00",vessel.motor_right));
+	VarForm->AddLine(L"---");
+	VarForm->AddLine(L"gp_mem_1 = " + gp_mem_1.ToString());
+	VarForm->AddLine(L"gp_mem_2 = " + gp_mem_2.ToString());
+	VarForm->AddLine(L"gp_mem_3 = " + gp_mem_3.ToString());
+	VarForm->AddLine(L"---");
+	VarForm->AddLine(L"gp_current = " + gp_current.ToString());
+	VarForm->AddLine(L"---");
+	VarForm->AddLine(L"main_state = " + MainStateToText(main_state));
+	VarForm->AddLine(L"---");
+	VarForm->AddLine(L"pd3 pd = " + FloatToStr(pd3_pulse_duration));
+	VarForm->AddLine(L"pb3 pd = " + FloatToStr(pb3_pulse_duration));
+	VarForm->AddLine(L"pd5 pd = " + FloatToStr(pd5_pulse_duration));
+	VarForm->AddLine(L"pd6 pd = " + FloatToStr(pd6_pulse_duration));
+
+	VarForm->AddLine(L"---");
+
+	VarForm->Update();
+
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainFrm::SendVesselPosToAtmel()
@@ -170,9 +216,11 @@ void __fastcall TMainFrm::SendVesselPosToAtmel()
 //	loc.lat = -89.0;
 //	loc.lon = -179.0;
 
+	bool bValidity = CbValidGps->Checked;
+
 	// Convert current location to a GPS string parseable by
 	// the TinyGPS library.
-	UnicodeString sRMC = loc.GetGPRMC(vessel.heading);
+	UnicodeString sRMC = loc.GetGPRMC(vessel.heading,bValidity);
 
 	// Send as fake UART message
 	for (int i(1);i<=sRMC.Length();++i) {

@@ -63,10 +63,16 @@ UnicodeString TGpsLoc::CMG2NMEA(float course_made_good) const
 	return s;
 }
 
-UnicodeString TGpsLoc::GetGPRMC(float course_made_good) const
+UnicodeString TGpsLoc::GetGPRMC(float course_made_good, bool bValidity) const
 {
-	UnicodeString s;
-	s.printf(L"$GPRMC,123519,A,%s,%s,000.0,%s,230394,003.1,W",
+	UnicodeString s,sFormat;
+
+	if (bValidity)
+		sFormat = L"$GPRMC,123519,A,%s,%s,000.0,%s,230394,003.1,W";
+	else
+		sFormat = L"$GPRMC,123519,V,%s,%s,000.0,%s,230394,003.1,W";
+
+	s.printf(sFormat.c_str(),
 		Lat2NMEA().c_str(),
 		Lon2NMEA().c_str(),
 		CMG2NMEA(course_made_good).c_str() );

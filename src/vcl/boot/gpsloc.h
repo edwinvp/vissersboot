@@ -19,7 +19,7 @@ public:
 	double lonRadians() const;
 	double latRadians() const;
 
-	UnicodeString GetGPRMC(float course_made_good) const;
+	UnicodeString GetGPRMC(float course_made_good, bool bValidity) const;
 	UnicodeString Lat2NMEA() const;
 	UnicodeString Lon2NMEA() const;
 	UnicodeString CMG2NMEA(float course_made_good) const;

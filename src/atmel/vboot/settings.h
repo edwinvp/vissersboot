@@ -1,2 +1,42 @@
+#ifndef SETTINGS_H
+#define SETTINGS_H
 
+// ----------------------------------------------------------------------------
+// DEFINES
+// ----------------------------------------------------------------------------
+
+// CPU frequency [Hz]
 #define F_CPU 16000000
+
+// REMOTE CONTROL JOYSTICK defines - in capture/compare (PWM) units (counts)
+#define JOY_MIN 2000 /* joystick up or left */
+#define JOY_CENTER 3000 /* joystick center value */
+#define JOY_MAX 4000 /* joystick down or right */
+#define JOY_BAND 250 /* max deviation for centre detection) */
+
+// Main state machine state definitions
+enum TMainState {
+	msManualMode=0, // manual control mode
+	msAutoMode, // automatic waypoint mode
+	msCountJoyUp, // count joystick 'up' command
+	msCountJoyUpRetn,
+	msConfirmGotoPosX,
+	msCountJoyDown, // count joystick 'down' command
+	msCountJoyDownRetn,
+	msConfirmSavePosX,
+	msCmdError,
+
+	msLast
+};
+
+// Periodic message type (which message to log periodically to console)
+enum TMessageMode {
+	mmNone, // don't log any message
+	mmServoCapture, // captured servo signals (remote ctrl. joystick values)
+	mmGps, // GPS input debugging
+
+	mmLast
+};
+
+#endif
+
