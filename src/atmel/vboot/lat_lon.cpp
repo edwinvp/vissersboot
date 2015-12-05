@@ -52,7 +52,10 @@ float CLatLon::bearingTo(const CLatLon & point) {
 	double y =     sin(deltaLambda) * cos(phi2);
 	double x =     cos(phi1) * sin(phi2) -
 				  sin(phi1) * cos(phi2) * cos(deltaLambda);
-	double theta = atan2(y, x);
+
+	double theta(0.0);
+	if (x!=0 || y!=0)
+		theta = atan2(y, x);
 
 	return fmod(toDegrees(theta)+360,360);
 };

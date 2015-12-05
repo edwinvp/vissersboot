@@ -2,7 +2,7 @@ object VarForm: TVarForm
   Left = 0
   Top = 0
   Caption = 'Variables'
-  ClientHeight = 282
+  ClientHeight = 411
   ClientWidth = 418
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -17,15 +17,12 @@ object VarForm: TVarForm
     Left = 0
     Top = 0
     Width = 418
-    Height = 282
+    Height = 411
     Align = alClient
     Lines.Strings = (
       'Memo1')
     ReadOnly = True
     TabOrder = 0
-    ExplicitLeft = 112
-    ExplicitTop = 96
-    ExplicitWidth = 145
-    ExplicitHeight = 145
+    ExplicitHeight = 282
   end
 end

@@ -23,6 +23,9 @@
 // Time after last GPS valid update until current fix consired stale
 #define GPS_STALE_TIME 5000
 
+// Time to find out GPS course - before PID starts steering
+#define COURSE_DET_TIME 8000
+
 
 // Main state machine state definitions
 enum TMainState {

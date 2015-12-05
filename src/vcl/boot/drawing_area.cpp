@@ -310,7 +310,12 @@ void TDrawingArea::DrawArrow(TGpsLoc base, TGpsLoc arrow_head)
 	float dy = spB.y - spA.y;
 
 	float r = sqrt(dx*dx + dy*dy);
-	float p = atan2(dy,dx);
+	float p;
+
+	if (dy == 0 && dx == 0)
+		p = 0;
+	else
+		p = atan2(dy,dx);
 
 	float ah_width = 15;
 	float r_inner = r - ah_width;

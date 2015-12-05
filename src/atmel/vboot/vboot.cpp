@@ -419,6 +419,14 @@ void auto_steer()
 	else
 		cv_clipped = pid_cv;
 
+	if (state_time < COURSE_DET_TIME) {
+		// Still determining course, keep PID in reset
+		p_add=0;
+		i_add=0;
+		d_add=0;
+		cv_clipped=0;
+	}
+
 	motor_l += cv_clipped;
 	motor_r -= cv_clipped;
 
