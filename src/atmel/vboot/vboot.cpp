@@ -1,4 +1,6 @@
+#include "Arduino.h"
 #include "settings.h"
+
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -16,9 +18,13 @@
 
 #endif
 
+#include "SPI.h"
 #include "TinyGPS.h"
+#include "SD.h"
 #include "lat_lon.h"
 #include "uart.h"
+
+const int chipSelect = 10; // 4  or 10
 
 // ----------------------------------------------------------------------------
 // VARIABLES
@@ -98,7 +104,7 @@ volatile unsigned char old_pind = 0;
 volatile unsigned char old_pinb = 0;
 // ----------------------------------------------------------------------------
 // Global millisecond timer value needed for TinyGps
-unsigned int millis()
+unsigned int epu_millis()
 {
 	return global_ms_timer;
 }
@@ -225,7 +231,7 @@ char rb_read()
 	return data;
 }
 // ----------------------------------------------------------------------------
-
+/*
 #ifndef _WIN32
 ISR(USART_RX_vect) {
 #else
@@ -246,6 +252,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 		head = new_head;
 	}
 }
+*/
 // ----------------------------------------------------------------------------
 void setup_gps_input()
 {
@@ -787,16 +794,17 @@ void manual_steering()
 void periodic_msg()
 {
 	switch (msg_mode) {
+	case mmNone: ;
 	case mmServoCapture:
 		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
 		printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
 			pd6_pulse_duration, pd5_pulse_duration,
 			pd3_pulse_duration, pb3_pulse_duration);
 		break;
-
 	case mmGps:
 		print_gps_msg();
 		break;
+	case mmLast: ;		
 	}
 }
 // ----------------------------------------------------------------------------
@@ -956,6 +964,21 @@ void main_loop()
 	}
 }
 // ----------------------------------------------------------------------------
+// SD card objects
+// ----------------------------------------------------------------------------
+
+// set up variables using the SD utility library functions:
+Sd2Card card;
+//SdVolume volume;
+//SdFile root;
+
+
+extern "C" void __cxa_pure_virtual() {
+	cli();
+	for (;;);
+}
+
+// ----------------------------------------------------------------------------
 // MAIN/STARTUP
 // ----------------------------------------------------------------------------
 #ifdef _WIN32
@@ -964,6 +987,8 @@ int main_init (void)
 int main (void)
 #endif
 {
+	init();
+	
 #ifndef _WIN32
 	/* set pin 5 of PORTB for output*/
 	DDRB |= _BV(DDB5);
@@ -972,6 +997,54 @@ int main (void)
 	USART_Init();  // Initialize USART
 #endif
 	sei();         // enable all interrupts
+
+	// Test SD-card
+	while(1) {
+
+		//if (rb_avail())
+		//if (rb_read() == ' ')
+
+		unsigned long m = millis();
+		printf("m = %ld\r\n",m);
+
+		if (Serial.available())		
+			if (Serial.read() == ' ')
+				break;		
+	}
+	
+	printf("Ok, let's begin.\r\n");
+	
+	 pinMode(chipSelect, OUTPUT);
+	 
+ // we'll use the initialization code from the utility libraries
+ // since we're just testing if the card is working!
+ if (!card.init(SPI_HALF_SPEED, chipSelect)) {
+	 Serial.println("initialization failed. Things to check:");
+	 Serial.println("* is a card inserted?");
+	 Serial.println("* is your wiring correct?");
+	 Serial.println("* did you change the chipSelect pin to match your shield or module?");
+	 while (1) ;
+	 } else {
+	 Serial.println("Wiring is correct and a card is present.");
+ }
+
+ // print the type of card
+ Serial.print("\nCard type: ");
+ switch (card.type()) {
+	 case SD_CARD_TYPE_SD1:
+	 Serial.println("SD1");
+	 break;
+	 case SD_CARD_TYPE_SD2:
+	 Serial.println("SD2");
+	 break;
+	 case SD_CARD_TYPE_SDHC:
+	 Serial.println("SDHC");
+	 break;
+	 default:
+	 Serial.println("Unknown");
+ }	
+	
+	while (1) ;
 
 	// Setup other peripherals
 	setup_capture_inputs();

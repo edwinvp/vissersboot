@@ -6,7 +6,9 @@
 // ----------------------------------------------------------------------------
 
 // CPU frequency [Hz]
+#ifdef NO_ARDUINO_LIB
 #define F_CPU 16000000
+#endif
 
 // REMOTE CONTROL JOYSTICK defines - in capture/compare (PWM) units (counts)
 #define JOY_MIN 2000 /* joystick up or left */
