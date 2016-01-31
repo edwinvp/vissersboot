@@ -80,8 +80,19 @@ volatile unsigned long global_ms_timer = 0;
 // Timing for periodic processes
 unsigned long t_100ms_start_ms(0);
 unsigned long t_500ms_start_ms(0);
+unsigned long t_1000ms_start_ms(0);
 
 bool shown_stats(false);
+
+// ----------------------------------------------------------------------------
+// SD card logging vars
+// ----------------------------------------------------------------------------
+
+// set up variables using the SD utility library functions:
+Sd2Card card;
+File myFile;
+
+bool CardDetected = false;
 
 // ----------------------------------------------------------------------------
 // PWM/JOYSTICK/MOTOR vars
@@ -345,11 +356,11 @@ void setup_pwm()
 void print_gps_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-		printf("GPS-NO_FIX\r\n");
+		Serial.println("GPS-NO_FIX\r\n");
 	else if (gps_fix_age > GPS_STALE_TIME)
-		printf("GPS-STALE\r\n");
+		Serial.println("GPS-STALE\r\n");
 	else {
-			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
+		printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
 			gps_fix_age, gps_lat, gps_lon, gps_course);
 	}
 }
@@ -776,7 +787,9 @@ void run_gps_input()
 	// get bytes received by uart,
 	// and decode GPS serial stream
 	while (rb_avail()) {
-		gps.encode(rb_read());
+		char c=rb_read();
+		Serial.println((uint8_t)c,5);
+		gps.encode(c);
 	}
 }
 // ----------------------------------------------------------------------------
@@ -886,6 +899,19 @@ void process_100ms()
 	periodic_msg();
 }
 // ----------------------------------------------------------------------------
+// 1000 [ms] process
+// ----------------------------------------------------------------------------
+void process_1000ms()
+{
+	Serial.println("1000 ms passed");
+
+	if (CardDetected) {
+		char para[80];
+		sprintf(para,"test!\r\n");
+		myFile.write(para,strlen(para));
+	}
+}
+// ----------------------------------------------------------------------------
 // 500 [ms] process
 // ----------------------------------------------------------------------------
 void process_500ms()
@@ -928,6 +954,8 @@ void process()
 	// Handle UART (GPS) input
 	run_gps_input();
 
+/*
+
 	// Calculate initial bearing with Haversine function
 	bearing_sp = gp_current.bearingTo(gp_finish);
 
@@ -951,6 +979,14 @@ void process()
 		t_500ms_start_ms = global_ms_timer;
 		process_500ms();
 	}
+*/	
+	// Time to run 1000 [ms] process?
+	delta = global_ms_timer - t_1000ms_start_ms;
+	if (delta > 1000) {
+		t_1000ms_start_ms = global_ms_timer;
+		process_1000ms();
+	}
+
 }
 // ----------------------------------------------------------------------------
 // Main loop (AVR only, do not use within simulator)
@@ -963,19 +999,67 @@ void main_loop()
 		process();
 	}
 }
-// ----------------------------------------------------------------------------
-// SD card objects
-// ----------------------------------------------------------------------------
 
-// set up variables using the SD utility library functions:
-Sd2Card card;
-//SdVolume volume;
-//SdFile root;
 
+// ----------------------------------------------------------------------------
+// Arduino libs compatibility
+// ----------------------------------------------------------------------------
 
 extern "C" void __cxa_pure_virtual() {
 	cli();
 	for (;;);
+}
+
+// ----------------------------------------------------------------------------
+// SD card objects
+// ----------------------------------------------------------------------------
+
+
+void setup_sd_card()
+{
+	CardDetected = false;
+	
+	pinMode(chipSelect, OUTPUT);
+
+	// we'll use the initialization code from the utility libraries
+	// since we're just testing if the card is working!
+	if (!card.init(SPI_HALF_SPEED, chipSelect)) {
+		Serial.println("initialization failed. Things to check:");
+		Serial.println("* is a card inserted?");
+		Serial.println("* is your wiring correct?");
+		Serial.println("* did you change the chipSelect pin to match your shield or module?");
+	} else {
+		CardDetected=true;
+		Serial.println("Wiring is correct and a card is present.");
+	}
+	
+	if (!CardDetected)
+		return;
+
+	// print the type of card
+	Serial.print("\nCard type: ");
+	switch (card.type()) {
+		case SD_CARD_TYPE_SD1:
+		Serial.println("SD1");
+		break;
+		case SD_CARD_TYPE_SD2:
+		Serial.println("SD2");
+		break;
+		case SD_CARD_TYPE_SDHC:
+		Serial.println("SDHC");
+		break;
+		default:
+		Serial.println("Unknown");
+	}
+
+	Serial.print("Initializing SD card...");
+
+	if (!SD.begin(chipSelect)) {
+		Serial.println("initialization failed!");
+		while (1);
+	}
+	Serial.println("initialization done.");
+
 }
 
 // ----------------------------------------------------------------------------
@@ -998,59 +1082,36 @@ int main (void)
 #endif
 	sei();         // enable all interrupts
 
-	// Test SD-card
-	while(1) {
 
-		//if (rb_avail())
-		//if (rb_read() == ' ')
+	printf("Booting\r\n");
 
-		unsigned long m = millis();
-		printf("m = %ld\r\n",m);
-
-		if (Serial.available())		
-			if (Serial.read() == ' ')
-				break;		
-	}
-	
-	printf("Ok, let's begin.\r\n");
-	
-	 pinMode(chipSelect, OUTPUT);
+	//setup_sd_card();
 	 
- // we'll use the initialization code from the utility libraries
- // since we're just testing if the card is working!
- if (!card.init(SPI_HALF_SPEED, chipSelect)) {
-	 Serial.println("initialization failed. Things to check:");
-	 Serial.println("* is a card inserted?");
-	 Serial.println("* is your wiring correct?");
-	 Serial.println("* did you change the chipSelect pin to match your shield or module?");
-	 while (1) ;
-	 } else {
-	 Serial.println("Wiring is correct and a card is present.");
- }
+	if (CardDetected) {
+		// delete existing logging file	
+		if (SD.exists("logging.txt")) {
+			Serial.println("logging.txt already exists, deleting it");
+			SD.remove("logging.txt");	
+		}	
 
- // print the type of card
- Serial.print("\nCard type: ");
- switch (card.type()) {
-	 case SD_CARD_TYPE_SD1:
-	 Serial.println("SD1");
-	 break;
-	 case SD_CARD_TYPE_SD2:
-	 Serial.println("SD2");
-	 break;
-	 case SD_CARD_TYPE_SDHC:
-	 Serial.println("SDHC");
-	 break;
-	 default:
-	 Serial.println("Unknown");
- }	
-	
-	while (1) ;
+		// open logging file
+		Serial.println("Opening logging.txt...");
+		myFile = SD.open("example.txt", FILE_WRITE);
+		char * para = "-------------!\r\n";
+		myFile.write(para,strlen(para));
+		myFile.flush();
+	}
+		
+	Serial.println("Setting up other peripherals");
+
 
 	// Setup other peripherals
-	setup_capture_inputs();
-	setup_pwm();
+	//setup_capture_inputs();
+	//setup_pwm();
 	setup_gps_input();
 
+	Serial.println("Init-done");
+	
 	// Initial state machine / modes
 	main_state = msManualMode;
 	msg_mode = mmNone;
