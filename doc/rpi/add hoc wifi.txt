@@ -1,0 +1,9 @@
+
+From:
+https://www.raspberrypi.org/forums/viewtopic.php?f=36&t=18771
+
+(the first line might not be necessary)
+ifconfig wlan0 up
+iwconfig wlan0 mode ad-hoc
+iwconfig wlan0 essid "Pi"
+ifconfig wlan0 192.168.1.1 netmask 255.255.255.0
