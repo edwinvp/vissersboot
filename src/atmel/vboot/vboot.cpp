@@ -236,6 +236,8 @@ void Fake_UART_ISR(unsigned UDR0) {
 	// into `value`
 	value = UDR0;
 
+// // also happens with this disabled
+#if 1
 	// Store byte in FIFO (if FIFO isn't full)
 	unsigned char new_head;
 	new_head = head + 1;
@@ -245,6 +247,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 		uart_fifo[head] = value;
 		head = new_head;
 	}
+#endif
 }
 // ----------------------------------------------------------------------------
 void setup_gps_input()
@@ -333,6 +336,24 @@ void setup_pwm()
 
 	ICR1 = 40000; // gives a 20 [ms] period
 #endif
+}
+// ----------------------------------------------------------------------------
+void print_steering_msg()
+{
+	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
+	printf("GPS-NO_FIX ");
+	else if (gps_fix_age > GPS_STALE_TIME)
+	printf("GPS-STALE ");
+	else {
+		printf("GPS-OK ");
+	}
+	
+	unsigned int a1 = OCR1A;
+	unsigned int b1 = OCR1B;
+	unsigned int sp10 = bearing_sp * 10.0;
+	unsigned int gps_cmg10 = gps_cmg * 10.0;
+	
+	printf("age=%ld. sp10=%d cmg(x10)=%d OCR1A=%d OCR1B=%d\r\n", gps_fix_age, sp10, gps_cmg10, a1,b1);			
 }
 // ----------------------------------------------------------------------------
 void print_gps_msg()
@@ -777,7 +798,7 @@ void run_gps_input()
 // ----------------------------------------------------------------------------
 void manual_steering()
 {
-	// Pass through motor left and right setpoints to PWM module
+	// Pass through motor left and right setpoints to PWM module	
 	OCR1A = pd5_pulse_duration;
 	OCR1B = pd6_pulse_duration;
 }
@@ -797,6 +818,10 @@ void periodic_msg()
 	case mmGps:
 		print_gps_msg();
 		break;
+		
+	case mmSteering:
+		print_steering_msg();
+		break;		
 	}
 }
 // ----------------------------------------------------------------------------
@@ -918,7 +943,7 @@ void process()
 	unsigned long delta(0);
 
 	// Handle UART (GPS) input
-	run_gps_input();
+	run_gps_input(); // also happens with this disabled
 
 	// Calculate initial bearing with Haversine function
 	bearing_sp = gp_current.bearingTo(gp_finish);
@@ -972,6 +997,8 @@ int main (void)
 	USART_Init();  // Initialize USART
 #endif
 	sei();         // enable all interrupts
+	
+	printf("Boot!\r\n");
 
 	// Setup other peripherals
 	setup_capture_inputs();
@@ -979,8 +1006,11 @@ int main (void)
 	setup_gps_input();
 
 	// Initial state machine / modes
-	main_state = msManualMode;
-	msg_mode = mmNone;
+	//main_state = msManualMode;
+	//msg_mode = mmServoCapture;
+	//msg_mode = mmGps;
+	msg_mode = mmSteering;
+	//msg_mode = mmNone;
 
 	clear_stats();
 

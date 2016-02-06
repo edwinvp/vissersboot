@@ -49,6 +49,7 @@ enum TMessageMode {
 	mmNone, // don't log any message
 	mmServoCapture, // captured servo signals (remote ctrl. joystick values)
 	mmGps, // GPS input debugging
+	mmSteering, // Auto steering debugging
 
 	mmLast
 };
