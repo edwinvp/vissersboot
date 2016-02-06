@@ -353,7 +353,7 @@ void print_steering_msg()
 	unsigned int sp10 = bearing_sp * 10.0;
 	unsigned int gps_cmg10 = gps_cmg * 10.0;
 	
-	printf("age=%ld. sp10=%d cmg(x10)=%d OCR1A=%d OCR1B=%d\r\n", gps_fix_age, sp10, gps_cmg10, a1,b1);			
+	printf("age=%ld. sp=%d br=%d A=%d B=%d\r\n", gps_fix_age, sp10, gps_cmg10, a1,b1);			
 }
 // ----------------------------------------------------------------------------
 void print_gps_msg()
@@ -768,6 +768,7 @@ void state_mach()
 
 	if (main_state != next_state) {
 		// Transitioning, reset step time and enter new step
+		printf("change step\r\n");
 		state_time = 0;
 		main_state = next_state;
 	} else {
@@ -898,9 +899,7 @@ void process_100ms()
 	else
 		manual_steering();
 
-	update_led();
-
-	periodic_msg();
+	update_led();	
 }
 // ----------------------------------------------------------------------------
 // 500 [ms] process
@@ -931,6 +930,8 @@ void process_500ms()
 		printf("GPS up\r\n");
 	if (gps_valid_prev && !gps_valid)
 		printf("GPS down\r\n");
+	
+	periodic_msg();	
 	
 	gps_valid_prev = gps_valid;
 }
