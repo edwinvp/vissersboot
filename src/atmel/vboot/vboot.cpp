@@ -14,6 +14,8 @@
 #include <avr/common.h>
 #include <stdio.h>
 
+#include "i2c.h"
+
 #endif
 
 #include "TinyGPS.h"
@@ -970,6 +972,88 @@ void process()
 		process_500ms();
 	}
 }
+
+void delay_ms(uint16_t x)
+{
+	uint16_t s = millis();
+	
+	uint16_t delta = 0;	
+		
+	do {
+		delta = millis() - s;		
+	} while (delta < x) ;	
+	
+}
+
+
+#define HMC5843_W	0x3C
+#define HMC5843_R	0x3D
+
+#ifndef _WIN32
+//Setup HMC5843 for constant measurement mode
+void init_hmc5843(void)
+{
+	i2cSendStart();
+	i2cWaitForComplete();
+
+	i2cSendByte(HMC5843_W); //write to the HMC5843
+	i2cWaitForComplete();
+
+	i2cSendByte(0x02); //Write to Mode register
+	i2cWaitForComplete();
+
+	i2cSendByte(0x00); //Clear bit 1, the MD1 bit
+	i2cWaitForComplete();
+
+	i2cSendStop();
+}
+
+int16_t read_hmc5843(char reg_adr)
+{
+	char lsb, msb;
+
+	i2cSendStart();
+	i2cWaitForComplete();
+
+	i2cSendByte(HMC5843_W);	// write to this I2C address, R/*W cleared
+	i2cWaitForComplete();
+
+	i2cSendByte(reg_adr);	//Read from a given address
+	i2cWaitForComplete();
+
+	i2cSendStart();
+
+	i2cSendByte(HMC5843_R); // read from this I2C address, R/*W Set
+	i2cWaitForComplete();
+
+	i2cReceiveByte(TRUE);
+	i2cWaitForComplete();
+	msb = i2cGetReceivedByte(); //Read the LSB data
+	i2cWaitForComplete();
+
+	i2cReceiveByte(FALSE);
+	i2cWaitForComplete();
+	lsb = i2cGetReceivedByte(); //Read the MSB data
+	i2cWaitForComplete();
+
+	i2cSendStop();
+
+	return( (msb<<8) | lsb);
+}
+
+#else
+void init_hmc5843(void)
+{
+}
+
+int16_t read_hmc5843(char reg_adr)
+{
+	return 0;
+}
+
+#endif
+
+
 // ----------------------------------------------------------------------------
 // Main loop (AVR only, do not use within simulator)
 // ----------------------------------------------------------------------------
@@ -1014,6 +1098,54 @@ int main (void)
 	//msg_mode = mmNone;
 
 	clear_stats();
+
+	// Initialize I2C-bus I/O
+#ifndef _WIN32
+	DDRC = 0b00110000;
+	PORTC = 0b00110000; //pullups on the I2C bus
+
+	i2cInit();
+	i2cSetBitrate(10);
+
+	delay_ms(100);
+
+	int cnt(0);
+
+	init_hmc5843();
+
+	while (1) {
+		
+		i2cSendStart();
+		i2cWaitForComplete();
+		
+		i2cSendByte(0x70);
+		i2cWaitForComplete();
+		
+		i2cSendByte(~cnt);
+		i2cWaitForComplete();
+		cnt++;
+
+		i2cSendStop();
+
+		int16_t x = read_hmc5843(0x03);
+		int16_t y = read_hmc5843(0x05);
+		int16_t z = read_hmc5843(0x07);
+
+		printf("x=%04d, y=%04d, z=%04d\r\n", x, y, z);
+		
+		//delay_ms(5);	
+	}
+
+
+
+	while (1) {
+		delay_ms(500);
+		PORTB |= _BV(PORTB5);
+		delay_ms(500);
+		PORTB &= ~_BV(PORTB5);
+	}
+#endif
+
 
 #ifndef _WIN32
 	main_loop();

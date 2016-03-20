@@ -31,7 +31,22 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	VarForm = new TVarForm(Application);
 	VarForm->Show();
 
+	UnicodeString fnPuttyLog=L"C:\\Users\\Z\\Desktop\\putty.log";
+
+	putty_log_file.reset(new TFileStream(fnPuttyLog,fmOpenRead | fmShareDenyNone));
+	putty_log_file->Position = putty_log_file->Size;
+
 	main_init();
+
+	a.x = -50;
+	a.z = -50;
+	b.x = 50;
+	b.z = -50;
+	c.x = -50;
+	c.z = 50;
+	d.x = 50;
+	d.z = 50;
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainFrm::AddRefLocations()
@@ -272,3 +287,183 @@ void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
 }
 //---------------------------------------------------------------------------
 
+
+void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
+{
+	if (putty_log_file->Position < putty_log_file->Size) {
+
+		int avail = putty_log_file->Size - putty_log_file->Position;
+
+		int to_read = avail;
+		if (avail>80) {
+			avail = 80;
+		}
+
+
+		std::vector<char> v(to_read);
+		putty_log_file->ReadBuffer(&v[0],to_read);
+
+		for (unsigned int i(0);i<v.size();i++) {
+			if (v[i] == 0x0d || v[i] == 0x0a) {
+				AnsiString u = AnsiString(s.c_str()).Trim();
+				if (u.Length())
+					NewXYZStr(u);
+				s.clear();
+			} else
+				s += v[i];
+		}
+
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::C2Scr(Graphics::TBitmap * bmp, int & sx, int & sy, float x, float y)
+{
+	int cx(bmp->Width/2),cy(bmp->Height/2);
+
+	double rel_x = (x / 1500.0) * cx;
+	double rel_y = -(y / 1500.0) * cy;
+	sx = cx + rel_x;
+	sy = cy + rel_y;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::NewXYZStr(AnsiString s)
+{
+	int x(0),y(0),z(0);
+	int nf = sscanf(s.c_str(),"x=%d, y=%d, z=%d",&x,&y,&z);
+
+
+	if (nf == 3) {
+		TCompassTriple t;
+		t.x = x;
+		t.y = y;
+		t.z = z;
+		cvalues.push_back(t);
+	}
+
+	std::auto_ptr<Graphics::TBitmap> bmp(new Graphics::TBitmap());
+	bmp->Width = PaintBox2->Width;
+	bmp->Height = PaintBox2->Height;
+
+	std::deque<TCompassTriple>::const_iterator it;
+	for (it=cvalues.begin();it!=cvalues.end();++it) {
+		int px(0),py(0);
+
+		const TCompassTriple & t = *it;
+		C2Scr(bmp.get(),px,py,t.x,t.z);
+
+		bmp->Canvas->Ellipse(px-4,py-4,px+4,py+4);
+	}
+
+	int sx(0),sy(0);
+	C2Scr(bmp.get(),sx,sy,a.x,a.z);
+	bmp->Canvas->MoveTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,b.x,b.z);
+	bmp->Canvas->LineTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,d.x,d.z);
+	bmp->Canvas->LineTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,c.x,c.z);
+	bmp->Canvas->LineTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,a.x,a.z);
+	bmp->Canvas->LineTo(sx,sy);
+
+	TCompassTriple centered;
+	centered.x=0;
+	centered.y=0;
+	centered.z=0;
+
+	if (!cvalues.empty()) {
+		const TCompassTriple & t = *cvalues.rbegin();
+
+		if (t.x < a.x) {
+			a.x = t.x;
+			c.x = t.x;
+		}
+
+		if (t.x > b.x) {
+			b.x = t.x;
+			d.x = t.x;
+		}
+
+		if (t.z < a.z) {
+			a.z = t.z;
+			b.z = t.z;
+		}
+
+		if (t.z > c.z) {
+			c.z = t.z;
+			d.z = t.z;
+		}
+
+		float w = b.x - a.x;
+		float h = c.z - a.z;
+
+		if (w>=0 && h>=0) {
+			centered.x = (t.x - a.x - (w/2.0));
+			centered.z = -(t.z - a.z - (h/2.0));
+		}
+
+	}
+
+	bmp->Canvas->Pen->Color = clBlue;
+
+	int sr(bmp->Width);
+	if (sr > bmp->Height)
+		sr = bmp->Height;
+
+	int cx(bmp->Width/2);
+	int cy(bmp->Height/2);
+	float rIdeal = 0.4 * sr;
+
+	bmp->Canvas->Brush->Style = bsClear;
+	bmp->Canvas->Ellipse(cx - rIdeal,cy - rIdeal,cx + rIdeal,cy + rIdeal);
+
+	bmp->Canvas->Brush->Style = bsSolid;
+	bmp->Canvas->Brush->Color = clBlue;
+
+	float w = b.x - a.x;
+	float h = c.z - a.z;
+
+	// True heading, 0=N, 270=W etc...
+	float d = 0.0;
+
+
+	if (w>0 && h>0) {
+		float ix = (float)centered.x / (w/2.0);
+		float iz = (float)centered.z / (h/2.0);
+
+		sx = cx + ix * rIdeal;
+		sy = cy + iz * rIdeal;
+		bmp->Canvas->Ellipse(sx - 4,sy - 4,sx + 4,sy + 4);
+
+		if (ix>0)
+			d = atan(iz/ix);
+		else if (ix<0 && iz >=0)
+			d = atan(iz/ix) + pi;
+		else if (ix<0 && iz < 0)
+			d = atan(iz/ix) - pi;
+		else if (ix==0 && iz > 0)
+			d = pi / 2.0;
+		else if (ix==0 && iz < 0)
+			d = -pi / 2.0;
+		else if (ix==0 && iz == 0)
+			d = 0;
+
+
+		d = 90.0 + d / (2.0*pi) * 360.0;
+
+	}
+
+	d += 180.0;
+    d = fmod(d,360.0);
+
+	bmp->Canvas->Pen->Color = clRed;
+
+	sx = cx + cos((d-90)/360.0*2.0*pi) * rIdeal;
+	sy = cy + sin((d-90)/360.0*2.0*pi) * rIdeal;
+
+	bmp->Canvas->MoveTo(cx,cy);
+	bmp->Canvas->LineTo(sx,sy);
+
+	PaintBox2->Canvas->Draw(0,0,bmp.get());
+
+}

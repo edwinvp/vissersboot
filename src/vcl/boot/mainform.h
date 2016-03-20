@@ -10,12 +10,20 @@
 #include <Vcl.ExtCtrls.hpp>
 //---------------------------------------------------------------------------
 #include "drawing_area.h"
+#include <Vcl.ComCtrls.hpp>
+#include <deque>
+//---------------------------------------------------------------------------
+class TCompassTriple
+{
+public:
+	int x,y,z;
+	TCompassTriple() : x(0), y(0), z(0) {};
+};
 //---------------------------------------------------------------------------
 class TMainFrm : public TForm
 {
 __published:	// IDE-managed Components
 	TTimer *Timer1;
-	TPaintBox *PaintBox1;
 	TSplitter *Splitter1;
 	TPanel *Panel1;
 	TListBox *ListBox1;
@@ -44,21 +52,38 @@ __published:	// IDE-managed Components
 	TButton *BtnZero;
 	TCheckBox *CbValidGps;
 	TButton *BtnAutoMode;
+	TPageControl *PageControl1;
+	TTabSheet *TsCourseOverview;
+	TTabSheet *TsMagneto;
+	TPaintBox *PaintBox1;
+	TPaintBox *PaintBox2;
+	TTimer *Timer2;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);
 	void __fastcall BtnAutoModeClick(TObject *Sender);
+	void __fastcall Timer2Timer(TObject *Sender);
 
 private:	// User declarations
 	TDrawingArea da;
 	TVessel vessel;
 	TDrawPoint start,finish;
 	std::vector<TGpsLoc> vessel_path;
+	std::auto_ptr<TFileStream> putty_log_file;
 
 	void __fastcall SendVesselPosToAtmel();
 	void __fastcall AddLocations();
 	void __fastcall AddRefLocations();
 	float __fastcall Pwm2MotorFact(int dc);
+
+	std::string s;
+	void __fastcall NewXYZStr(AnsiString s);
+
+	TCompassTriple a,b,c,d;
+
+	std::deque<TCompassTriple> cvalues;
+
+	void __fastcall C2Scr(Graphics::TBitmap * bmp, int & sx, int & sy, float x, float y);
 
 public:		// User declarations
 	__fastcall TMainFrm(TComponent* Owner);

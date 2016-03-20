@@ -33,6 +33,8 @@ extern volatile unsigned int pb3_pulse_duration; // Man/auto (RX channel 4)
 //---------------------------------------------------------------------------
 extern uint8_t PORTB;
 extern AnsiString prog_op;
+extern uint8_t DDRC;
+extern uint8_t PORTC;
 //---------------------------------------------------------------------------
 int printf(const char * fmt, ... );
 //---------------------------------------------------------------------------
