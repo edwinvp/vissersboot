@@ -119,7 +119,6 @@ void i2cSetBitrate(unsigned short bitrateKHz)
 	bitrate_div = ((F_CPU/4000l)/bitrateKHz);
 	if(bitrate_div >= 16)
 		bitrate_div = (bitrate_div-16)/2;
-	bitrate_div = 30;
 	outb(TWBR, bitrate_div);
 }
 
@@ -143,7 +142,7 @@ void i2cWaitForComplete(void)
 	// wait for i2c interface to complete operation
     while ((!(TWCR & (1<<TWINT))) && (i < 10000))
 		i++;
-	if (i>=10000)
+	if (i>=20000)
 		printf("i2c complete timed out\r\n");
 }
 

@@ -989,6 +989,11 @@ void delay_ms(uint16_t x)
 #define HMC5843_W	0x3C
 #define HMC5843_R	0x3D
 
+//#define M8N_W 0x42
+//#define M8N_R 0x43
+#define M8N_W 0x84
+#define M8N_R 0x85
+
 #ifndef _WIN32
 //Setup HMC5843 for constant measurement mode
 void init_hmc5843(void)
@@ -1053,6 +1058,23 @@ int16_t read_hmc5843(char reg_adr)
 
 #endif
 
+char read_m8n()
+{
+	i2cSendStart();
+	i2cWaitForComplete();
+
+	i2cSendByte(M8N_R);
+	i2cWaitForComplete();
+		
+	i2cReceiveByte(FALSE);
+	i2cWaitForComplete();
+	char d = i2cGetReceivedByte();
+	
+	i2cSendStop();
+	i2cWaitForComplete();
+	
+	return d;
+}
 
 // ----------------------------------------------------------------------------
 // Main loop (AVR only, do not use within simulator)
@@ -1126,14 +1148,47 @@ int main (void)
 		cnt++;
 
 		i2cSendStop();
+		i2cWaitForComplete();
 
 		int16_t x = read_hmc5843(0x03);
 		int16_t y = read_hmc5843(0x05);
 		int16_t z = read_hmc5843(0x07);
 
 		printf("x=%04d, y=%04d, z=%04d\r\n", x, y, z);
+
+		i2cSendStart();
+		i2cWaitForComplete();
 		
+		i2cSendByte(M8N_W);
+		i2cWaitForComplete();
+		
+		i2cSendByte(0xff);
+		i2cWaitForComplete();
+
+		i2cSendStop();
+		i2cWaitForComplete();
+
+		int c(0);
+		int d;
+		do { 
+			d = read_m8n();
+			if (d<32)
+				printf (".");		
+			else
+				printf ("%c", d);
+
+			gps.encode(d);
+			
+			c++;
+			if (c>500)
+				break;
+			
 		//delay_ms(5);	
+		} while (d!=0xff);
+
+
+		process_500ms();
+		
 	}
 
 
