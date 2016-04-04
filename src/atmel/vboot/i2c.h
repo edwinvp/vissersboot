@@ -1,6 +1,7 @@
 //      This library provides the high-level functions needed to use the I2C
 //	serial interface supported by the hardware of several AVR processors.
 #include <avr/io.h>
+#include <util/delay.h>
 //#include <avr/interrupt.h>
 #include "types.h"
 #include "defs.h"
@@ -67,7 +68,7 @@
 void i2cInit(void);
 
 //! Set the I2C transaction bitrate (in KHz)
-void i2cSetBitrate(unsigned short bitrateKHz);
+void i2cSetBitrate(unsigned char bitrateKHz);
 
 // Low-level I2C transaction commands 
 //! Send an I2C start condition in Master mode
@@ -86,7 +87,6 @@ void i2cReceiveByte(unsigned char ackFlag);
 unsigned char i2cGetReceivedByte(void);
 //! Get current I2c bus status from TWSR
 unsigned char i2cGetStatus(void);
-void delay_ms(uint16_t x);
 
 // high-level I2C transaction commands
 
@@ -101,24 +101,20 @@ unsigned char i2cMasterReceiveNI(unsigned char deviceAddr, unsigned char length,
 
 void i2cInit(void)
 {
-	// set i2c bit rate to 40KHz
-	i2cSetBitrate(100);
+	// set i2c bit rate
+	i2cSetBitrate(50);
 	// enable TWI (two-wire interface)
 	sbi(TWCR, TWEN);	// Enable TWI
 }
 
-void i2cSetBitrate(unsigned short bitrateKHz)
+void i2cSetBitrate(unsigned char bitrate_div)
 {
-	unsigned char bitrate_div;
 	// set i2c bitrate
-	// SCL freq = F_CPU/(16+2*TWBR))
+	// SCL freq = F_CPU/(16+2*(bitrate_div))
 	cbi(TWSR, TWPS0);
 	cbi(TWSR, TWPS1);
 	
-	//calculate bitrate division	
-	bitrate_div = ((F_CPU/4000l)/bitrateKHz);
-	if(bitrate_div >= 16)
-		bitrate_div = (bitrate_div-16)/2;
+	//calculate bitrate division		
 	outb(TWBR, bitrate_div);
 }
 
@@ -148,7 +144,7 @@ void i2cWaitForComplete(void)
 
 void i2cSendByte(unsigned char data)
 {
-	delay_ms(1);
+	_delay_us(10);
 	//printf("sending 0x%x\n", data);
 	WRITE_sda();
 	// save data to the TWDR

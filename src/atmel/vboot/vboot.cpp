@@ -1058,17 +1058,80 @@ int16_t read_hmc5843(char reg_adr)
 
 #endif
 
-char read_m8n()
+char m8n_set_reg_addr(unsigned char r_addr)
+{
+		i2cSendStart();
+		i2cWaitForComplete();
+		
+		i2cSendByte(M8N_W);
+		i2cWaitForComplete();
+		
+		i2cSendByte(r_addr);
+		i2cWaitForComplete();
+
+		i2cSendStop();
+		i2cWaitForComplete();		
+}
+
+int multi_read_m8n()
+{
+	int c(0);
+	
+	i2cSendStart();
+	i2cWaitForComplete();
+
+	i2cSendByte(M8N_R);
+	i2cWaitForComplete();
+	
+	unsigned char d(0x0);
+	bool valid(false);
+	do {
+		_delay_us(15);
+
+		//i2cReceiveByte(FALSE);
+		i2cReceiveByte(TRUE);
+		
+		i2cWaitForComplete();
+		d = i2cGetReceivedByte();
+		
+		valid = d != 0 && d != 0xff;
+		
+		if (valid && c < 100) {
+			if (d>=31)
+				printf("%c", d);
+			else
+				printf(".");
+			
+			gps.encode(d);
+		}
+		
+		c++;
+	} while (c < 10 || c < 500 && valid);
+
+		i2cReceiveByte(FALSE);
+		i2cWaitForComplete();
+		d = i2cGetReceivedByte();
+
+	
+	i2cSendStop();
+	i2cWaitForComplete();
+	
+	return c;
+	
+}
+
+
+unsigned char read_m8n()
 {
 	i2cSendStart();
 	i2cWaitForComplete();
 
 	i2cSendByte(M8N_R);
 	i2cWaitForComplete();
-		
+				
 	i2cReceiveByte(FALSE);
 	i2cWaitForComplete();
-	char d = i2cGetReceivedByte();
+	unsigned char d = i2cGetReceivedByte();
 	
 	i2cSendStop();
 	i2cWaitForComplete();
@@ -1127,7 +1190,7 @@ int main (void)
 	PORTC = 0b00110000; //pullups on the I2C bus
 
 	i2cInit();
-	i2cSetBitrate(10);
+	i2cSetBitrate(15);
 
 	delay_ms(100);
 
@@ -1156,35 +1219,12 @@ int main (void)
 
 		printf("x=%04d, y=%04d, z=%04d\r\n", x, y, z);
 
-		i2cSendStart();
-		i2cWaitForComplete();
-		
-		i2cSendByte(M8N_W);
-		i2cWaitForComplete();
-		
-		i2cSendByte(0xff);
-		i2cWaitForComplete();
-
-		i2cSendStop();
-		i2cWaitForComplete();
+		m8n_set_reg_addr(0xff);
 
 		int c(0);
-		int d;
-		do { 
-			d = read_m8n();
-			if (d<32)
-				printf (".");		
-			else
-				printf ("%c", d);
-
-			gps.encode(d);
-			
-			c++;
-			if (c>500)
-				break;
-			
-		//delay_ms(5);	
-		} while (d!=0xff);
+		c = multi_read_m8n();
+			 
+		printf("Rd c=%d\r\n",c);
 
 
 		process_500ms();
