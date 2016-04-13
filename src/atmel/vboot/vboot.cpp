@@ -15,6 +15,8 @@
 #include <stdio.h>
 
 #include "i2c.h"
+#include "m8n.h"
+#include "hmc5843.h"
 
 #endif
 
@@ -51,6 +53,12 @@ bool gps_valid = false;
 bool gps_valid_prev = false;
 float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
+
+// Compass input
+int16_t compass_x;
+int16_t compass_y;
+int16_t compass_z;
+
 
 // Auto steering related
 float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
@@ -252,6 +260,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 #endif
 }
 // ----------------------------------------------------------------------------
+/*
 void setup_gps_input()
 {
 #ifndef _WIN32
@@ -270,6 +279,7 @@ void setup_gps_input()
 	PCICR |= _BV(PCIE0);
 #endif
 }
+*/
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
 {
@@ -825,6 +835,15 @@ void periodic_msg()
 	case mmSteering:
 		print_steering_msg();
 		break;		
+		
+	case mmCompass:
+		printf("x=%04d, y=%04d, z=%04d\r\n", compass_x, compass_y, compass_z);
+		break;
+		
+	case mmLast:
+	case mmNone:
+		msg_mode = mmSteering;
+		break;
 	}
 }
 // ----------------------------------------------------------------------------
@@ -958,6 +977,16 @@ void process()
 	arrived = distance_m < 10;
 
 
+
+	compass_x = read_hmc5843(0x03);
+	compass_y = read_hmc5843(0x05);
+	compass_z = read_hmc5843(0x07);
+
+	m8n_set_reg_addr(0xff);
+
+	int c = multi_read_m8n(gps);
+
+
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;
 	if (delta >= 100) {
@@ -983,160 +1012,6 @@ void delay_ms(uint16_t x)
 		delta = millis() - s;		
 	} while (delta < x) ;	
 	
-}
-
-
-#define HMC5843_W	0x3C
-#define HMC5843_R	0x3D
-
-//#define M8N_W 0x42
-//#define M8N_R 0x43
-#define M8N_W 0x84
-#define M8N_R 0x85
-
-#ifndef _WIN32
-//Setup HMC5843 for constant measurement mode
-void init_hmc5843(void)
-{
-	i2cSendStart();
-	i2cWaitForComplete();
-
-	i2cSendByte(HMC5843_W); //write to the HMC5843
-	i2cWaitForComplete();
-
-	i2cSendByte(0x02); //Write to Mode register
-	i2cWaitForComplete();
-
-	i2cSendByte(0x00); //Clear bit 1, the MD1 bit
-	i2cWaitForComplete();
-
-	i2cSendStop();
-}
-
-int16_t read_hmc5843(char reg_adr)
-{
-	char lsb, msb;
-
-	i2cSendStart();
-	i2cWaitForComplete();
-
-	i2cSendByte(HMC5843_W);	// write to this I2C address, R/*W cleared
-	i2cWaitForComplete();
-
-	i2cSendByte(reg_adr);	//Read from a given address
-	i2cWaitForComplete();
-
-	i2cSendStart();
-
-	i2cSendByte(HMC5843_R); // read from this I2C address, R/*W Set
-	i2cWaitForComplete();
-
-	i2cReceiveByte(TRUE);
-	i2cWaitForComplete();
-	msb = i2cGetReceivedByte(); //Read the LSB data
-	i2cWaitForComplete();
-
-	i2cReceiveByte(FALSE);
-	i2cWaitForComplete();
-	lsb = i2cGetReceivedByte(); //Read the MSB data
-	i2cWaitForComplete();
-
-	i2cSendStop();
-
-	return( (msb<<8) | lsb);
-}
-
-#else
-void init_hmc5843(void)
-{
-}
-
-int16_t read_hmc5843(char reg_adr)
-{
-	return 0;
-}
-
-#endif
-
-char m8n_set_reg_addr(unsigned char r_addr)
-{
-		i2cSendStart();
-		i2cWaitForComplete();
-		
-		i2cSendByte(M8N_W);
-		i2cWaitForComplete();
-		
-		i2cSendByte(r_addr);
-		i2cWaitForComplete();
-
-		i2cSendStop();
-		i2cWaitForComplete();		
-}
-
-int multi_read_m8n()
-{
-	int c(0);
-	
-	i2cSendStart();
-	i2cWaitForComplete();
-
-	i2cSendByte(M8N_R);
-	i2cWaitForComplete();
-	
-	unsigned char d(0x0);
-	bool valid(false);
-	do {
-		_delay_us(15);
-
-		//i2cReceiveByte(FALSE);
-		i2cReceiveByte(TRUE);
-		
-		i2cWaitForComplete();
-		d = i2cGetReceivedByte();
-		
-		valid = d != 0 && d != 0xff;
-		
-		if (valid && c < 100) {
-			if (d>=31)
-				printf("%c", d);
-			else
-				printf(".");
-			
-			gps.encode(d);
-		}
-		
-		c++;
-	} while (c < 10 || c < 500 && valid);
-
-		i2cReceiveByte(FALSE);
-		i2cWaitForComplete();
-		d = i2cGetReceivedByte();
-
-	
-	i2cSendStop();
-	i2cWaitForComplete();
-	
-	return c;
-	
-}
-
-
-unsigned char read_m8n()
-{
-	i2cSendStart();
-	i2cWaitForComplete();
-
-	i2cSendByte(M8N_R);
-	i2cWaitForComplete();
-				
-	i2cReceiveByte(FALSE);
-	i2cWaitForComplete();
-	unsigned char d = i2cGetReceivedByte();
-	
-	i2cSendStop();
-	i2cWaitForComplete();
-	
-	return d;
 }
 
 // ----------------------------------------------------------------------------
@@ -1173,13 +1048,13 @@ int main (void)
 	// Setup other peripherals
 	setup_capture_inputs();
 	setup_pwm();
-	setup_gps_input();
+	//setup_gps_input();
 
 	// Initial state machine / modes
 	//main_state = msManualMode;
-	//msg_mode = mmServoCapture;
+	msg_mode = mmServoCapture;
 	//msg_mode = mmGps;
-	msg_mode = mmSteering;
+	//msg_mode = mmSteering;
 	//msg_mode = mmNone;
 
 	clear_stats();
@@ -1194,51 +1069,8 @@ int main (void)
 
 	delay_ms(100);
 
-	int cnt(0);
-
 	init_hmc5843();
 
-	while (1) {
-		
-		i2cSendStart();
-		i2cWaitForComplete();
-		
-		i2cSendByte(0x70);
-		i2cWaitForComplete();
-		
-		i2cSendByte(~cnt);
-		i2cWaitForComplete();
-		cnt++;
-
-		i2cSendStop();
-		i2cWaitForComplete();
-
-		int16_t x = read_hmc5843(0x03);
-		int16_t y = read_hmc5843(0x05);
-		int16_t z = read_hmc5843(0x07);
-
-		printf("x=%04d, y=%04d, z=%04d\r\n", x, y, z);
-
-		m8n_set_reg_addr(0xff);
-
-		int c(0);
-		c = multi_read_m8n();
-			 
-		printf("Rd c=%d\r\n",c);
-
-
-		process_500ms();
-		
-	}
-
-
-
-	while (1) {
-		delay_ms(500);
-		PORTB |= _BV(PORTB5);
-		delay_ms(500);
-		PORTB &= ~_BV(PORTB5);
-	}
 #endif
 
 

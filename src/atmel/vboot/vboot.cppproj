@@ -139,7 +139,16 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="i2c.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hmc5843.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="lat_lon.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="m8n.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="TinyGPS.cpp">
