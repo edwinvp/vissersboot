@@ -22,7 +22,7 @@ void init_hmc5843(void)
 
 int16_t read_hmc5843(char reg_adr)
 {
-	char lsb, msb;
+	char lsb(0), msb(0);
 
 	i2cSendStart();
 	i2cWaitForComplete();
@@ -33,7 +33,11 @@ int16_t read_hmc5843(char reg_adr)
 	i2cSendByte(reg_adr);	//Read from a given address
 	i2cWaitForComplete();
 
+//	i2cSendStop();
+//	i2cWaitForComplete();
+
 	i2cSendStart();
+	i2cWaitForComplete();
 
 	i2cSendByte(HMC5843_R); // read from this I2C address, R/*W Set
 	i2cWaitForComplete();

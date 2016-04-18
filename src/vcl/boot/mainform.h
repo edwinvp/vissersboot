@@ -12,13 +12,7 @@
 #include "drawing_area.h"
 #include <Vcl.ComCtrls.hpp>
 #include <deque>
-//---------------------------------------------------------------------------
-class TCompassTriple
-{
-public:
-	int x,y,z;
-	TCompassTriple() : x(0), y(0), z(0) {};
-};
+#include "vboot.h"
 //---------------------------------------------------------------------------
 class TMainFrm : public TForm
 {
@@ -78,8 +72,6 @@ private:	// User declarations
 
 	std::string s;
 	void __fastcall NewXYZStr(AnsiString s);
-
-	TCompassTriple a,b,c,d;
 
 	std::deque<TCompassTriple> cvalues;
 

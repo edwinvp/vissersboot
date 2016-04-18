@@ -81,6 +81,8 @@
 #define ABS(x)				((x>0)?(x):(-x))
 
 // constants
+#ifndef PI
 #define PI		3.14159265359
+#endif
 
 #endif

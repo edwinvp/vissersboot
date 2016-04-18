@@ -6,6 +6,7 @@
 #include "mainform.h"
 #include "fakeio.h"
 #include "var_form.h"
+#include "vboot.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -37,15 +38,6 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	putty_log_file->Position = putty_log_file->Size;
 
 	main_init();
-
-	a.x = -50;
-	a.z = -50;
-	b.x = 50;
-	b.z = -50;
-	c.x = -50;
-	c.z = 50;
-	d.x = 50;
-	d.z = 50;
 
 }
 //---------------------------------------------------------------------------
@@ -332,6 +324,11 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 	int nf = sscanf(s.c_str(),"x=%d, y=%d, z=%d",&x,&y,&z);
 
 
+	ext_compass_x = x;
+	ext_compass_y = y;
+	ext_compass_z = z;
+
+
 	if (nf == 3) {
 		TCompassTriple t;
 		t.x = x;
@@ -355,15 +352,15 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 	}
 
 	int sx(0),sy(0);
-	C2Scr(bmp.get(),sx,sy,a.x,a.z);
+	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_min_z.fin);
 	bmp->Canvas->MoveTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,b.x,b.z);
+	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_max_z.fin);
 	bmp->Canvas->LineTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,d.x,d.z);
+	C2Scr(bmp.get(),sx,sy,compass_max_x.fin,compass_max_z.fin);
 	bmp->Canvas->LineTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,c.x,c.z);
+	C2Scr(bmp.get(),sx,sy,compass_max_x.fin,compass_min_z.fin);
 	bmp->Canvas->LineTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,a.x,a.z);
+	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_min_z.fin);
 	bmp->Canvas->LineTo(sx,sy);
 
 	TCompassTriple centered;
@@ -374,34 +371,13 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 	if (!cvalues.empty()) {
 		const TCompassTriple & t = *cvalues.rbegin();
 
-		if (t.x < a.x) {
-			a.x = t.x;
-			c.x = t.x;
-		}
-
-		if (t.x > b.x) {
-			b.x = t.x;
-			d.x = t.x;
-		}
-
-		if (t.z < a.z) {
-			a.z = t.z;
-			b.z = t.z;
-		}
-
-		if (t.z > c.z) {
-			c.z = t.z;
-			d.z = t.z;
-		}
-
-		float w = b.x - a.x;
-		float h = c.z - a.z;
+		float w = compass_max_x.fin - compass_min_x.fin;
+		float h = compass_max_z.fin - compass_min_z.fin;
 
 		if (w>=0 && h>=0) {
-			centered.x = (t.x - a.x - (w/2.0));
-			centered.z = -(t.z - a.z - (h/2.0));
+			centered.x = (t.x - compass_min_x.fin - (w/2.0));
+			centered.z = -(t.z - compass_min_z.fin - (h/2.0));
 		}
-
 	}
 
 	bmp->Canvas->Pen->Color = clBlue;
@@ -420,41 +396,12 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 	bmp->Canvas->Brush->Style = bsSolid;
 	bmp->Canvas->Brush->Color = clBlue;
 
-	float w = b.x - a.x;
-	float h = c.z - a.z;
+	float w = compass_max_x.fin - compass_min_x.fin;
+	float h = compass_max_z.fin - compass_min_z.fin;
+
 
 	// True heading, 0=N, 270=W etc...
-	float d = 0.0;
-
-
-	if (w>0 && h>0) {
-		float ix = (float)centered.x / (w/2.0);
-		float iz = (float)centered.z / (h/2.0);
-
-		sx = cx + ix * rIdeal;
-		sy = cy + iz * rIdeal;
-		bmp->Canvas->Ellipse(sx - 4,sy - 4,sx + 4,sy + 4);
-
-		if (ix>0)
-			d = atan(iz/ix);
-		else if (ix<0 && iz >=0)
-			d = atan(iz/ix) + pi;
-		else if (ix<0 && iz < 0)
-			d = atan(iz/ix) - pi;
-		else if (ix==0 && iz > 0)
-			d = pi / 2.0;
-		else if (ix==0 && iz < 0)
-			d = -pi / 2.0;
-		else if (ix==0 && iz == 0)
-			d = 0;
-
-
-		d = 90.0 + d / (2.0*pi) * 360.0;
-
-	}
-
-	d += 180.0;
-    d = fmod(d,360.0);
+	float d = compass_course;
 
 	bmp->Canvas->Pen->Color = clRed;
 

@@ -36,7 +36,14 @@ extern AnsiString prog_op;
 extern uint8_t DDRC;
 extern uint8_t PORTC;
 //---------------------------------------------------------------------------
+extern int16_t ext_compass_x;
+extern int16_t ext_compass_y;
+extern int16_t ext_compass_z;
+//---------------------------------------------------------------------------
 int printf(const char * fmt, ... );
+//---------------------------------------------------------------------------
+int16_t read_hmc5843(char reg_adr);
+void m8n_set_reg_addr(int d);
 //---------------------------------------------------------------------------
 int main_init (void);
 void process();
