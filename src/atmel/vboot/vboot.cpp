@@ -446,8 +446,11 @@ void auto_steer()
 	float max_speed(0.8f);
 	float max_correct(0.9*max_speed);
 
+	//float pv = gps_cmd;
+	float pv = compass_course;
+
 	float pid_cv = simple_pid(
-		gps_cmg, // process-value (GPS course)
+		pv, // process-value (GPS course)
 		bearing_sp, // set point (bearing from Haversine)
 		true, 0.02, // P-action
 		true, 0.0000005, // I-action
