@@ -953,8 +953,10 @@ void periodic_msg()
 		break;		
 		
 	case mmCompass:
-		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d\r\n",
-			compass_raw.x, compass_raw.y, compass_raw.z, compass_smp, int(compass_course));
+		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04\r\n",
+			compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
+			int(compass_course),
+			int(bearing_sp));
 		//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
 		//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
 		
