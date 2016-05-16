@@ -127,6 +127,9 @@
         <CppCompile Include="..\..\atmel\vboot\vboot.cpp">
             <BuildOrder>4</BuildOrder>
         </CppCompile>
+        <None Include="..\..\atmel\vboot\vboot.h">
+            <BuildOrder>11</BuildOrder>
+        </None>
         <CppCompile Include="boot.cpp">
             <BuildOrder>0</BuildOrder>
         </CppCompile>

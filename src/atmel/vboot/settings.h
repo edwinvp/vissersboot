@@ -50,6 +50,7 @@ enum TMessageMode {
 	mmServoCapture, // captured servo signals (remote ctrl. joystick values)
 	mmGps, // GPS input debugging
 	mmSteering, // Auto steering debugging
+	mmCompass, // Compass values
 
 	mmLast
 };

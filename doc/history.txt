@@ -45,3 +45,6 @@ juli/augustus
 - start ontwikkeling simulatieprogramma
 - toevoegen RC kanalen 3 en 4
 
+apri/mei 2016
+- software omgeschreven om magnetische sensor te gebruiken t.b.v. kompasgeleiding
+- 1 motor kan niet in achteruit om de een of andere reden

@@ -6,6 +6,7 @@
 #include "mainform.h"
 #include "fakeio.h"
 #include "var_form.h"
+#include "vboot.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -31,7 +32,13 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	VarForm = new TVarForm(Application);
 	VarForm->Show();
 
+	UnicodeString fnPuttyLog=L"C:\\Users\\Z\\Desktop\\putty.log";
+
+	putty_log_file.reset(new TFileStream(fnPuttyLog,fmOpenRead | fmShareDenyNone));
+	putty_log_file->Position = putty_log_file->Size;
+
 	main_init();
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainFrm::AddRefLocations()
@@ -244,7 +251,7 @@ void __fastcall TMainFrm::SendVesselPosToAtmel()
 
 	// Send as fake UART message
 	for (int i(1);i<=sRMC.Length();++i) {
-		Fake_UART_ISR(sRMC[i]);
+		gps_buffer.push(sRMC[i]);
 		process();
 	}
 }
@@ -269,6 +276,153 @@ void __fastcall TMainFrm::BtnZeroClick(TObject *Sender)
 void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
 {
 	main_state = msAutoMode;
+}
+//---------------------------------------------------------------------------
+
+
+void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
+{
+	if (putty_log_file->Position < putty_log_file->Size) {
+
+		int avail = putty_log_file->Size - putty_log_file->Position;
+
+		int to_read = avail;
+		if (avail>80) {
+			avail = 80;
+		}
+
+
+		std::vector<char> v(to_read);
+		putty_log_file->ReadBuffer(&v[0],to_read);
+
+		for (unsigned int i(0);i<v.size();i++) {
+			if (v[i] == 0x0d || v[i] == 0x0a) {
+				AnsiString u = AnsiString(s.c_str()).Trim();
+				if (u.Length())
+					NewXYZStr(u);
+				s.clear();
+			} else
+				s += v[i];
+		}
+
+	}
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::C2Scr(Graphics::TBitmap * bmp, int & sx, int & sy, float x, float y)
+{
+	int cx(bmp->Width/2),cy(bmp->Height/2);
+
+	double rel_x = (x / 1500.0) * cx;
+	double rel_y = -(y / 1500.0) * cy;
+	sx = cx + rel_x;
+	sy = cy + rel_y;
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::NewXYZStr(AnsiString s)
+{
+	int x(0),y(0),z(0);
+	int nf = sscanf(s.c_str(),"x=%d, y=%d, z=%d",&x,&y,&z);
+
+
+	ext_compass_x = x;
+	ext_compass_y = y;
+	ext_compass_z = z;
+
+
+	if (nf == 3) {
+		TCompassTriple t;
+		t.x = x;
+		t.y = y;
+		t.z = z;
+		cvalues.push_back(t);
+	}
+
+	std::auto_ptr<Graphics::TBitmap> bmp(new Graphics::TBitmap());
+	bmp->Width = PaintBox2->Width;
+	bmp->Height = PaintBox2->Height;
+
+	std::deque<TCompassTriple>::const_iterator it;
+	for (it=cvalues.begin();it!=cvalues.end();++it) {
+		int px(0),py(0);
+
+		const TCompassTriple & t = *it;
+		C2Scr(bmp.get(),px,py,t.x,t.z);
+
+		bmp->Canvas->Ellipse(px-4,py-4,px+4,py+4);
+	}
+
+	int sx(0),sy(0);
+	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_min_z.fin);
+	bmp->Canvas->MoveTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_max_z.fin);
+	bmp->Canvas->LineTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,compass_max_x.fin,compass_max_z.fin);
+	bmp->Canvas->LineTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,compass_max_x.fin,compass_min_z.fin);
+	bmp->Canvas->LineTo(sx,sy);
+	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_min_z.fin);
+	bmp->Canvas->LineTo(sx,sy);
+
+	TCompassTriple centered;
+	centered.x=0;
+	centered.y=0;
+	centered.z=0;
+
+	if (!cvalues.empty()) {
+		const TCompassTriple & t = *cvalues.rbegin();
+
+		float w = compass_max_x.fin - compass_min_x.fin;
+		float h = compass_max_z.fin - compass_min_z.fin;
+
+		if (w>=0 && h>=0) {
+			centered.x = (t.x - compass_min_x.fin - (w/2.0));
+			centered.z = -(t.z - compass_min_z.fin - (h/2.0));
+		}
+	}
+
+	bmp->Canvas->Pen->Color = clBlue;
+
+	int sr(bmp->Width);
+	if (sr > bmp->Height)
+		sr = bmp->Height;
+
+	int cx(bmp->Width/2);
+	int cy(bmp->Height/2);
+	float rIdeal = 0.4 * sr;
+
+	bmp->Canvas->Brush->Style = bsClear;
+	bmp->Canvas->Ellipse(cx - rIdeal,cy - rIdeal,cx + rIdeal,cy + rIdeal);
+
+	bmp->Canvas->Brush->Style = bsSolid;
+	bmp->Canvas->Brush->Color = clBlue;
+
+	float w = compass_max_x.fin - compass_min_x.fin;
+	float h = compass_max_z.fin - compass_min_z.fin;
+
+
+	// True heading, 0=N, 270=W etc...
+	float d = compass_course;
+
+	bmp->Canvas->Pen->Color = clRed;
+
+	sx = cx + cos((d-90)/360.0*2.0*pi) * rIdeal;
+	sy = cy + sin((d-90)/360.0*2.0*pi) * rIdeal;
+
+	bmp->Canvas->MoveTo(cx,cy);
+	bmp->Canvas->LineTo(sx,sy);
+
+	PaintBox2->Canvas->Draw(0,0,bmp.get());
+
+}
+void __fastcall TMainFrm::OnInputKeyPress(TObject *Sender, System::WideChar &Key)
+
+{
+	char c(0);
+
+	if (Key>='a' && Key<='z')
+		c=Key;
+
+	Fake_UART_ISR(c);
 }
 //---------------------------------------------------------------------------
 

@@ -3,7 +3,11 @@
 #ifdef _WIN32
 // Simulator running under Windows
 #include "fakeio.h"
+
 #else
+
+#define b_printf printf
+
 // Atmel target
 #include <avr/io.h>
 #include <util/delay.h>
@@ -14,11 +18,16 @@
 #include <avr/common.h>
 #include <stdio.h>
 
+#include "i2c.h"
+#include "m8n.h"
+#include "hmc5843.h"
+
 #endif
 
 #include "TinyGPS.h"
 #include "lat_lon.h"
 #include "uart.h"
+#include "vboot.h"
 
 // ----------------------------------------------------------------------------
 // VARIABLES
@@ -50,6 +59,24 @@ bool gps_valid_prev = false;
 float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
 
+// Compass input
+TCompassTriple compass_raw;
+int16_t compass_smp;
+
+float compass_course_no_offset;
+float compass_north_offset;
+float compass_course;
+
+bool calibration_mode;
+
+comp_extreme compass_min_x;
+comp_extreme compass_max_x;
+comp_extreme compass_min_y;
+comp_extreme compass_max_y;
+comp_extreme compass_min_z;
+comp_extreme compass_max_z;
+
+
 // Auto steering related
 float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
 float distance_m = 0; // distance to finish from current gps pos
@@ -66,6 +93,7 @@ bool led_signal(false);
 float p_add(0);
 float i_add(0);
 float d_add(0);
+float pid_err(0);
 
 
 // Global [ms] timer
@@ -250,6 +278,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 #endif
 }
 // ----------------------------------------------------------------------------
+/*
 void setup_gps_input()
 {
 #ifndef _WIN32
@@ -268,6 +297,7 @@ void setup_gps_input()
 	PCICR |= _BV(PCIE0);
 #endif
 }
+*/
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
 {
@@ -338,32 +368,44 @@ void setup_pwm()
 #endif
 }
 // ----------------------------------------------------------------------------
+int joy_to_perc(unsigned int raw)
+{
+	// 2000 (-100%) ... 3000 (0%) .... 4000 (100%)
+
+	int perc(raw);
+	perc = (perc - 3000)/10;
+
+	return perc;
+}
+// ----------------------------------------------------------------------------
 void print_steering_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-	printf("GPS-NO_FIX ");
+	b_printf("GPS-NO_FIX ");
 	else if (gps_fix_age > GPS_STALE_TIME)
-	printf("GPS-STALE ");
+	b_printf("GPS-STALE ");
 	else {
-		printf("GPS-OK ");
+		b_printf("GPS-OK ");
 	}
-	
-	unsigned int a1 = OCR1A;
-	unsigned int b1 = OCR1B;
+
+	int a1 = joy_to_perc(OCR1A);
+	int b1 = joy_to_perc(OCR1B);
 	unsigned int sp10 = bearing_sp * 10.0;
-	unsigned int gps_cmg10 = gps_cmg * 10.0;
+	unsigned int pv10 = compass_course * 10.0;
+	unsigned int err10 = pid_err * 10.0;
 	
-	printf("age=%ld. sp=%d br=%d A=%d B=%d\r\n", gps_fix_age, sp10, gps_cmg10, a1,b1);			
+	b_printf("age=%ld. x10: sp=%d pv=%d motors err=%d: A=%d B=%d\r\n",
+		gps_fix_age, sp10, pv10, err10, a1,b1);
 }
 // ----------------------------------------------------------------------------
 void print_gps_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-		printf("GPS-NO_FIX\r\n");
+		b_printf("GPS-NO_FIX\r\n");
 	else if (gps_fix_age > GPS_STALE_TIME)
-		printf("GPS-STALE\r\n");
+		b_printf("GPS-STALE\r\n");
 	else {
-			printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
+			b_printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
 			gps_fix_age, gps_lat, gps_lon, gps_course);
 	}
 }
@@ -395,10 +437,10 @@ float simple_pid(float pv, float sp,
 {
 	float cv(0.0);
 
-	float err = bearing_sp - gps_cmg;
+	pid_err = bearing_sp - gps_cmg;
 
-	p_add = Kp * err;
-	i_add += Ki * err;
+	p_add = Kp * pid_err;
+	i_add += Ki * pid_err;
 	d_add = 0.0;
 
 	cv = 0;
@@ -420,8 +462,11 @@ void auto_steer()
 	float max_speed(0.8f);
 	float max_correct(0.9*max_speed);
 
+	//float pv = gps_cmd;
+	float pv = compass_course;
+
 	float pid_cv = simple_pid(
-		gps_cmg, // process-value (GPS course)
+		pv, // process-value (GPS course)
 		bearing_sp, // set point (bearing from Haversine)
 		true, 0.02, // P-action
 		true, 0.0000005, // I-action
@@ -580,7 +625,7 @@ void step_auto_mode()
 	}
 
 	if (arrived) {
-		printf("Arrived!\r\n");
+		b_printf("Arrived!\r\n");
 		next_state = msManualMode;
 	}
 }
@@ -690,7 +735,7 @@ void step_confirm_goto_pos_x()
 	else if (blink_times == 0) {
 
 		if (set_finish(joy_pulses)) {
-			printf("Set finish to # %d\r\n", joy_pulses);
+			b_printf("Set finish to # %d\r\n", joy_pulses);
 			next_state = msAutoMode;
 		} else
 			next_state = msCmdErrorMan;
@@ -702,7 +747,7 @@ void step_confirm_store_pos_x()
 	if (blink_times > 3)
 		next_state = msCmdErrorMan;
 	else if (blink_times == 0) {
-		printf("Store waypoint # %d\r\n", joy_pulses);
+		b_printf("Store waypoint # %d\r\n", joy_pulses);
 		store_waypoint(joy_pulses);
 		next_state = msManualMode;
 	}
@@ -768,7 +813,7 @@ void state_mach()
 
 	if (main_state != next_state) {
 		// Transitioning, reset step time and enter new step
-		printf("change step\r\n");
+		b_printf("change step\r\n");
 		state_time = 0;
 		main_state = next_state;
 	} else {
@@ -777,21 +822,91 @@ void state_mach()
 		state_time += 100;
 	}
 }
+
+void set_true_north()
+{
+	b_printf("Setting true north.\r\n");
+	compass_north_offset = 0 - compass_course_no_offset;
+}
+
+void toggle_calibration_mode()
+{
+	if (calibration_mode)
+		calibration_mode=false;
+	else
+		calibration_mode=true;
+	
+	b_printf("Calibration mode: ");
+	if (calibration_mode)	
+		b_printf("ON\r\n");
+	else
+		b_printf("OFF\r\n");
+}
+
+void c_init_min(comp_extreme & x)
+{
+	x.fin = 32767;
+	for (int i(0);i<4;i++)
+	x.avg[i]=0;
+	x.cnt = 0;
+};
+
+void c_init_max(comp_extreme & x)
+{
+	x.fin = -32768;
+	for (int i(0);i<4;i++)
+	x.avg[i]=0;
+	x.cnt = 0;
+};
+
+// ----------------------------------------------------------------------------
+void reset_compass_calibration()
+{
+	calibration_mode=false;
+	c_init_min(compass_min_x);
+	c_init_max(compass_max_x);
+	c_init_min(compass_min_y);
+	c_init_max(compass_max_y);
+	c_init_min(compass_min_z);
+	c_init_max(compass_max_z);
+	compass_course_no_offset = 0.0f;
+	compass_course = 0.0f;
+}
+
+
 // ----------------------------------------------------------------------------
 // Handles GPS input
 // ----------------------------------------------------------------------------
-void run_gps_input()
+void read_uart()
 {
-	// Soft pass through of gps pin due to the fact
-	// we don't have a second UART/USART and the GPS module
-	// is connected to an I/O-pin with limited (input capture)
-	// features.
-	copy_gps_pin();
 
-	// get bytes received by uart,
-	// and decode GPS serial stream
 	while (rb_avail()) {
-		gps.encode(rb_read());
+		char c = rb_read();
+		
+		switch (c) {
+		case 't':
+			toggle_calibration_mode();
+			break;			
+		case 'r':
+			reset_compass_calibration();
+			b_printf("Compass calibration reset\r\n");
+			break;
+		case 'n':
+			set_true_north();
+			break;
+		case 'c':
+			msg_mode = mmCompass;
+			break;
+		case 'g':
+			msg_mode = mmGps;
+			break;
+		case 's':
+			msg_mode = mmSteering;
+			break;
+		case 'e':
+			msg_mode = mmServoCapture;
+			break;
+		}			
 	}
 }
 // ----------------------------------------------------------------------------
@@ -803,17 +918,30 @@ void manual_steering()
 	OCR1A = pd5_pulse_duration;
 	OCR1B = pd6_pulse_duration;
 }
+
+// ----------------------------------------------------------------------------
+
 // ----------------------------------------------------------------------------
 // Periodic message
 // ----------------------------------------------------------------------------
 void periodic_msg()
 {
+	int pd6_perc, pd5_perc, pd3_perc, pb3_perc, a1, b1;
+
 	switch (msg_mode) {
 	case mmServoCapture:
 		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
-		printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
-			pd6_pulse_duration, pd5_pulse_duration,
-			pd3_pulse_duration, pb3_pulse_duration);
+		pd6_perc = joy_to_perc(pd6_pulse_duration);
+		pd5_perc = joy_to_perc(pd5_pulse_duration);
+		pd3_perc = joy_to_perc(pd3_pulse_duration);
+		pb3_perc = joy_to_perc(pb3_pulse_duration);
+		a1 = joy_to_perc(OCR1A);
+		b1 = joy_to_perc(OCR1B);
+
+		b_printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n",
+			pd6_perc, pd5_perc,
+			pd3_perc, pb3_perc,
+			a1, b1);
 		break;
 
 	case mmGps:
@@ -823,6 +951,19 @@ void periodic_msg()
 	case mmSteering:
 		print_steering_msg();
 		break;		
+		
+	case mmCompass:
+		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d\r\n",
+			compass_raw.x, compass_raw.y, compass_raw.z, compass_smp, int(compass_course));
+		//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
+		//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
+		
+		break;
+		
+	case mmLast:
+	case mmNone:
+		msg_mode = mmSteering;
+		break;
 	}
 }
 // ----------------------------------------------------------------------------
@@ -923,17 +1064,126 @@ void process_500ms()
 		// GPS-OK
 		gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
 		gps_valid= true;
-		
+
 	}
 	
 	if (!gps_valid_prev && gps_valid)
-		printf("GPS up\r\n");
+		b_printf("GPS up\r\n");
 	if (gps_valid_prev && !gps_valid)
-		printf("GPS down\r\n");
+		b_printf("GPS down\r\n");
 	
 	periodic_msg();	
 	
 	gps_valid_prev = gps_valid;
+}
+
+
+
+int16_t c_avg(comp_extreme & x)
+{
+	long int sum = 0;
+	for (int i(0);i<4;i++)
+		sum += x.avg[i];
+
+	int16_t avg = sum >> 2;
+	return avg;
+}
+
+void c_update_min(comp_extreme & x, int16_t newval)
+{
+	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
+		return;
+
+	if (x.cnt > 3) {
+			int16_t avg = c_avg(x);
+			if (avg < x.fin)
+				x.fin = avg;
+			x.cnt=0;
+	}
+	x.avg[x.cnt++] = newval;
+}
+
+void c_update_max(comp_extreme & x, int16_t newval)
+{
+	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
+		return;
+if (x.cnt > 3) {
+			int16_t avg = c_avg(x);
+			if (avg > x.fin)
+				x.fin = avg;
+			x.cnt=0;
+	}
+	x.avg[x.cnt++] = newval;
+}
+
+void c_calibrate()
+{
+	c_update_min(compass_min_x,compass_raw.x);
+	c_update_max(compass_max_x,compass_raw.x);
+	c_update_min(compass_min_y,compass_raw.y);
+	c_update_max(compass_max_y,compass_raw.y);
+	c_update_min(compass_min_z,compass_raw.z);
+	c_update_max(compass_max_z,compass_raw.z);
+}
+
+float c_clip_degrees(float d)
+{
+	d = fmod(d,360.0f);
+
+	if (d < 0)	
+		d += 360.0;
+
+	return d;
+}
+
+float c_coords_to_angle(float ix, float iz)
+{
+	float d(0.0f);
+	if (ix>0)
+		d = atan(iz/ix);
+	else if (ix<0 && iz >=0)
+			d = atan(iz/ix) + PI;
+		else if (ix<0 && iz < 0)
+			d = atan(iz/ix) - PI;
+		else if (ix==0 && iz > 0)
+			d = PI / 2.0;
+		else if (ix==0 && iz < 0)
+			d = -PI / 2.0;
+		else if (ix==0 && iz == 0)
+			d = 0;
+
+
+	d = 90.0 + d / TWO_PI * 360.0;
+	d += 180.0;
+	d = c_clip_degrees(d);
+	return d;
+}
+
+float c_calc_course()
+{
+	float d(0.0f);
+
+	TCompassTriple centered;
+	centered.x=0;
+	centered.y=0;
+	centered.z=0;
+
+	float w = compass_max_x.fin - compass_min_x.fin;
+	float h = compass_max_z.fin - compass_min_z.fin;
+
+	if (w>=0 && h>=0) {
+		centered.x = (compass_raw.x - compass_min_x.fin - (w/2.0));
+		centered.z = -(compass_raw.z - compass_min_z.fin - (h/2.0));
+	}
+
+	if (w>0 && h>0) {
+		float ix = (float)centered.x / (w/2.0);
+		float iz = (float)centered.z / (h/2.0);
+
+		d = c_coords_to_angle(ix,iz);
+	}
+
+	return d;
 }
 
 // ----------------------------------------------------------------------------
@@ -944,7 +1194,7 @@ void process()
 	unsigned long delta(0);
 
 	// Handle UART (GPS) input
-	run_gps_input(); // also happens with this disabled
+	read_uart(); // also happens with this disabled
 
 	// Calculate initial bearing with Haversine function
 	bearing_sp = gp_current.bearingTo(gp_finish);
@@ -955,6 +1205,25 @@ void process()
 			gp_current.lat, gp_current.lon);
 	arrived = distance_m < 10;
 
+
+	compass_raw.x = 0;
+	compass_raw.y = 0;
+	compass_raw.z = 0;
+
+	compass_raw.x = read_hmc5843(0x03);
+	compass_raw.y = read_hmc5843(0x05);
+	compass_raw.z = read_hmc5843(0x07);
+
+	if (calibration_mode)
+		c_calibrate();
+
+	compass_course_no_offset = c_calc_course();
+	compass_course = c_clip_degrees(compass_course_no_offset + compass_north_offset);
+
+	compass_smp++;
+
+	m8n_set_reg_addr(0xff);
+	multi_read_m8n(gps);
 
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;
@@ -970,6 +1239,23 @@ void process()
 		process_500ms();
 	}
 }
+
+void delay_ms(uint16_t x)
+{
+	uint16_t s = millis();
+	
+	uint16_t delta = 0;	
+		
+	do {
+		delta = millis() - s;		
+	} while (delta < x) ;	
+	
+}
+
+
+
+
+
 // ----------------------------------------------------------------------------
 // Main loop (AVR only, do not use within simulator)
 // ----------------------------------------------------------------------------
@@ -981,6 +1267,7 @@ void main_loop()
 		process();
 	}
 }
+
 // ----------------------------------------------------------------------------
 // MAIN/STARTUP
 // ----------------------------------------------------------------------------
@@ -999,21 +1286,50 @@ int main (void)
 #endif
 	sei();         // enable all interrupts
 	
-	printf("Boot!\r\n");
+	b_printf("Boot!\r\n");
 
 	// Setup other peripherals
 	setup_capture_inputs();
 	setup_pwm();
-	setup_gps_input();
+	//setup_gps_input();
 
 	// Initial state machine / modes
 	//main_state = msManualMode;
 	//msg_mode = mmServoCapture;
 	//msg_mode = mmGps;
-	msg_mode = mmSteering;
+	//msg_mode = mmSteering;
+	msg_mode = mmCompass;
 	//msg_mode = mmNone;
 
+	reset_compass_calibration();
+
+#if 1
+	compass_min_x.fin = -307;
+	compass_max_x.fin = 364;
+	compass_min_z.fin = -532;
+	compass_max_z.fin = 76;
+#endif
+
 	clear_stats();
+
+	// Initialize I2C-bus I/O
+#ifndef _WIN32
+	DDRC = 0b00110000;
+	PORTC = 0b00110000; //pullups on the I2C bus
+
+	i2cInit();
+	i2cSetBitrate(15);
+
+	delay_ms(100);
+
+	init_hmc5843();
+
+	delay_ms(25);
+	init_hmc5843();
+	delay_ms(25);
+
+#endif
+
 
 #ifndef _WIN32
 	main_loop();
