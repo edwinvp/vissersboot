@@ -251,7 +251,7 @@ void __fastcall TMainFrm::SendVesselPosToAtmel()
 
 	// Send as fake UART message
 	for (int i(1);i<=sRMC.Length();++i) {
-		Fake_UART_ISR(sRMC[i]);
+		gps_buffer.push(sRMC[i]);
 		process();
 	}
 }
@@ -414,3 +414,15 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 	PaintBox2->Canvas->Draw(0,0,bmp.get());
 
 }
+void __fastcall TMainFrm::OnInputKeyPress(TObject *Sender, System::WideChar &Key)
+
+{
+	char c(0);
+
+	if (Key>='a' && Key<='z')
+		c=Key;
+
+	Fake_UART_ISR(c);
+}
+//---------------------------------------------------------------------------
+

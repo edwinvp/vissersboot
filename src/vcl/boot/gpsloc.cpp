@@ -67,10 +67,16 @@ UnicodeString TGpsLoc::GetGPRMC(float course_made_good, bool bValidity) const
 {
 	UnicodeString s,sFormat;
 
+#if 0
+	UnicodeString sPrefix(L"$GPRMC");
+#else
+	UnicodeString sPrefix(L"$GNRMC");
+#endif
+
 	if (bValidity)
-		sFormat = L"$GPRMC,123519,A,%s,%s,000.0,%s,230394,003.1,W";
+		sFormat = sPrefix+L",123519,A,%s,%s,000.0,%s,230394,003.1,W";
 	else
-		sFormat = L"$GPRMC,123519,V,%s,%s,000.0,%s,230394,003.1,W";
+		sFormat = sPrefix+L",123519,V,%s,%s,000.0,%s,230394,003.1,W";
 
 	s.printf(sFormat.c_str(),
 		Lat2NMEA().c_str(),

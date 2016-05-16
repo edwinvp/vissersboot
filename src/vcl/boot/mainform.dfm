@@ -229,10 +229,10 @@ object MainFrm: TMainFrm
       OnClick = BtnZeroClick
     end
     object CbValidGps: TCheckBox
-      Left = 32
-      Top = 384
+      Left = 112
+      Top = 380
       Width = 225
-      Height = 33
+      Height = 17
       Caption = 'Send valid GPS position to AVR program'
       Checked = True
       State = cbChecked
@@ -246,6 +246,17 @@ object MainFrm: TMainFrm
       Caption = 'Force Auto Mode'
       TabOrder = 9
       OnClick = BtnAutoModeClick
+    end
+    object EdInput: TLabeledEdit
+      Left = 6
+      Top = 407
+      Width = 153
+      Height = 21
+      EditLabel.Width = 38
+      EditLabel.Height = 13
+      EditLabel.Caption = 'EdInput'
+      TabOrder = 10
+      OnKeyPress = OnInputKeyPress
     end
   end
   object ListBox1: TListBox
@@ -267,10 +278,6 @@ object MainFrm: TMainFrm
     TabOrder = 2
     object TsCourseOverview: TTabSheet
       Caption = 'TsCourseOverview'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 177
-      ExplicitHeight = 173
       object PaintBox1: TPaintBox
         Left = 0
         Top = 0

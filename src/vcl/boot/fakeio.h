@@ -3,6 +3,7 @@
 #define fakeioH
 //---------------------------------------------------------------------------
 #include <System.hpp>
+#include <queue>
 #include "TinyGPS.h"
 #include "lat_lon.h"
 #include "settings.h"
@@ -40,7 +41,7 @@ extern int16_t ext_compass_x;
 extern int16_t ext_compass_y;
 extern int16_t ext_compass_z;
 //---------------------------------------------------------------------------
-int printf(const char * fmt, ... );
+int b_printf(const char * fmt, ... );
 //---------------------------------------------------------------------------
 int16_t read_hmc5843(char reg_adr);
 void m8n_set_reg_addr(int d);
@@ -48,7 +49,11 @@ void m8n_set_reg_addr(int d);
 int main_init (void);
 void process();
 void Fake_UART_ISR(unsigned UDR0);
+void multi_read_m8n(TinyGPS & gps);
+
 extern volatile unsigned long global_ms_timer;
+//---------------------------------------------------------------------------
+extern std::queue<char> gps_buffer;
 //---------------------------------------------------------------------------
 extern TMainState main_state; // (main) sequencer state
 extern unsigned long state_time; // time elapsed in this state machine step [ms]

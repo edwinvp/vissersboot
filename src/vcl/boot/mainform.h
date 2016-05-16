@@ -52,11 +52,13 @@ __published:	// IDE-managed Components
 	TPaintBox *PaintBox1;
 	TPaintBox *PaintBox2;
 	TTimer *Timer2;
+	TLabeledEdit *EdInput;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);
 	void __fastcall BtnAutoModeClick(TObject *Sender);
 	void __fastcall Timer2Timer(TObject *Sender);
+	void __fastcall OnInputKeyPress(TObject *Sender, System::WideChar &Key);
 
 private:	// User declarations
 	TDrawingArea da;
