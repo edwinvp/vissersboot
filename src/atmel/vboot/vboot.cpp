@@ -437,7 +437,7 @@ float simple_pid(float pv, float sp,
 {
 	float cv(0.0);
 
-	pid_err = bearing_sp - gps_cmg;
+	pid_err = sp - pv;
 
 	p_add = Kp * pid_err;
 	i_add += Ki * pid_err;
@@ -953,7 +953,7 @@ void periodic_msg()
 		break;		
 		
 	case mmCompass:
-		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04\r\n",
+		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n",
 			compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
 			int(compass_course),
 			int(bearing_sp));
