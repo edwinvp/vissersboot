@@ -10,6 +10,7 @@ private:
 	float ClipMotor(float m);
 public:
 	TGpsLoc position;
+	float compass_course;
 	float heading; // where the vessel is "facing to" - degrees (0=N, 90=E, 180=S, 270=W)
 	float bearing_sp; // where we should go (idem.)
 	float speed;

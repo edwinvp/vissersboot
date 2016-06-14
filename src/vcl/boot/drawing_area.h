@@ -36,6 +36,10 @@ public:
 	TColor clr;
 	TGpsLoc loc;
 
+	TDrawPoint(double lat, double lon) : clr(clBlack) {
+		loc.lat = lat;
+		loc.lon = lon;
+	};
 	TDrawPoint() : clr(clBlack) {};
 };
 //---------------------------------------------------------------------------

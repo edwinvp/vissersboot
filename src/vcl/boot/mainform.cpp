@@ -18,12 +18,24 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	: TForm(Owner)
 {
 	//da.SetZoomFactor(8400000);
-	da.SetZoomFactor(10000);
+	//da.SetZoomFactor(10000); // kral. plas
+	da.SetZoomFactor(80000); // lage bergse plas
 
 	vessel.heading = 40.0f;
+
+#if 0
+	// kralingse plas
 	vessel.position.lat = 51.9364818f;
 	vessel.position.lon = 4.5162849f;
 	vessel.speed = 0;
+#endif
+
+#if 1
+	// lage bergse bos, ergens op het meertje
+	vessel.position.lat = 51.966982;
+	vessel.position.lon = 4.515443;
+	vessel.speed = 0;
+#endif
 
 	AddLocations();
 
@@ -39,6 +51,13 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 
 	main_init();
 
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::AddRefpoint(double lat, double lon, TColor clr)
+{
+	TDrawPoint rp(lat,lon);
+	rp.clr = clr;
+	da.AddDrawPoint(rp);
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainFrm::AddRefLocations()
@@ -67,31 +86,40 @@ void __fastcall TMainFrm::AddRefLocations()
 	da.AddDrawPoint(rotterdam);
 
 	// Kralingse plas
-	TDrawPoint kp1, kp2, kp3,kp4;
 	// kp1  kp2
 	// kp3  kp4
-	kp1.clr = clBlue;
-	kp2.clr = clBlue;
-	kp3.clr = clBlue;
-	kp4.clr = clBlue;
-	kp1.loc.lat = 51.9413472f;
-	kp1.loc.lon = 4.513745f;
-	kp2.loc.lat = 51.9380235f;
-	kp2.loc.lon = 4.5250358f;
-	kp3.loc.lat = 51.9340276f;
-	kp3.loc.lon = 4.5056552f;
-	kp4.loc.lat = 51.9281928f;
-	kp4.loc.lon = 4.5183095f;
-	da.AddDrawPoint(kp1);
-	da.AddDrawPoint(kp2);
-	da.AddDrawPoint(kp3);
-	da.AddDrawPoint(kp4);
+	AddRefpoint(51.9413472f,4.513745f,clBlue);
+	AddRefpoint(51.9380235f,4.5250358f,clBlue);
+	AddRefpoint(51.9340276f,4.5056552f,clBlue);
+	AddRefpoint(51.9281928f,4.5183095f,clBlue);
+
+	// Lage Bergse Bos
+	AddRefpoint(51.9413472f,4.513745f,clBlue);
+	AddRefpoint(51.966493, 4.514893,clBlue);
+	AddRefpoint(51.966907, 4.514823,clBlue);
+	AddRefpoint(51.967109, 4.514874,clBlue);
+	AddRefpoint(51.967203, 4.514955,clBlue);
+	AddRefpoint(51.967335, 4.515105,clBlue);
+	AddRefpoint(51.967548, 4.515274,clBlue);
+	AddRefpoint(51.967626, 4.515247,clBlue);
+	AddRefpoint(51.967738, 4.515115,clBlue);
+	AddRefpoint(51.966486, 4.515470,clBlue);
+	AddRefpoint(51.966388, 4.515727,clBlue);
+	AddRefpoint(51.966415, 4.515864,clBlue);
+	AddRefpoint(51.966492, 4.514898,clBlue);
+	AddRefpoint(51.966750, 4.514595,clBlue);
+	AddRefpoint(51.966521, 4.515032,clBlue);
+	AddRefpoint(51.966570, 4.514753,clBlue);
+	AddRefpoint(51.966638, 4.514665,clBlue);
+
+
 }
 //---------------------------------------------------------------------------
 void __fastcall TMainFrm::AddLocations()
 {
 	AddRefLocations();
 
+#if 0
 	// startpunt navigatie: ergens midden in de Kralingse plas
 	start.clr = clWhite;
 	start.loc.lat = 51.9364818f;
@@ -102,6 +130,22 @@ void __fastcall TMainFrm::AddLocations()
 	finish.loc.lat = 51.932278f;
 	finish.loc.lon = 4.521163f;
 	da.AddDrawPoint(finish);
+#endif
+
+#if 1
+	// startpunt navigatie: lage bergse bos, parkeerplaats/speeltuin
+	start.clr = clWhite;
+	start.loc.lat = 51.966982;
+	start.loc.lon = 4.515443;
+	da.AddDrawPoint(start);
+
+	// eindpunt/finish navigatie: wat verder weg (voor de tuin)
+	finish.clr = clWhite;
+	finish.loc.lat = 51.966572;
+	finish.loc.lon = 4.51526;
+	da.AddDrawPoint(finish);
+#endif
+
 
 	gp_start.lat = start.loc.lat;
 	gp_start.lon = start.loc.lon;
@@ -114,6 +158,7 @@ void __fastcall TMainFrm::AddLocations()
 
 	gp_finish.lat = finish.loc.lat;
 	gp_finish.lon = finish.loc.lon;
+
 }
 //---------------------------------------------------------------------------
 float __fastcall TMainFrm::Pwm2MotorFact(int dc)
@@ -181,6 +226,7 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
+	vessel.compass_course = compass_course;
 	vessel.bearing_sp = bearing_sp;
 
 	float avr_motor_l(0),avr_motor_r(0);
@@ -282,29 +328,44 @@ void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
 
 void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
 {
-	if (putty_log_file->Position < putty_log_file->Size) {
+	if (CbUseRealCompass->Checked) {
+		if (putty_log_file->Position < putty_log_file->Size) {
 
-		int avail = putty_log_file->Size - putty_log_file->Position;
+			int avail = putty_log_file->Size - putty_log_file->Position;
 
-		int to_read = avail;
-		if (avail>80) {
-			avail = 80;
+			int to_read = avail;
+			if (avail>80) {
+				avail = 80;
+			}
+
+			std::vector<char> v(to_read);
+			putty_log_file->ReadBuffer(&v[0],to_read);
+
+			for (unsigned int i(0);i<v.size();i++) {
+				if (v[i] == 0x0d || v[i] == 0x0a) {
+					AnsiString u = AnsiString(s.c_str()).Trim();
+					if (u.Length())
+						NewXYZStr(u);
+					s.clear();
+				} else
+					s += v[i];
+			}
 		}
+	} else {
+		// Convert trackbar to 'fake' compass reading
+		int degs = TbCompass->Position;
+		double phi = degs/360.0*2.0*pi;
 
+		double rx = (compass_max_x.fin - compass_min_x.fin)/2;
+		double rz = (compass_max_z.fin - compass_min_z.fin)/2;
+		double cent_x = compass_min_x.fin + rx;
+		double cent_z = compass_min_z.fin + rz;
 
-		std::vector<char> v(to_read);
-		putty_log_file->ReadBuffer(&v[0],to_read);
+		int x = cent_x - sin(phi)*rx;
+		int y = 0;
+		int z = cent_z - cos(phi)*rz;
 
-		for (unsigned int i(0);i<v.size();i++) {
-			if (v[i] == 0x0d || v[i] == 0x0a) {
-				AnsiString u = AnsiString(s.c_str()).Trim();
-				if (u.Length())
-					NewXYZStr(u);
-				s.clear();
-			} else
-				s += v[i];
-		}
-
+		ThreeNewCompassValues(x,y,z);
 	}
 }
 //---------------------------------------------------------------------------
@@ -318,24 +379,18 @@ void __fastcall TMainFrm::C2Scr(Graphics::TBitmap * bmp, int & sx, int & sy, flo
 	sy = cy + rel_y;
 }
 //---------------------------------------------------------------------------
-void __fastcall TMainFrm::NewXYZStr(AnsiString s)
+void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 {
-	int x(0),y(0),z(0);
-	int nf = sscanf(s.c_str(),"x=%d, y=%d, z=%d",&x,&y,&z);
-
+	TCompassTriple t;
+	t.x = x;
+	t.y = y;
+	t.z = z;
+	cvalues.push_back(t);
 
 	ext_compass_x = x;
 	ext_compass_y = y;
 	ext_compass_z = z;
 
-
-	if (nf == 3) {
-		TCompassTriple t;
-		t.x = x;
-		t.y = y;
-		t.z = z;
-		cvalues.push_back(t);
-	}
 
 	std::auto_ptr<Graphics::TBitmap> bmp(new Graphics::TBitmap());
 	bmp->Width = PaintBox2->Width;
@@ -351,17 +406,14 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 		bmp->Canvas->Ellipse(px-4,py-4,px+4,py+4);
 	}
 
-	int sx(0),sy(0);
-	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_min_z.fin);
-	bmp->Canvas->MoveTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_max_z.fin);
-	bmp->Canvas->LineTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,compass_max_x.fin,compass_max_z.fin);
-	bmp->Canvas->LineTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,compass_max_x.fin,compass_min_z.fin);
-	bmp->Canvas->LineTo(sx,sy);
-	C2Scr(bmp.get(),sx,sy,compass_min_x.fin,compass_min_z.fin);
-	bmp->Canvas->LineTo(sx,sy);
+	// Show entire (normal) sensor min/max range as rectangle
+	int x1,y1,x2,y2;
+	C2Scr(bmp.get(),x1,y1,compass_min_x.fin,compass_min_z.fin);
+	C2Scr(bmp.get(),x2,y2,compass_max_x.fin,compass_max_z.fin);
+	bmp->Canvas->Brush->Style = bsClear;
+	bmp->Canvas->Rectangle(x1,y1,x2,y2);
+	bmp->Canvas->Brush->Style = bsSolid;
+
 
 	TCompassTriple centered;
 	centered.x=0;
@@ -405,13 +457,24 @@ void __fastcall TMainFrm::NewXYZStr(AnsiString s)
 
 	bmp->Canvas->Pen->Color = clRed;
 
-	sx = cx + cos((d-90)/360.0*2.0*pi) * rIdeal;
-	sy = cy + sin((d-90)/360.0*2.0*pi) * rIdeal;
+	int sx = cx + cos((d-90)/360.0*2.0*pi) * rIdeal;
+	int sy = cy + sin((d-90)/360.0*2.0*pi) * rIdeal;
 
 	bmp->Canvas->MoveTo(cx,cy);
 	bmp->Canvas->LineTo(sx,sy);
 
 	PaintBox2->Canvas->Draw(0,0,bmp.get());
+}
+//---------------------------------------------------------------------------
+void __fastcall TMainFrm::NewXYZStr(AnsiString s)
+{
+	int x(0),y(0),z(0);
+	int nf = sscanf(s.c_str(),"x=%d, y=%d, z=%d",&x,&y,&z);
+
+	if (nf == 3) {
+		ThreeNewCompassValues(x,y,z);
+	}
+
 
 }
 void __fastcall TMainFrm::OnInputKeyPress(TObject *Sender, System::WideChar &Key)

@@ -2,7 +2,7 @@ object MainFrm: TMainFrm
   Left = 0
   Top = 0
   Caption = 'Main simulation form'
-  ClientHeight = 583
+  ClientHeight = 635
   ClientWidth = 725
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,7 +18,7 @@ object MainFrm: TMainFrm
     Left = 368
     Top = 0
     Width = 16
-    Height = 432
+    Height = 484
     Align = alRight
     Beveled = True
     ExplicitLeft = 417
@@ -29,9 +29,10 @@ object MainFrm: TMainFrm
     Left = 384
     Top = 0
     Width = 341
-    Height = 432
+    Height = 484
     Align = alRight
     TabOrder = 0
+    ExplicitHeight = 432
     object Label1: TLabel
       Left = 96
       Top = 280
@@ -258,31 +259,52 @@ object MainFrm: TMainFrm
       TabOrder = 10
       OnKeyPress = OnInputKeyPress
     end
+    object CbUseRealCompass: TCheckBox
+      Left = 176
+      Top = 401
+      Width = 153
+      Height = 25
+      Caption = 'Use real compass sensor'
+      TabOrder = 11
+    end
+    object TbCompass: TTrackBar
+      Left = 20
+      Top = 437
+      Width = 233
+      Height = 41
+      Max = 360
+      PageSize = 0
+      Frequency = 90
+      TabOrder = 12
+    end
   end
   object ListBox1: TListBox
     Left = 0
-    Top = 432
+    Top = 484
     Width = 725
     Height = 151
     Align = alBottom
     ItemHeight = 13
     TabOrder = 1
+    ExplicitTop = 432
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 0
     Width = 368
-    Height = 432
-    ActivePage = TsMagneto
+    Height = 484
+    ActivePage = TsCourseOverview
     Align = alClient
     TabOrder = 2
+    ExplicitHeight = 432
     object TsCourseOverview: TTabSheet
       Caption = 'TsCourseOverview'
+      ExplicitHeight = 404
       object PaintBox1: TPaintBox
         Left = 0
         Top = 0
         Width = 360
-        Height = 404
+        Height = 456
         Align = alClient
         ExplicitLeft = 38
         ExplicitTop = 32
@@ -293,11 +315,12 @@ object MainFrm: TMainFrm
     object TsMagneto: TTabSheet
       Caption = 'TsMagneto'
       ImageIndex = 1
+      ExplicitHeight = 404
       object PaintBox2: TPaintBox
         Left = 0
         Top = 0
         Width = 360
-        Height = 404
+        Height = 456
         Align = alClient
         ExplicitLeft = 24
         ExplicitTop = 16

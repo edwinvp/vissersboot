@@ -19,6 +19,7 @@ TVessel::TVessel()
 	// heading: 0=North, 90=East, 180=South, 270=West
 	heading = 0.0f;
 	bearing_sp = 0.0f;
+	compass_course = 0.0f;
 
 	speed = 0.0f;
 	motor_left = 0.0f;

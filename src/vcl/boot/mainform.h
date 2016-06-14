@@ -53,6 +53,8 @@ __published:	// IDE-managed Components
 	TPaintBox *PaintBox2;
 	TTimer *Timer2;
 	TLabeledEdit *EdInput;
+	TCheckBox *CbUseRealCompass;
+	TTrackBar *TbCompass;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);
@@ -70,10 +72,12 @@ private:	// User declarations
 	void __fastcall SendVesselPosToAtmel();
 	void __fastcall AddLocations();
 	void __fastcall AddRefLocations();
+	void __fastcall AddRefpoint(double lat, double lon, TColor clr);
 	float __fastcall Pwm2MotorFact(int dc);
 
 	std::string s;
 	void __fastcall NewXYZStr(AnsiString s);
+	void __fastcall ThreeNewCompassValues(int x, int y, int z);
 
 	std::deque<TCompassTriple> cvalues;
 
