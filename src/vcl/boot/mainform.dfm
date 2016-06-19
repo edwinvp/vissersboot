@@ -32,7 +32,6 @@ object MainFrm: TMainFrm
     Height = 484
     Align = alRight
     TabOrder = 0
-    ExplicitHeight = 432
     object Label1: TLabel
       Left = 96
       Top = 280
@@ -286,7 +285,6 @@ object MainFrm: TMainFrm
     Align = alBottom
     ItemHeight = 13
     TabOrder = 1
-    ExplicitTop = 432
   end
   object PageControl1: TPageControl
     Left = 0
@@ -296,10 +294,8 @@ object MainFrm: TMainFrm
     ActivePage = TsCourseOverview
     Align = alClient
     TabOrder = 2
-    ExplicitHeight = 432
     object TsCourseOverview: TTabSheet
       Caption = 'TsCourseOverview'
-      ExplicitHeight = 404
       object PaintBox1: TPaintBox
         Left = 0
         Top = 0
@@ -315,6 +311,9 @@ object MainFrm: TMainFrm
     object TsMagneto: TTabSheet
       Caption = 'TsMagneto'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
       ExplicitHeight = 404
       object PaintBox2: TPaintBox
         Left = 0

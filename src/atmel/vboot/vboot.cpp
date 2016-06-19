@@ -30,6 +30,18 @@
 #include "vboot.h"
 
 // ----------------------------------------------------------------------------
+// Auto steer PID-tune parameters
+// ----------------------------------------------------------------------------
+double TUNE_P(0.01); // P-action
+double TUNE_I(0.0000005); // I-action
+double TUNE_D(0.0);  // D-action
+
+int tune_ptr(0);
+char tune_buf[16];
+
+int CfgMode(0);
+
+// ----------------------------------------------------------------------------
 // VARIABLES
 // ----------------------------------------------------------------------------
 
@@ -468,9 +480,9 @@ void auto_steer()
 	float pid_cv = simple_pid(
 		pv, // process-value (GPS course)
 		bearing_sp, // set point (bearing from Haversine)
-		true, 0.02, // P-action
-		true, 0.0000005, // I-action
-		false, 0.0  // D-action
+		true, TUNE_P, // P-action
+		true, TUNE_I, // I-action
+		false, TUNE_D  // D-action
 		);
 
 	motor_l = max_speed;
@@ -873,6 +885,37 @@ void reset_compass_calibration()
 	compass_course = 0.0f;
 }
 
+// ----------------------------------------------------------------------------
+void tune_PrintValue(double dblParam)
+{
+	b_printf("(abcd.efgh --> +/-): %lf\r\n",dblParam);
+}
+// ----------------------------------------------------------------------------
+void tune_Config(double & dblParam, char c)
+{
+	tune_buf[tune_ptr++] = c;
+
+	if (tune_ptr>15) {
+		tune_ptr=0;
+		b_printf("(err)\r\n");
+		return;
+	}
+
+	if (c==13 || c==10) {
+		double nv(0);
+		tune_buf[tune_ptr]=0;
+		int fields = sscanf(tune_buf,"%lf",&nv);
+		tune_ptr=0;
+		if (fields == 1) {
+			dblParam = nv;
+			b_printf("new value = %lf\r\n",dblParam);
+		} else {
+			b_printf("(err,bad)\r\n");
+		}
+	}
+
+}
+// ----------------------------------------------------------------------------
 
 // ----------------------------------------------------------------------------
 // Handles GPS input
@@ -882,11 +925,11 @@ void read_uart()
 
 	while (rb_avail()) {
 		char c = rb_read();
-		
+
 		switch (c) {
 		case 't':
 			toggle_calibration_mode();
-			break;			
+			break;
 		case 'r':
 			reset_compass_calibration();
 			b_printf("Compass calibration reset\r\n");
@@ -900,15 +943,43 @@ void read_uart()
 		case 'g':
 			msg_mode = mmGps;
 			break;
+		case 'p':
+			msg_mode = mmPAction;
+			break;
+		case 'i':
+			msg_mode = mmIAction;
+			break;
 		case 's':
 			msg_mode = mmSteering;
 			break;
 		case 'e':
 			msg_mode = mmServoCapture;
 			break;
-		}			
+
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '.':
+		case '-':
+		case '+':
+		case 13:
+		case 10:
+			if (msg_mode == mmPAction)
+				tune_Config(TUNE_P,c);
+			else if (msg_mode == mmIAction)
+				tune_Config(TUNE_I,c);
+			break;
+		}
 	}
 }
+
 // ----------------------------------------------------------------------------
 // Manual mode (joystick 'pass through' steering)
 // ----------------------------------------------------------------------------
@@ -942,6 +1013,16 @@ void periodic_msg()
 			pd6_perc, pd5_perc,
 			pd3_perc, pb3_perc,
 			a1, b1);
+		break;
+
+	case mmPAction:
+		b_printf("(set P-action): ");
+		tune_PrintValue(TUNE_P);
+		break;
+
+	case mmIAction:
+		b_printf("(set I-action): ");
+		tune_PrintValue(TUNE_I);
 		break;
 
 	case mmGps:

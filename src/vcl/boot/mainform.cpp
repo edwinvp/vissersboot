@@ -482,7 +482,12 @@ void __fastcall TMainFrm::OnInputKeyPress(TObject *Sender, System::WideChar &Key
 {
 	char c(0);
 
-	if (Key>='a' && Key<='z')
+	if ((Key>='a' && Key<='z') ||
+		(Key>='0' && Key<='9') ||
+		(Key>='-') ||
+		(Key>='+') ||
+		(Key>='\r') ||
+		(Key>='\n'))
 		c=Key;
 
 	Fake_UART_ISR(c);

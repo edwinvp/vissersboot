@@ -21,10 +21,10 @@
 #define JOY_CMD_ACCEPT_TIME 2000
 
 // Time after last GPS valid update until current fix consired stale
-#define GPS_STALE_TIME 5000
+#define GPS_STALE_TIME 10000
 
 // Time to find out GPS course - before PID starts steering
-#define COURSE_DET_TIME 8000
+#define COURSE_DET_TIME 4000
 
 
 // Main state machine state definitions
@@ -51,6 +51,9 @@ enum TMessageMode {
 	mmGps, // GPS input debugging
 	mmSteering, // Auto steering debugging
 	mmCompass, // Compass values
+
+	mmPAction, // Configure P-action
+	mmIAction, // Configure I-action
 
 	mmLast
 };
