@@ -888,7 +888,8 @@ void reset_compass_calibration()
 // ----------------------------------------------------------------------------
 void tune_PrintValue(double dblParam)
 {
-	b_printf("(abcd.efgh --> +/-): %lf\r\n",dblParam);
+	long l = dblParam*1000.0;
+	b_printf("(set): %ld (x1000)\r\n",l);
 }
 // ----------------------------------------------------------------------------
 void tune_Config(double & dblParam, char c)
@@ -903,12 +904,14 @@ void tune_Config(double & dblParam, char c)
 
 	if (c==13 || c==10) {
 		double nv(0);
+		long ld(0);
 		tune_buf[tune_ptr]=0;
-		int fields = sscanf(tune_buf,"%lf",&nv);
+		int fields = sscanf(tune_buf,"%ld",&ld);
 		tune_ptr=0;
 		if (fields == 1) {
 			dblParam = nv;
-			b_printf("new value = %lf\r\n",dblParam);
+			b_printf("new value accepted) %ld\r\n",ld);
+			dblParam = ld / 1000.0;
 		} else {
 			b_printf("(err,bad)\r\n");
 		}
