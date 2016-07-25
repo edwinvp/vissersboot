@@ -30,11 +30,56 @@
 #include "vboot.h"
 
 // ----------------------------------------------------------------------------
+// Besturing (motoren)
+// ----------------------------------------------------------------------------
+
+// Boot van achteren gezien:
+// joystick in vooruit
+//    CCW >0    CCW >0
+// joystick in achteruit
+//    CW  <0    CW  <0
+// joystick links:
+//    CW  <0    CCW >0
+// joystick rechts:
+//    CCW >0    CW  <0
+
+// ----------------------------------------------------------------------------
+// RS-232 console command overview
+// ----------------------------------------------------------------------------
+
+/*
+	(compass calibration)
+	t: go to (compass) calibration mode
+	r: reset (forget) compass calibration
+	n: set current direction vessel is pointing at as (true) 'North'
+	(screens)
+	c: view compass data screen
+	g: view GPS data screen
+	s: view steering screen
+	e: servo capture screen
+	(settings)
+	p: (PID 'P'-action configuration)
+	i: (PID 'I'-action configuration)
+	(auto steer test screen)
+	a: go straight to auto steer mode
+	x: don't stop steering (even after arriving)
+	d: substitute PV compass heading (enter 0 for no substution)
+	o: substitute SP heading (enter 0 for no substitution)
+
+	"0123456789.,-+" (valid in PID configuration modi)
+*/
+
+// ----------------------------------------------------------------------------
 // Auto steer PID-tune parameters
 // ----------------------------------------------------------------------------
 double TUNE_P(0.01); // P-action
-double TUNE_I(0.0000005); // I-action
+double TUNE_I(0.0000001); // I-action
 double TUNE_D(0.0);  // D-action
+
+double SUBST_SP(0.0);
+double SUBST_PV(0.0);
+
+float pv_used(0),sp_used(0);
 
 int tune_ptr(0);
 char tune_buf[16];
@@ -49,6 +94,12 @@ int CfgMode(0);
 TMainState main_state,next_state;
 // Time elapsed in current state machine step [ms]
 unsigned long state_time = 0;
+
+// Tests
+bool subst_pv = false;
+bool subst_sp = false;
+bool dont_stop_steering = false;
+bool straight_to_auto = false;
 
 int joy_pulses = 0; // # times the goto/store joystick has been pushed up/down
 
@@ -260,8 +311,8 @@ char rb_read()
 		unsigned char new_tail(tail);
 		new_tail++;
 		new_tail &= FIFO_MASK;
-		tail = new_tail;		
-	}		
+		tail = new_tail;
+	}
 	return data;
 }
 // ----------------------------------------------------------------------------
@@ -402,12 +453,34 @@ void print_steering_msg()
 
 	int a1 = joy_to_perc(OCR1A);
 	int b1 = joy_to_perc(OCR1B);
-	unsigned int sp10 = bearing_sp * 10.0;
-	unsigned int pv10 = compass_course * 10.0;
-	unsigned int err10 = pid_err * 10.0;
+	unsigned int sp_d = sp_used;
+	unsigned int pv_d = pv_used;
+	unsigned int err_d = pid_err;
+
+	if (main_state==msAutoModeCourse)
+		b_printf("[autoC] ");
+	else if (main_state==msAutoModeNormal)
+		b_printf("[autoN] ");
+	else
+		b_printf("[man] ");
+
+	b_printf("age=%ld ", gps_fix_age);
+
+	if (main_state==msAutoModeCourse || main_state==msAutoModeNormal) {
+		b_printf("sp=%d", sp_d);
+		if (SUBST_SP!=0)
+			b_printf("*");
 	
-	b_printf("age=%ld. x10: sp=%d pv=%d motors err=%d: A=%d B=%d\r\n",
-		gps_fix_age, sp10, pv10, err10, a1,b1);
+		b_printf(" ");
+	
+		b_printf("pv=%d", pv_d);
+		if (SUBST_PV!=0)
+			b_printf("*");
+	} else
+		b_printf("sp=-- pv=-- ");
+
+	b_printf(" err=%d: A=%d B=%d\r\n", err_d, a1,b1);
+
 }
 // ----------------------------------------------------------------------------
 void print_gps_msg()
@@ -449,6 +522,13 @@ float simple_pid(float pv, float sp,
 {
 	float cv(0.0);
 
+	bool bBigDiff = fabs(sp-pv) > 180;
+
+	if (sp > 180 && bBigDiff)
+		sp -= 360;
+	if (pv > 180 && bBigDiff)
+		pv -= 360;
+
 	pid_err = sp - pv;
 
 	p_add = Kp * pid_err;
@@ -462,6 +542,9 @@ float simple_pid(float pv, float sp,
 		cv += i_add;
 	if (enable_d)
 		cv += d_add;
+		
+	if (!enable_i)
+		i_add=0;
 
 	return cv;
 }
@@ -474,19 +557,38 @@ void auto_steer()
 	float max_speed(0.8f);
 	float max_correct(0.9*max_speed);
 
-	//float pv = gps_cmd;
-	float pv = compass_course;
+	float rel_pid_err = fabs(pid_err) / 180.0f;
+
+	if (main_state == msAutoModeCourse)
+		max_correct *= (1.0 + 2.0*rel_pid_err);
+
+	if (SUBST_SP != 0.0)
+		sp_used = SUBST_SP;
+	else
+		sp_used = bearing_sp;
+
+	if (SUBST_PV != 0.0)
+		pv_used = SUBST_PV;
+	else
+		pv_used = compass_course;
+
+	bool enable_i = (main_state == msAutoModeNormal);
 
 	float pid_cv = simple_pid(
-		pv, // process-value (GPS course)
-		bearing_sp, // set point (bearing from Haversine)
+		pv_used, // process-value (GPS course)
+		sp_used, // set point (bearing from Haversine)
 		true, TUNE_P, // P-action
-		true, TUNE_I, // I-action
+		enable_i, TUNE_I, // I-action
 		false, TUNE_D  // D-action
 		);
 
-	motor_l = max_speed;
-	motor_r = max_speed;
+	if (main_state == msAutoModeNormal) {
+		motor_l = max_speed;
+		motor_r = max_speed;
+	} else {
+		motor_l = 0;
+		motor_r = 0;
+	}
 
 	float cv_clipped(0.0);
 
@@ -511,7 +613,7 @@ void auto_steer()
 	motor_l = clip_motor(motor_l);
 	motor_r = clip_motor(motor_r);
 
-	if (arrived) {
+	if (!dont_stop_steering && arrived) {
 		motor_l = 0;
 		motor_r = 0;
 	}
@@ -618,10 +720,21 @@ void step_manual_mode()
 	} else if (joy_in_clear()) {
 		shown_stats = false;
 		next_state = msClear1;
+	} else if (straight_to_auto) {
+		straight_to_auto = false;
+		next_state = msAutoModeCourse;
 	}
 }
 // ----------------------------------------------------------------------------
-void step_auto_mode()
+void check_arrived()
+{
+	if (!dont_stop_steering && arrived) {
+		b_printf("Arrived!\r\n");
+		next_state = msManualMode;
+	}
+}
+// ----------------------------------------------------------------------------
+void abort_auto_if()
 {
 	// Blink LED fast when 'special' goto/store/clear command is given.
 	// We are now in auto mode and that is allowed only in manual mode.
@@ -635,11 +748,24 @@ void step_auto_mode()
 	if (joy_in_manual() || !gps_valid) {
 		next_state = msManualMode;
 	}
-
-	if (arrived) {
-		b_printf("Arrived!\r\n");
-		next_state = msManualMode;
+}
+// ----------------------------------------------------------------------------
+void step_auto_mode_course()
+{
+	if (state_time > 2000) {
+		if (pid_err < 10)
+			next_state = msAutoModeNormal;
 	}
+
+
+	abort_auto_if();
+	check_arrived();
+}
+// ----------------------------------------------------------------------------
+void step_auto_mode_normal()
+{
+	abort_auto_if();
+	check_arrived();
 }
 // ----------------------------------------------------------------------------
 void step_count_goto()
@@ -736,7 +862,7 @@ void step_cmd_error_auto()
 	bool bLetGoOfJoyStick = joy_in_goto_store_center() && !joy_in_clear();
 
 	if (state_time > 1000 || bLetGoOfJoyStick) {
-		next_state = msAutoMode;
+		next_state = msAutoModeCourse;
 	}
 }
 // ----------------------------------------------------------------------------
@@ -748,7 +874,7 @@ void step_confirm_goto_pos_x()
 
 		if (set_finish(joy_pulses)) {
 			b_printf("Set finish to # %d\r\n", joy_pulses);
-			next_state = msAutoMode;
+			next_state = msAutoModeCourse;
 		} else
 			next_state = msCmdErrorMan;
 	}
@@ -765,6 +891,24 @@ void step_confirm_store_pos_x()
 	}
 }
 // ----------------------------------------------------------------------------
+void print_step_name(TMainState st)
+{
+	switch (st) {
+	case msAutoModeCourse: b_printf("msAutoModeCourse"); break;
+	case msAutoModeNormal: b_printf("msAutoModeNormal"); break;
+	case msManualMode: b_printf("msManualMode"); break;
+	case msCountJoyGoto: b_printf("msCountJoyGoto"); break;
+	case msCountJoyGotoRetn: b_printf("msCountJoyGotoRetn"); break;
+	case msConfirmGotoPosX: b_printf("msConfirmGotoPosX"); break;
+	case msCountJoyStore: b_printf("msCountJoyStore"); break;
+	case msCountJoyStoreRetn: b_printf("msCountJoyStoreRetn"); break;
+	case msConfirmStorePosX: b_printf("msConfirmStorePosX"); break;
+	case msClear1: b_printf("msClear1"); break;
+	case msClear2: b_printf("msClear2"); break;
+	case msCmdErrorMan: b_printf("msCmdErrorMan"); break;
+	case msCmdErrorAuto: b_printf("msCmdErrorAuto"); break;
+	}
+}
 
 // ----------------------------------------------------------------------------
 // Main state machine
@@ -778,10 +922,12 @@ void state_mach()
 	case msManualMode: // manual control mode
 		step_manual_mode();
 		break;
-	case msAutoMode: // automatic waypoint mode
-		step_auto_mode();
+	case msAutoModeCourse: // automatic waypoint mode (course)
+		step_auto_mode_course();
 		break;
-
+	case msAutoModeNormal: // automatic waypoint mode (normal)
+		step_auto_mode_normal();
+		break;
 	case msCountJoyGoto: // count joystick 'up' (goto pos.) command
 		step_count_goto();
 		break;
@@ -825,7 +971,11 @@ void state_mach()
 
 	if (main_state != next_state) {
 		// Transitioning, reset step time and enter new step
-		b_printf("change step\r\n");
+		b_printf("change step");
+
+		print_step_name(next_state);
+		b_printf("\r\n");
+
 		state_time = 0;
 		main_state = next_state;
 	} else {
@@ -847,9 +997,9 @@ void toggle_calibration_mode()
 		calibration_mode=false;
 	else
 		calibration_mode=true;
-	
+
 	b_printf("Calibration mode: ");
-	if (calibration_mode)	
+	if (calibration_mode)
 		b_printf("ON\r\n");
 	else
 		b_printf("OFF\r\n");
@@ -888,8 +1038,27 @@ void reset_compass_calibration()
 // ----------------------------------------------------------------------------
 void tune_PrintValue(double dblParam)
 {
-	long l = dblParam*1000.0;
-	b_printf("(set): %ld (x1000)\r\n",l);
+	long l(0);
+
+	switch (msg_mode) {
+	case mmCompass:
+	case mmNone:
+	case mmGps:
+	case mmLast:
+	case mmServoCapture:
+	case mmSteering:
+		break;		
+	case mmPAction:
+	case mmIAction:
+		l = dblParam*1000.0;
+		b_printf("(set): %ld (x1000)\r\n",l);
+		break;
+	case mmPVSubst:
+	case mmSPSubst:
+		l = dblParam;
+		b_printf("(set): %ld (x1)\r\n",l);
+		break;
+	}
 }
 // ----------------------------------------------------------------------------
 void tune_Config(double & dblParam, char c)
@@ -911,14 +1080,52 @@ void tune_Config(double & dblParam, char c)
 		if (fields == 1) {
 			dblParam = nv;
 			b_printf("new value accepted) %ld\r\n",ld);
-			dblParam = ld / 1000.0;
+
+			switch (msg_mode) {
+			case mmNone:
+			case mmCompass:
+			case mmGps:
+			case mmServoCapture:
+			case mmSteering:
+				break;										
+			case mmPAction:
+			case mmIAction:
+				dblParam = ld / 1000.0;
+				break;
+			case mmPVSubst:
+			case mmSPSubst:
+				dblParam = ld;
+			case mmLast:
+				break;				
+			};
+
 		} else {
 			b_printf("(err,bad)\r\n");
 		}
 	}
 
 }
+
 // ----------------------------------------------------------------------------
+void handle_parameterization(char c)
+{
+	switch (msg_mode) {
+	case mmPAction:
+		tune_Config(TUNE_P, c);
+		break;
+	case mmIAction:
+		tune_Config(TUNE_I, c);
+		break;
+	case mmPVSubst:
+		tune_Config(SUBST_PV, c);
+		break;
+	case mmSPSubst:
+		tune_Config(SUBST_SP, c);
+		break;
+	default:
+		;		
+	}
+}
 
 // ----------------------------------------------------------------------------
 // Handles GPS input
@@ -958,7 +1165,21 @@ void read_uart()
 		case 'e':
 			msg_mode = mmServoCapture;
 			break;
-
+		case 'a':
+			straight_to_auto = true;
+			break;
+		case 'x':
+			if (dont_stop_steering)
+				dont_stop_steering=false;
+			else
+				dont_stop_steering=true;
+			break;
+		case 'd':
+			msg_mode = mmPVSubst;
+			break;
+		case 'o':
+			msg_mode = mmSPSubst;
+			break;
 		case '0':
 		case '1':
 		case '2':
@@ -974,10 +1195,7 @@ void read_uart()
 		case '+':
 		case 13:
 		case 10:
-			if (msg_mode == mmPAction)
-				tune_Config(TUNE_P,c);
-			else if (msg_mode == mmIAction)
-				tune_Config(TUNE_I,c);
+			handle_parameterization(c);
 			break;
 		}
 	}
@@ -988,7 +1206,7 @@ void read_uart()
 // ----------------------------------------------------------------------------
 void manual_steering()
 {
-	// Pass through motor left and right setpoints to PWM module	
+	// Pass through motor left and right setpoints to PWM module
 	OCR1A = pd5_pulse_duration;
 	OCR1B = pd6_pulse_duration;
 }
@@ -1028,14 +1246,24 @@ void periodic_msg()
 		tune_PrintValue(TUNE_I);
 		break;
 
+	case mmPVSubst:
+		b_printf("(set PV-subst): ");
+		tune_PrintValue(SUBST_PV);
+		break;
+
+	case mmSPSubst:
+		b_printf("(set SP-subst): ");
+		tune_PrintValue(SUBST_SP);
+		break;
+
 	case mmGps:
 		print_gps_msg();
 		break;
-		
+
 	case mmSteering:
 		print_steering_msg();
-		break;		
-		
+		break;
+
 	case mmCompass:
 		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n",
 			compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
@@ -1043,9 +1271,9 @@ void periodic_msg()
 			int(bearing_sp));
 		//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
 		//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
-		
+
 		break;
-		
+
 	case mmLast:
 	case mmNone:
 		msg_mode = mmSteering;
@@ -1071,7 +1299,8 @@ void update_led()
 		}
 		break;
 
-	case msAutoMode:
+	case msAutoModeNormal:
+	case msAutoModeCourse:
 		led_signal = arrived;
 		break;
 
@@ -1121,12 +1350,12 @@ void process_100ms()
 	state_mach();
 
 	// Steering
-	if (main_state == msAutoMode)
+	if (main_state == msAutoModeCourse || main_state == msAutoModeNormal)
 		auto_steer();
 	else
 		manual_steering();
 
-	update_led();	
+	update_led();
 }
 // ----------------------------------------------------------------------------
 // 500 [ms] process
@@ -1152,14 +1381,14 @@ void process_500ms()
 		gps_valid= true;
 
 	}
-	
+
 	if (!gps_valid_prev && gps_valid)
 		b_printf("GPS up\r\n");
 	if (gps_valid_prev && !gps_valid)
 		b_printf("GPS down\r\n");
-	
-	periodic_msg();	
-	
+
+	periodic_msg();
+
 	gps_valid_prev = gps_valid;
 }
 
@@ -1216,7 +1445,7 @@ float c_clip_degrees(float d)
 {
 	d = fmod(d,360.0f);
 
-	if (d < 0)	
+	if (d < 0)
 		d += 360.0;
 
 	return d;
@@ -1329,13 +1558,13 @@ void process()
 void delay_ms(uint16_t x)
 {
 	uint16_t s = millis();
-	
-	uint16_t delta = 0;	
-		
+
+	uint16_t delta = 0;
+
 	do {
-		delta = millis() - s;		
-	} while (delta < x) ;	
-	
+		delta = millis() - s;
+	} while (delta < x) ;
+
 }
 
 
@@ -1371,7 +1600,7 @@ int main (void)
 	USART_Init();  // Initialize USART
 #endif
 	sei();         // enable all interrupts
-	
+
 	b_printf("Boot!\r\n");
 
 	// Setup other peripherals
@@ -1426,4 +1655,3 @@ int main (void)
 // ----------------------------------------------------------------------------
 // EOF
 // ----------------------------------------------------------------------------
-

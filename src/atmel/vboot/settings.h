@@ -30,7 +30,8 @@
 // Main state machine state definitions
 enum TMainState {
 	msManualMode=0, // manual control mode
-	msAutoMode, // automatic waypoint mode
+	msAutoModeCourse, // 'course' adjustments
+	msAutoModeNormal, // automatic waypoint mode
 	msCountJoyGoto, // count joystick 'up' command
 	msCountJoyGotoRetn,
 	msConfirmGotoPosX,
@@ -54,6 +55,8 @@ enum TMessageMode {
 
 	mmPAction, // Configure P-action
 	mmIAction, // Configure I-action
+	mmPVSubst, // Set PV substitution
+	mmSPSubst, // Set SP substitution
 
 	mmLast
 };

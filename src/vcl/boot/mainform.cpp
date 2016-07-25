@@ -173,7 +173,8 @@ UnicodeString MainStateToText(TMainState s)
 {
 	switch (s) {
 	case msManualMode: return L"msManualMode";
-	case msAutoMode: return L"msAutoMode";
+	case msAutoModeNormal: return L"msAutoModeNormal";
+	case msAutoModeCourse: return L"msAutoModeCourse";
 	case msCountJoyGoto: return L"msCountJoyGoto";
 	case msConfirmGotoPosX: return L"msConfirmGotoPosX";
 	case msCountJoyStore: return L"msCountJoyStore";
@@ -321,7 +322,7 @@ void __fastcall TMainFrm::BtnZeroClick(TObject *Sender)
 
 void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
 {
-	main_state = msAutoMode;
+	main_state = msAutoModeCourse;
 }
 //---------------------------------------------------------------------------
 
@@ -353,7 +354,12 @@ void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
 		}
 	} else {
 		// Convert trackbar to 'fake' compass reading
-		int degs = TbCompass->Position;
+
+		// Use scrollbar
+		//int degs = TbCompass->Position;
+		// Use virtual vessel:
+        int degs = vessel.heading;
+
 		double phi = degs/360.0*2.0*pi;
 
 		double rx = (compass_max_x.fin - compass_min_x.fin)/2;
