@@ -16,6 +16,6 @@ typedef unsigned char byte;
 
 // function is expected to return the number of [ms] the program has been running
 // (but we don't care about that)
-extern unsigned int millis();
+extern unsigned long millis();
 
 #endif

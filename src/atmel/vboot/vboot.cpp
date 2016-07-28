@@ -189,7 +189,7 @@ volatile unsigned char old_pind = 0;
 volatile unsigned char old_pinb = 0;
 // ----------------------------------------------------------------------------
 // Global millisecond timer value needed for TinyGps
-unsigned int millis()
+unsigned long millis()
 {
 	return global_ms_timer;
 }
