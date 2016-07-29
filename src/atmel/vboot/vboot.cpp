@@ -72,7 +72,7 @@
 // ----------------------------------------------------------------------------
 // Auto steer PID-tune parameters
 // ----------------------------------------------------------------------------
-double TUNE_P(0.01); // P-action
+double TUNE_P(0.002); // P-action
 double TUNE_I(0.0000001); // I-action
 double TUNE_D(0.0);  // D-action
 
@@ -191,7 +191,12 @@ volatile unsigned char old_pinb = 0;
 // Global millisecond timer value needed for TinyGps
 unsigned long millis()
 {
-	return global_ms_timer;
+	unsigned long tmr;
+	cli();
+	tmr = global_ms_timer;
+	sei();
+	
+	return tmr;
 }
 // ----------------------------------------------------------------------------
 void copy_gps_pin(void)
@@ -550,28 +555,64 @@ float simple_pid(float pv, float sp,
 }
 
 // ----------------------------------------------------------------------------
+//!\brief Calculate motor set points as a factor (-1.0 ... +1.0)
+void calc_motor_setpoints(float & motor_l, float & motor_r, float max_speed, float cv_clipped)
+{
+	if (main_state == msAutoModeNormal) {
+		motor_l = max_speed;
+		motor_r = max_speed;
+		} else {
+		motor_l = 0;
+		motor_r = 0;
+	}
+
+	motor_l += cv_clipped;
+	motor_r -= cv_clipped;
+
+	// Make sure motor set points stay within -1.0 ... 1.0
+	motor_l = clip_motor(motor_l);
+	motor_r = clip_motor(motor_r);
+
+	if (!dont_stop_steering && arrived) {
+		motor_l = 0;
+		motor_r = 0;
+	}	
+}
+
+// ----------------------------------------------------------------------------
 void auto_steer()
 {
 	float motor_l(0), motor_r(0);
 
-	float max_speed(0.8f);
-	float max_correct(0.9*max_speed);
+	// Max speed in straight line
+	float max_speed(1.0f); // This equals 100 [%] speed
+	// Max steering action
+	// ... in normal auto mode (sailing with small PID-error)
+	float max_correct_normal(0.3*max_speed);
+	// ... in "course" auto mode (while initially manoeuvering the vessel)
+	float max_correct_course(0.9*max_speed);
 
 	float rel_pid_err = fabs(pid_err) / 180.0f;
 
+	float max_correct(0.0);
 	if (main_state == msAutoModeCourse)
-		max_correct *= (1.0 + 2.0*rel_pid_err);
+		max_correct = max_correct_course*rel_pid_err;
+	else		
+		max_correct = max_correct_normal;		
 
+	// Use different, manually entered course (a test mode)
 	if (SUBST_SP != 0.0)
 		sp_used = SUBST_SP;
 	else
 		sp_used = bearing_sp;
 
+	// Use simulated, manually entered compass (a test mode)
 	if (SUBST_PV != 0.0)
 		pv_used = SUBST_PV;
 	else
 		pv_used = compass_course;
 
+	// Only enable I-action when in normal auto mode (not course mode)
 	bool enable_i = (main_state == msAutoModeNormal);
 
 	float pid_cv = simple_pid(
@@ -582,16 +623,8 @@ void auto_steer()
 		false, TUNE_D  // D-action
 		);
 
-	if (main_state == msAutoModeNormal) {
-		motor_l = max_speed;
-		motor_r = max_speed;
-	} else {
-		motor_l = 0;
-		motor_r = 0;
-	}
-
+	// Clip the PID control variable (CV)
 	float cv_clipped(0.0);
-
 	if (pid_cv > max_correct)
 		cv_clipped = max_correct;
 	else if (pid_cv < -max_correct)
@@ -599,26 +632,19 @@ void auto_steer()
 	else
 		cv_clipped = pid_cv;
 
+	// Take a moment to see where the boat is pointing at before doing anything
 	if (state_time < COURSE_DET_TIME) {
-		// Still determining course, keep PID in reset
+		// Do this by keeping the PID-variables in reset condition
 		p_add=0;
 		i_add=0;
 		d_add=0;
 		cv_clipped=0;
 	}
 
-	motor_l += cv_clipped;
-	motor_r -= cv_clipped;
+	// Calculate L+R motor speed factors (-1.0 ... +1.0)
+	calc_motor_setpoints(motor_l,motor_r,max_speed,cv_clipped);
 
-	motor_l = clip_motor(motor_l);
-	motor_r = clip_motor(motor_r);
-
-	if (!dont_stop_steering && arrived) {
-		motor_l = 0;
-		motor_r = 0;
-	}
-
-
+	// Convert to values that the servo hardware understands (2000...4000)
 	OCR1A = (float)JOY_CENTER + (motor_l * 1000.0);
 	OCR1B = (float)JOY_CENTER + (motor_r * 1000.0);
 }
@@ -753,7 +779,7 @@ void abort_auto_if()
 void step_auto_mode_course()
 {
 	if (state_time > 2000) {
-		if (pid_err < 10)
+		if (fabs(pid_err) < 16)
 			next_state = msAutoModeNormal;
 	}
 
@@ -764,6 +790,9 @@ void step_auto_mode_course()
 // ----------------------------------------------------------------------------
 void step_auto_mode_normal()
 {
+	if (fabs(pid_err) > 32)
+		next_state = msAutoModeCourse;
+	
 	abort_auto_if();
 	check_arrived();
 }
