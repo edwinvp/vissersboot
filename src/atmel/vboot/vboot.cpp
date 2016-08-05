@@ -485,8 +485,24 @@ void print_steering_msg()
 		b_printf("sp=-- pv=-- ");
 
 	b_printf(" err=%d: A=%d B=%d\r\n", err_d, a1,b1);
-
 }
+// ----------------------------------------------------------------------------
+void print_compass_msg()
+{
+		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n",
+		compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
+		int(compass_course),
+		int(bearing_sp));
+		//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
+		//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
+}
+// ----------------------------------------------------------------------------
+void print_debug_msg()
+{
+	print_steering_msg();
+	print_compass_msg(); 	
+}
+
 // ----------------------------------------------------------------------------
 void print_gps_msg()
 {
@@ -1293,14 +1309,12 @@ void periodic_msg()
 		print_steering_msg();
 		break;
 
-	case mmCompass:
-		b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n",
-			compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
-			int(compass_course),
-			int(bearing_sp));
-		//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
-		//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
+	case mmDebug:
+		print_debug_msg();
+	break;
 
+	case mmCompass:
+		print_compass_msg();
 		break;
 
 	case mmLast:
@@ -1642,7 +1656,7 @@ int main (void)
 	//msg_mode = mmServoCapture;
 	//msg_mode = mmGps;
 	//msg_mode = mmSteering;
-	msg_mode = mmCompass;
+	msg_mode = mmDebug;
 	//msg_mode = mmNone;
 
 	reset_compass_calibration();

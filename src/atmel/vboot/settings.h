@@ -52,6 +52,7 @@ enum TMessageMode {
 	mmGps, // GPS input debugging
 	mmSteering, // Auto steering debugging
 	mmCompass, // Compass values
+	mmDebug, // Combination
 
 	mmPAction, // Configure P-action
 	mmIAction, // Configure I-action
