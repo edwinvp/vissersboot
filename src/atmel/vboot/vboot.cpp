@@ -72,7 +72,7 @@
 // ----------------------------------------------------------------------------
 // Auto steer PID-tune parameters
 // ----------------------------------------------------------------------------
-double TUNE_P(0.002); // P-action
+double TUNE_P(0.01); // P-action
 double TUNE_I(0.0000001); // I-action
 double TUNE_D(0.0);  // D-action
 
@@ -121,6 +121,7 @@ bool gps_valid = false;
 bool gps_valid_prev = false;
 float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
+int restrict_dir = 0;
 
 // Compass input
 TCompassTriple compass_raw;
@@ -594,6 +595,31 @@ void calc_motor_setpoints(float & motor_l, float & motor_r, float max_speed, flo
 		motor_r = 0;
 	}	
 }
+// ----------------------------------------------------------------------------
+void do_restrict_dir(float & pid_cv)
+{
+	// It doesn't matter to turn CW or CCW if the error is that big,
+	// insist on maintaining either CW or CCW
+	if (restrict_dir==0) {
+		if (pid_err > 135.0) {
+			b_printf("Restrict dir -1\r\n");
+			restrict_dir = -1;
+		} else if (pid_err < -135) {
+			b_printf("Restrict dir +1\r\n");
+			restrict_dir = 1;
+		}
+	} else {
+		if (restrict_dir==1)
+			pid_cv = fabs(pid_cv);
+		else
+			pid_cv = -fabs(pid_cv);
+		
+		if ( fabs(pid_err) < 120) {
+			b_printf("Cancel dir restrict\r\n");
+			restrict_dir=0;
+		}
+	}
+}
 
 // ----------------------------------------------------------------------------
 void auto_steer()
@@ -638,6 +664,8 @@ void auto_steer()
 		enable_i, TUNE_I, // I-action
 		false, TUNE_D  // D-action
 		);
+
+	do_restrict_dir(pid_cv);
 
 	// Clip the PID control variable (CV)
 	float cv_clipped(0.0);
