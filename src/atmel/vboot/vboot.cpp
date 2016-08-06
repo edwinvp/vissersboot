@@ -13,6 +13,8 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
+#include <avr/eeprom.h>
+
 // Target: ATmega328
 //#include <avr/iom328.h>
 #include <avr/common.h>
@@ -979,7 +981,7 @@ void print_step_name(TMainState st)
 	case msClear1: b_printf("msClear1"); break;
 	case msClear2: b_printf("msClear2"); break;
 	case msCmdErrorMan: b_printf("msCmdErrorMan"); break;
-	case msCmdErrorAuto: b_printf("msCmdErrorAuto"); break;
+	case msCmdErrorAuto: b_printf("msCmdErrorAuto"); break;	
 	}
 }
 
@@ -1058,26 +1060,6 @@ void state_mach()
 	}
 }
 
-void set_true_north()
-{
-	b_printf("Setting true north.\r\n");
-	compass_north_offset = 0 - compass_course_no_offset;
-}
-
-void toggle_calibration_mode()
-{
-	if (calibration_mode)
-		calibration_mode=false;
-	else
-		calibration_mode=true;
-
-	b_printf("Calibration mode: ");
-	if (calibration_mode)
-		b_printf("ON\r\n");
-	else
-		b_printf("OFF\r\n");
-}
-
 void c_init_min(comp_extreme & x)
 {
 	x.fin = 32767;
@@ -1108,6 +1090,104 @@ void reset_compass_calibration()
 	compass_course = 0.0f;
 }
 
+
+uint16_t crc16(const unsigned char* data_p, unsigned char length)
+{
+	unsigned char x;
+	uint16_t  crc = 0xFFFF;
+
+	while (length--){
+		x = crc >> 8 ^ *data_p++;
+		x ^= x>>4;
+		crc = (crc << 8) ^ ((uint16_t )(x << 12)) ^ ((uint16_t )(x <<5)) ^ ((uint16_t )x);
+	}
+	return crc;
+}
+
+void c_store_calibration()
+{
+	b_printf("Storing calibration settings...");
+	
+	uint16_t rec[8];
+
+	rec[0]=(uint16_t)compass_north_offset;
+	rec[1]=compass_min_x.fin;
+	rec[2]=compass_max_x.fin;
+	rec[3]=compass_min_y.fin;
+	rec[4]=compass_max_y.fin;
+	rec[5]=compass_min_z.fin;
+	rec[6]=compass_max_z.fin;
+	rec[7]=crc16((unsigned char*)rec,7);		
+	
+	unsigned int addr=0;
+	for (int i(0); i<8; i++) {
+		eeprom_busy_wait();
+		eeprom_write_word((uint16_t*)addr,rec[i]);
+		addr+=2;	
+	}	
+}
+
+void c_load_calibration()
+{
+	b_printf("Loading calibration settings...");
+	
+	unsigned int addr=0;
+	uint16_t rec[8];
+	
+	for (int i(0); i<8; i++) {
+		eeprom_busy_wait();
+		rec[i]=eeprom_read_word((uint16_t*)addr);
+		addr+=2;
+		
+		int v=rec[i];
+		b_printf("(Read: %04x)",v);
+	}
+
+	uint16_t chk = crc16((unsigned char*)rec,7);
+	
+	if (chk == rec[7]) {		
+		reset_compass_calibration();
+		
+		compass_north_offset=rec[0];
+		compass_min_x.fin=rec[1];
+		compass_max_x.fin=rec[2];
+		compass_min_y.fin=rec[3];
+		compass_max_y.fin=rec[4];
+		compass_min_z.fin=rec[5];
+		compass_max_z.fin=rec[6];
+				
+		b_printf("OK\r\n");
+		
+	} else {
+		b_printf("FAILED (checksum)\r\n");
+	}
+	
+}
+
+
+void set_true_north()
+{
+	b_printf("Setting true north.\r\n");
+	compass_north_offset = 0 - compass_course_no_offset;
+	
+	c_store_calibration();
+}
+
+void toggle_calibration_mode()
+{
+	if (calibration_mode)
+		calibration_mode=false;
+	else
+		calibration_mode=true;
+
+	b_printf("Calibration mode: ");
+	if (calibration_mode)
+		b_printf("ON\r\n");
+	else
+		b_printf("OFF\r\n");
+}
+
+
 // ----------------------------------------------------------------------------
 void tune_PrintValue(double dblParam)
 {
@@ -1130,6 +1210,8 @@ void tune_PrintValue(double dblParam)
 	case mmSPSubst:
 		l = dblParam;
 		b_printf("(set): %ld (x1)\r\n",l);
+		break;
+	case mmDebug:
 		break;
 	}
 }
@@ -1168,6 +1250,8 @@ void tune_Config(double & dblParam, char c)
 			case mmPVSubst:
 			case mmSPSubst:
 				dblParam = ld;
+			case mmDebug:
+				break;
 			case mmLast:
 				break;				
 			};
@@ -1673,6 +1757,8 @@ int main (void)
 	sei();         // enable all interrupts
 
 	b_printf("Boot!\r\n");
+
+	c_load_calibration();
 
 	// Setup other peripherals
 	setup_capture_inputs();
