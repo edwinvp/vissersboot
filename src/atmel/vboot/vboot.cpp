@@ -585,8 +585,8 @@ void calc_motor_setpoints(float & motor_l, float & motor_r, float max_speed, flo
 		motor_r = 0;
 	}
 
-	motor_l += cv_clipped;
-	motor_r -= cv_clipped;
+	motor_l -= cv_clipped;
+	motor_r += cv_clipped;
 
 	// Make sure motor set points stay within -1.0 ... 1.0
 	motor_l = clip_motor(motor_l);
@@ -616,7 +616,7 @@ void do_restrict_dir(float & pid_cv)
 		else
 			pid_cv = -fabs(pid_cv);
 		
-		if ( fabs(pid_err) < 120) {
+		if ( fabs(pid_err) < 90) {
 			b_printf("Cancel dir restrict\r\n");
 			restrict_dir=0;
 		}
