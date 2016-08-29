@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "compass_calibrate.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -129,19 +130,11 @@ int restrict_dir = 0;
 TCompassTriple compass_raw;
 int16_t compass_smp;
 
-float compass_course_no_offset;
-float compass_north_offset;
 float compass_course;
 
+CCompassCalibration cc;
+
 bool calibration_mode;
-
-comp_extreme compass_min_x;
-comp_extreme compass_max_x;
-comp_extreme compass_min_y;
-comp_extreme compass_max_y;
-comp_extreme compass_min_z;
-comp_extreme compass_max_z;
-
 
 // Auto steering related
 float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
@@ -348,27 +341,6 @@ void Fake_UART_ISR(unsigned UDR0) {
 	}
 #endif
 }
-// ----------------------------------------------------------------------------
-/*
-void setup_gps_input()
-{
-#ifndef _WIN32
-	// Configure PB0 as input
-	DDRB &= ~_BV(DDB0);
-	PORTB &= ~_BV(PORTB0);
-
-	// Setup PD7 as output
-	DDRD |= _BV(DDD7);
-	PORTD  &= ~_BV(PORTD7); // make zero
-
-	// Enable on-pin-change for pin
-	PCMSK0 |= _BV(PCINT0);
-
-	// Configure interrupt on logical state state on PB0 (so PCIE0)
-	PCICR |= _BV(PCIE0);
-#endif
-}
-*/
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
 {
@@ -1060,34 +1032,14 @@ void state_mach()
 	}
 }
 
-void c_init_min(comp_extreme & x)
-{
-	x.fin = 32767;
-	for (int i(0);i<4;i++)
-	x.avg[i]=0;
-	x.cnt = 0;
-};
-
-void c_init_max(comp_extreme & x)
-{
-	x.fin = -32768;
-	for (int i(0);i<4;i++)
-	x.avg[i]=0;
-	x.cnt = 0;
-};
 
 // ----------------------------------------------------------------------------
 void reset_compass_calibration()
 {
-	calibration_mode=false;
-	c_init_min(compass_min_x);
-	c_init_max(compass_max_x);
-	c_init_min(compass_min_y);
-	c_init_max(compass_max_y);
-	c_init_min(compass_min_z);
-	c_init_max(compass_max_z);
-	compass_course_no_offset = 0.0f;
 	compass_course = 0.0f;
+	
+	calibration_mode=false;
+	cc.init();
 }
 
 
@@ -1110,13 +1062,13 @@ void c_store_calibration()
 	
 	uint16_t rec[8];
 
-	rec[0]=(uint16_t)compass_north_offset;
-	rec[1]=compass_min_x.fin;
-	rec[2]=compass_max_x.fin;
-	rec[3]=compass_min_y.fin;
-	rec[4]=compass_max_y.fin;
-	rec[5]=compass_min_z.fin;
-	rec[6]=compass_max_z.fin;
+	rec[0]=(uint16_t)cc.compass_north_offset;
+	rec[1]=cc.compass_min_x.fin;
+	rec[2]=cc.compass_max_x.fin;
+	rec[3]=cc.compass_min_y.fin;
+	rec[4]=cc.compass_max_y.fin;
+	rec[5]=cc.compass_min_z.fin;
+	rec[6]=cc.compass_max_z.fin;
 	rec[7]=crc16((unsigned char*)rec,7);		
 	
 	unsigned int addr=0;
@@ -1148,13 +1100,13 @@ void c_load_calibration()
 	if (chk == rec[7]) {		
 		reset_compass_calibration();
 		
-		compass_north_offset=rec[0];
-		compass_min_x.fin=rec[1];
-		compass_max_x.fin=rec[2];
-		compass_min_y.fin=rec[3];
-		compass_max_y.fin=rec[4];
-		compass_min_z.fin=rec[5];
-		compass_max_z.fin=rec[6];
+		cc.compass_north_offset=rec[0];
+		cc.compass_min_x.fin=rec[1];
+		cc.compass_max_x.fin=rec[2];
+		cc.compass_min_y.fin=rec[3];
+		cc.compass_max_y.fin=rec[4];
+		cc.compass_min_z.fin=rec[5];
+		cc.compass_max_z.fin=rec[6];
 				
 		b_printf("OK\r\n");
 		
@@ -1164,11 +1116,10 @@ void c_load_calibration()
 	
 }
 
-
 void set_true_north()
 {
 	b_printf("Setting true north.\r\n");
-	compass_north_offset = 0 - compass_course_no_offset;
+	cc.set_north();
 	
 	c_store_calibration();
 }
@@ -1549,113 +1500,6 @@ void process_500ms()
 
 
 
-int16_t c_avg(comp_extreme & x)
-{
-	long int sum = 0;
-	for (int i(0);i<4;i++)
-		sum += x.avg[i];
-
-	int16_t avg = sum >> 2;
-	return avg;
-}
-
-void c_update_min(comp_extreme & x, int16_t newval)
-{
-	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
-		return;
-
-	if (x.cnt > 3) {
-			int16_t avg = c_avg(x);
-			if (avg < x.fin)
-				x.fin = avg;
-			x.cnt=0;
-	}
-	x.avg[x.cnt++] = newval;
-}
-
-void c_update_max(comp_extreme & x, int16_t newval)
-{
-	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
-		return;
-if (x.cnt > 3) {
-			int16_t avg = c_avg(x);
-			if (avg > x.fin)
-				x.fin = avg;
-			x.cnt=0;
-	}
-	x.avg[x.cnt++] = newval;
-}
-
-void c_calibrate()
-{
-	c_update_min(compass_min_x,compass_raw.x);
-	c_update_max(compass_max_x,compass_raw.x);
-	c_update_min(compass_min_y,compass_raw.y);
-	c_update_max(compass_max_y,compass_raw.y);
-	c_update_min(compass_min_z,compass_raw.z);
-	c_update_max(compass_max_z,compass_raw.z);
-}
-
-float c_clip_degrees(float d)
-{
-	d = fmod(d,360.0f);
-
-	if (d < 0)
-		d += 360.0;
-
-	return d;
-}
-
-float c_coords_to_angle(float ix, float iz)
-{
-	float d(0.0f);
-	if (ix>0)
-		d = atan(iz/ix);
-	else if (ix<0 && iz >=0)
-			d = atan(iz/ix) + PI;
-		else if (ix<0 && iz < 0)
-			d = atan(iz/ix) - PI;
-		else if (ix==0 && iz > 0)
-			d = PI / 2.0;
-		else if (ix==0 && iz < 0)
-			d = -PI / 2.0;
-		else if (ix==0 && iz == 0)
-			d = 0;
-
-
-	d = 90.0 + d / TWO_PI * 360.0;
-	d += 180.0;
-	d = c_clip_degrees(d);
-	return d;
-}
-
-float c_calc_course()
-{
-	float d(0.0f);
-
-	TCompassTriple centered;
-	centered.x=0;
-	centered.y=0;
-	centered.z=0;
-
-	float w = compass_max_x.fin - compass_min_x.fin;
-	float h = compass_max_z.fin - compass_min_z.fin;
-
-	if (w>=0 && h>=0) {
-		centered.x = (compass_raw.x - compass_min_x.fin - (w/2.0));
-		centered.z = -(compass_raw.z - compass_min_z.fin - (h/2.0));
-	}
-
-	if (w>0 && h>0) {
-		float ix = (float)centered.x / (w/2.0);
-		float iz = (float)centered.z / (h/2.0);
-
-		d = c_coords_to_angle(ix,iz);
-	}
-
-	return d;
-}
-
 // ----------------------------------------------------------------------------
 // MAIN PROCESS
 // ----------------------------------------------------------------------------
@@ -1685,10 +1529,9 @@ void process()
 	compass_raw.z = read_hmc5843(0x07);
 
 	if (calibration_mode)
-		c_calibrate();
-
-	compass_course_no_offset = c_calc_course();
-	compass_course = c_clip_degrees(compass_course_no_offset + compass_north_offset);
+		cc.calibrate(compass_raw);
+	
+	compass_course = cc.calc_course(compass_raw);
 
 	compass_smp++;
 
@@ -1763,7 +1606,6 @@ int main (void)
 	// Setup other peripherals
 	setup_capture_inputs();
 	setup_pwm();
-	//setup_gps_input();
 
 	// Initial state machine / modes
 	//main_state = msManualMode;
@@ -1776,10 +1618,10 @@ int main (void)
 	reset_compass_calibration();
 
 #if 1
-	compass_min_x.fin = -307;
-	compass_max_x.fin = 364;
-	compass_min_z.fin = -532;
-	compass_max_z.fin = 76;
+	cc.compass_min_x.fin = -307;
+	cc.compass_max_x.fin = 364;
+	cc.compass_min_z.fin = -532;
+	cc.compass_max_z.fin = 76;
 #endif
 
 	clear_stats();

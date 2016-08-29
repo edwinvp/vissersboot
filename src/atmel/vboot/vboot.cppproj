@@ -139,6 +139,9 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="compass_calibrate.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="i2c.cpp">
       <SubType>compile</SubType>
     </Compile>
