@@ -46,8 +46,7 @@ int16_t CCompassCalibration::c_avg(comp_extreme & x)
 void CCompassCalibration::c_update_min(comp_extreme & x, int16_t newval)
 {
 	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
-	return;
-
+    	return;
 	if (x.cnt > 3) {
 		int16_t avg = c_avg(x);
 		if (avg < x.fin)
@@ -60,7 +59,7 @@ void CCompassCalibration::c_update_min(comp_extreme & x, int16_t newval)
 void CCompassCalibration::c_update_max(comp_extreme & x, int16_t newval)
 {
 	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
-	return;
+	    return;
 	if (x.cnt > 3) {
 		int16_t avg = c_avg(x);
 		if (avg > x.fin)

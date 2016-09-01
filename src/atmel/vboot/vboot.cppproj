@@ -148,10 +148,19 @@
     <Compile Include="hmc5843.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="joystick.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="lat_lon.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="m8n.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="state_machine.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="steering.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="TinyGPS.cpp">

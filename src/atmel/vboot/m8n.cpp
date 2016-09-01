@@ -51,7 +51,7 @@ int multi_read_m8n(TinyGPS & gps)
 		}
 		
 		c++;
-	} while (c < 10 || c < 500 && valid);
+	} while (c < 10 || (c < 500 && valid));
 
 		i2cReceiveByte(FALSE);
 		i2cWaitForComplete();
