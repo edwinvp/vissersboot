@@ -20,15 +20,17 @@ struct comp_extreme {
 class CCompassCalibration
 {
 private:
-	void c_update_max(comp_extreme & x, int16_t newval);
-	void c_update_min(comp_extreme & x, int16_t newval);
-	void c_init_min(comp_extreme & x);
-	void c_init_max(comp_extreme & x);
+	void update_max(comp_extreme & x, int16_t newval);
+	void update_min(comp_extreme & x, int16_t newval);
+	void init_min(comp_extreme & x);
+	void init_max(comp_extreme & x);
 	int16_t c_avg(comp_extreme & x);
-	float c_coords_to_angle(float ix, float iz);
-	float c_clip_degrees(float d);
+	float coords_to_angle(float ix, float iz);
+	float clip_degrees(float d);
 		
 public:
+    bool calibration_mode;
+
 	float compass_north_offset;
 	float compass_course_no_offset;
 	float compass_course;
@@ -44,6 +46,12 @@ public:
 	void calibrate(const TCompassTriple & compass_raw);
 	float calc_course(const TCompassTriple & compass_raw);
 	void set_north();
+    void store_calibration();
+    void load_calibration();
+    void reset_compass_calibration();
+    void set_true_north();
+    void toggle_calibration_mode();
+
 };
 
 //---------------------------------------------------------------------------

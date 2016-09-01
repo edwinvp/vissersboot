@@ -142,6 +142,9 @@
     <Compile Include="compass_calibrate.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="crc.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="i2c.cpp">
       <SubType>compile</SubType>
     </Compile>
@@ -170,6 +173,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="uart.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="waypoints.cpp">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

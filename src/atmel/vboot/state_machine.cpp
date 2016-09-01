@@ -3,19 +3,13 @@
 #include "steering.h"
 #include "joystick.h"
 #include "lat_lon.h"
+#include "waypoints.h"
 
 extern CSteering steering;
 extern CJoystick joystick;
+extern CWayPoints waypoints;
 
 extern bool gps_valid;
-extern int joy_pulses; // # times the goto/store joystick has been pushed up/down
-extern bool shown_stats;
-extern bool straight_to_auto;
-extern bool arrived; // TRUE when arriving at the waypoint
-extern bool dont_stop_steering;
-extern CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
-extern CLatLon gp_mem_2; // memorized GPS position 2
-extern CLatLon gp_mem_3; // memorized GPS position 3
 extern int blink_times;
 extern bool slow_blink;
 void print_stats();
@@ -26,8 +20,11 @@ void store_waypoint(int memory_no);
 #include <stdio.h>
 #endif
 
-CStateMachine::CStateMachine() : main_state(msManualMode),next_state(msManualMode),
-	state_time(0)
+CStateMachine::CStateMachine() : 
+    main_state(msManualMode),next_state(msManualMode),
+    state_time(0),
+    shown_stats(false),
+    straight_to_auto(false), joy_pulses(0)    
 {	
 }
 
@@ -138,7 +135,7 @@ void CStateMachine::print_step_name(TMainState st)
 // ----------------------------------------------------------------------------
 void CStateMachine::check_arrived()
 {
-    if (!dont_stop_steering && arrived) {
+    if (!steering.dont_stop_steering && steering.arrived) {
         b_printf("Arrived!\r\n");
         next_state = msManualMode;
     }
@@ -148,14 +145,14 @@ void CStateMachine::abort_auto_if()
 {
     // Blink LED fast when 'special' goto/store/clear command is given.
     // We are now in auto mode and that is allowed only in manual mode.
-    if (!joystick.joy_in_goto_store_center() ||
-        joystick.joy_in_clear()) {
+    if (!joystick.in_goto_store_center() ||
+        joystick.in_clear()) {
         next_state = msCmdErrorAuto;
     }
 
     // Go to manual mode if GPS signal is absent for too long,
     // or joystick is put in manual control mode.
-    if (joystick.joy_in_manual() || !gps_valid) {
+    if (joystick.in_manual() || !gps_valid) {
         next_state = msManualMode;
     }
 }
@@ -171,7 +168,7 @@ void CStateMachine::step_manual_mode()
 	steering.d_add=0;
 
 	// In manual mode
-	if (joystick.joy_in_goto()) {
+	if (joystick.in_goto()) {
 		joy_pulses = 0;
 
 		if (gps_valid)
@@ -179,10 +176,10 @@ void CStateMachine::step_manual_mode()
 		else
 			next_state = msCmdErrorMan;
 
-		} else if (joystick.joy_in_store()) {
+		} else if (joystick.in_store()) {
 			joy_pulses = 0;
 			next_state = msCountJoyStore;
-		} else if (joystick.joy_in_clear()) {
+		} else if (joystick.in_clear()) {
 			shown_stats = false;
 			next_state = msClear1;
 		} else if (straight_to_auto) {
@@ -214,7 +211,7 @@ void CStateMachine::step_auto_mode_normal()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_clear1()
 {
-    if (!joystick.joy_in_clear())
+    if (!joystick.in_clear())
     next_state = msCmdErrorMan;
     else if (!shown_stats) {
         print_stats();
@@ -227,10 +224,8 @@ void CStateMachine::step_clear1()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_clear2()
 {
-    if (!joystick.joy_in_clear()) {
-        gp_mem_1.clear();
-        gp_mem_2.clear();
-        gp_mem_3.clear();
+    if (!joystick.in_clear()) {
+        waypoints.forget_all();
         next_state = msManualMode;
     }
 
@@ -241,7 +236,7 @@ void CStateMachine::step_clear2()
 void CStateMachine::step_cmd_error_man()
 {
     if (state_time > 2000) {
-        if (joystick.joy_in_goto_store_center() && !joystick.joy_in_clear()) {
+        if (joystick.in_goto_store_center() && !joystick.in_clear()) {
             next_state = msManualMode;
         }
     }
@@ -249,7 +244,7 @@ void CStateMachine::step_cmd_error_man()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_cmd_error_auto()
 {
-    bool bLetGoOfJoyStick = joystick.joy_in_goto_store_center() && !joystick.joy_in_clear();
+    bool bLetGoOfJoyStick = joystick.in_goto_store_center() && !joystick.in_clear();
 
     if (state_time > 1000 || bLetGoOfJoyStick) {
         next_state = msAutoModeCourse;
@@ -262,7 +257,7 @@ void CStateMachine::step_confirm_goto_pos_x()
     next_state = msCmdErrorMan;
     else if (blink_times == 0) {
 
-        if (set_finish(joy_pulses)) {
+        if (waypoints.set_finish(joy_pulses)) {
             b_printf("Set finish to # %d\r\n", joy_pulses);
             next_state = msAutoModeCourse;
         } else
@@ -276,16 +271,16 @@ void CStateMachine::step_confirm_store_pos_x()
     next_state = msCmdErrorMan;
     else if (blink_times == 0) {
         b_printf("Store waypoint # %d\r\n", joy_pulses);
-        store_waypoint(joy_pulses);
+        waypoints.store_waypoint(joy_pulses);
         next_state = msManualMode;
     }
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_goto()
 {
-    if (joystick.joy_in_store())
+    if (joystick.in_store())
         next_state = msCmdErrorMan; // attempt to run 'opposite' command
-    else if (joystick.joy_in_goto_store_center()) {
+    else if (joystick.in_goto_store_center()) {
         if (state_time > MIN_JOY_PULSE_DURATION) {
             // pulse valid, count
             joy_pulses++;
@@ -298,9 +293,9 @@ void CStateMachine::step_count_goto()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_goto_retn()
 {
-    if (joystick.joy_in_goto())
+    if (joystick.in_goto())
         next_state = msCountJoyGoto;
-    else if (joystick.joy_in_store())
+    else if (joystick.in_store())
         next_state = msCmdErrorMan;
     else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
         blink_times = joy_pulses;
@@ -310,9 +305,9 @@ void CStateMachine::step_count_goto_retn()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_store()
 {
-    if (joystick.joy_in_goto())
+    if (joystick.in_goto())
         next_state = msCmdErrorMan;
-    else if (joystick.joy_in_goto_store_center()) {
+    else if (joystick.in_goto_store_center()) {
         if (state_time > MIN_JOY_PULSE_DURATION) {
             // pulse valid, count
             joy_pulses++;
@@ -325,9 +320,9 @@ void CStateMachine::step_count_store()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_store_retn()
 {
-    if (joystick.joy_in_store())
+    if (joystick.in_store())
         next_state = msCountJoyStore;
-    else if (joystick.joy_in_store())
+    else if (joystick.in_store())
         next_state = msCmdErrorMan;
     else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
         blink_times = joy_pulses;

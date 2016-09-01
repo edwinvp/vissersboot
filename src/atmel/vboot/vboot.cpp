@@ -3,6 +3,7 @@
 #include "state_machine.h"
 #include "steering.h"
 #include "joystick.h"
+#include "waypoints.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -12,8 +13,6 @@
 #include <avr/io.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
-
-#include <avr/eeprom.h>
 
 // Target: ATmega328
 //#include <avr/iom328.h>
@@ -84,25 +83,13 @@ int CfgMode(0);
 CStateMachine stm;
 CSteering steering;
 CJoystick joystick;
+CWayPoints waypoints;
 
 // Tests
 bool subst_pv = false;
 bool subst_sp = false;
-bool dont_stop_steering = false;
-bool straight_to_auto = false;
-
-int joy_pulses = 0; // # times the goto/store joystick has been pushed up/down
 
 TMessageMode msg_mode;
-
-// Memorized GPS positions
-CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
-CLatLon gp_mem_2; // memorized GPS position 2
-CLatLon gp_mem_3; // memorized GPS position 3
-// Current / destination GPS positions
-CLatLon gp_current; // current GPS position (may be stale or invalid!)
-CLatLon gp_start; // GPS position when auto steering was switched on
-CLatLon gp_finish; // auto steering target GPS position
 
 // GPS input related
 unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
@@ -116,15 +103,10 @@ long gps_lat, gps_lon, gps_course;
 TCompassTriple compass_raw;
 int16_t compass_smp;
 
-float compass_course;
-
 CCompassCalibration cc;
-
-bool calibration_mode;
 
 // Auto steering related
 float distance_m = 0; // distance to finish from current gps pos
-bool arrived(false); // TRUE when arriving at the waypoint
 
 // LED control related
 int blink_times(0);
@@ -139,8 +121,6 @@ volatile unsigned long global_ms_timer = 0;
 // Timing for periodic processes
 unsigned long t_100ms_start_ms(0);
 unsigned long t_500ms_start_ms(0);
-
-bool shown_stats(false);
 
 // ----------------------------------------------------------------------------
 // PWM/JOYSTICK/MOTOR vars
@@ -389,16 +369,6 @@ void setup_pwm()
 #endif
 }
 // ----------------------------------------------------------------------------
-int joy_to_perc(unsigned int raw)
-{
-	// 2000 (-100%) ... 3000 (0%) .... 4000 (100%)
-
-	int perc(raw);
-	perc = (perc - 3000)/10;
-
-	return perc;
-}
-// ----------------------------------------------------------------------------
 void print_steering_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
@@ -409,8 +379,8 @@ void print_steering_msg()
 		b_printf("GPS-OK ");
 	}
 
-	int a1 = joy_to_perc(OCR1A);
-	int b1 = joy_to_perc(OCR1B);
+	int a1 = joystick.to_perc(OCR1A);
+	int b1 = joystick.to_perc(OCR1B);
 	unsigned int sp_d = steering.sp_used;
 	unsigned int pv_d = steering.pv_used;
 	unsigned int err_d = steering.pid_err;
@@ -444,7 +414,7 @@ void print_compass_msg()
 {
     b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n",
 	compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
-	int(compass_course),
+	int(steering.compass_course),
 	int(steering.bearing_sp));
 	//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
 	//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
@@ -478,144 +448,6 @@ void clear_stats(void)
 {
 	//
 }
-// ----------------------------------------------------------------------------
-bool set_finish(int memory_no)
-{
-	gp_finish.clear();
-
-	if (memory_no >= 1 && memory_no <= 3) {
-		switch (memory_no) {
-		case 1: gp_finish = gp_mem_1; break;
-		case 2: gp_finish = gp_mem_2; break;
-		case 3: gp_finish = gp_mem_3; break;
-		}
-	}
-
-	return !gp_finish.empty();
-}
-// ----------------------------------------------------------------------------
-void store_waypoint(int memory_no)
-{
-	if (memory_no >= 1 && memory_no <= 3) {
-		switch (memory_no) {
-		case 1: gp_mem_1 = gp_current; break;
-		case 2: gp_mem_2 = gp_current; break;
-		case 3: gp_mem_3 = gp_current; break;
-		}
-	}
-}
-
-
-// ----------------------------------------------------------------------------
-// Main state machine
-// ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
-void reset_compass_calibration()
-{
-	compass_course = 0.0f;
-	
-	calibration_mode=false;
-	cc.init();
-}
-
-
-uint16_t crc16(const unsigned char* data_p, unsigned char length)
-{
-	unsigned char x;
-	uint16_t  crc = 0xFFFF;
-
-	while (length--){
-		x = crc >> 8 ^ *data_p++;
-		x ^= x>>4;
-		crc = (crc << 8) ^ ((uint16_t )(x << 12)) ^ ((uint16_t )(x <<5)) ^ ((uint16_t )x);
-	}
-	return crc;
-}
-
-void c_store_calibration()
-{
-	b_printf("Storing calibration settings...");
-	
-	uint16_t rec[8];
-
-	rec[0]=(uint16_t)cc.compass_north_offset;
-	rec[1]=cc.compass_min_x.fin;
-	rec[2]=cc.compass_max_x.fin;
-	rec[3]=cc.compass_min_y.fin;
-	rec[4]=cc.compass_max_y.fin;
-	rec[5]=cc.compass_min_z.fin;
-	rec[6]=cc.compass_max_z.fin;
-	rec[7]=crc16((unsigned char*)rec,7);		
-	
-	unsigned int addr=0;
-	for (int i(0); i<8; i++) {
-		eeprom_busy_wait();
-		eeprom_write_word((uint16_t*)addr,rec[i]);
-		addr+=2;	
-	}	
-}
-
-void c_load_calibration()
-{
-	b_printf("Loading calibration settings...");
-	
-	unsigned int addr=0;
-	uint16_t rec[8];
-	
-	for (int i(0); i<8; i++) {
-		eeprom_busy_wait();
-		rec[i]=eeprom_read_word((uint16_t*)addr);
-		addr+=2;
-		
-		int v=rec[i];
-		b_printf("(Read: %04x)",v);
-	}
-
-	uint16_t chk = crc16((unsigned char*)rec,7);
-	
-	if (chk == rec[7]) {		
-		reset_compass_calibration();
-		
-		cc.compass_north_offset=rec[0];
-		cc.compass_min_x.fin=rec[1];
-		cc.compass_max_x.fin=rec[2];
-		cc.compass_min_y.fin=rec[3];
-		cc.compass_max_y.fin=rec[4];
-		cc.compass_min_z.fin=rec[5];
-		cc.compass_max_z.fin=rec[6];
-				
-		b_printf("OK\r\n");
-		
-	} else {
-		b_printf("FAILED (checksum)\r\n");
-	}
-	
-}
-
-void set_true_north()
-{
-	b_printf("Setting true north.\r\n");
-	cc.set_north();
-	
-	c_store_calibration();
-}
-
-void toggle_calibration_mode()
-{
-	if (calibration_mode)
-		calibration_mode=false;
-	else
-		calibration_mode=true;
-
-	b_printf("Calibration mode: ");
-	if (calibration_mode)
-		b_printf("ON\r\n");
-	else
-		b_printf("OFF\r\n");
-}
-
-
 // ----------------------------------------------------------------------------
 void tune_PrintValue(double dblParam)
 {
@@ -723,14 +555,14 @@ void read_uart()
 
 		switch (c) {
 		case 't':
-			toggle_calibration_mode();
+			cc.toggle_calibration_mode();
 			break;
 		case 'r':
-			reset_compass_calibration();
+			cc.reset_compass_calibration();
 			b_printf("Compass calibration reset\r\n");
 			break;
 		case 'n':
-			set_true_north();
+			cc.set_true_north();
 			break;
 		case 'c':
 			msg_mode = mmCompass;
@@ -751,13 +583,10 @@ void read_uart()
 			msg_mode = mmServoCapture;
 			break;
 		case 'a':
-			straight_to_auto = true;
+			stm.straight_to_auto = true;
 			break;
 		case 'x':
-			if (dont_stop_steering)
-				dont_stop_steering=false;
-			else
-				dont_stop_steering=true;
+            steering.toggle_dont_stop();
 			break;
 		case 'd':
 			msg_mode = mmPVSubst;
@@ -808,12 +637,12 @@ void periodic_msg()
 	switch (msg_mode) {
 	case mmServoCapture:
 		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
-		pd6_perc = joy_to_perc(pd6_pulse_duration);
-		pd5_perc = joy_to_perc(pd5_pulse_duration);
-		pd3_perc = joy_to_perc(pd3_pulse_duration);
-		pb3_perc = joy_to_perc(pb3_pulse_duration);
-		a1 = joy_to_perc(OCR1A);
-		b1 = joy_to_perc(OCR1B);
+		pd6_perc = joystick.to_perc(pd6_pulse_duration);
+		pd5_perc = joystick.to_perc(pd5_pulse_duration);
+		pd3_perc = joystick.to_perc(pd3_pulse_duration);
+		pb3_perc = joystick.to_perc(pb3_pulse_duration);
+		a1 = joystick.to_perc(OCR1A);
+		b1 = joystick.to_perc(OCR1B);
 
 		b_printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n",
 			pd6_perc, pd5_perc,
@@ -884,7 +713,7 @@ void update_led()
 
 	case msAutoModeNormal:
 	case msAutoModeCourse:
-		led_signal = arrived;
+		led_signal = steering.arrived;
 		break;
 
 	case msCmdErrorMan:
@@ -960,7 +789,7 @@ void process_500ms()
 		gps_valid = false;
 	} else {
 		// GPS-OK
-		gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
+		gps.f_get_position(&waypoints.gp_current.lat,&waypoints.gp_current.lon,0);
 		gps_valid= true;
 
 	}
@@ -988,13 +817,13 @@ void process()
 	read_uart(); // also happens with this disabled
 
 	// Calculate initial bearing with Haversine function
-	steering.bearing_sp = gp_current.bearingTo(gp_finish);
+	steering.bearing_sp = waypoints.gp_current.bearingTo(waypoints.gp_finish);
 
 
 	distance_m =
-		TinyGPS::distance_between (gp_finish.lat, gp_finish.lon,
-			gp_current.lat, gp_current.lon);
-	arrived = distance_m < 10;
+		TinyGPS::distance_between (waypoints.gp_finish.lat, waypoints.gp_finish.lon,
+			waypoints.gp_current.lat, waypoints.gp_current.lon);
+	steering.arrived = distance_m < 10;
 
 
 	compass_raw.x = 0;
@@ -1005,10 +834,10 @@ void process()
 	compass_raw.y = read_hmc5843(0x05);
 	compass_raw.z = read_hmc5843(0x07);
 
-	if (calibration_mode)
+	if (cc.calibration_mode)
 		cc.calibrate(compass_raw);
 	
-	compass_course = cc.calc_course(compass_raw);
+	steering.compass_course = cc.calc_course(compass_raw);
 
 	compass_smp++;
 
@@ -1074,7 +903,7 @@ int main (void)
 
 	b_printf("Boot!\r\n");
 
-	c_load_calibration();
+	cc.load_calibration();
 
 	// Setup other peripherals
 	setup_capture_inputs();
@@ -1088,7 +917,7 @@ int main (void)
 	msg_mode = mmDebug;
 	//msg_mode = mmNone;
 
-	reset_compass_calibration();
+	cc.reset_compass_calibration();
 
 #if 1
 	cc.compass_min_x.fin = -307;

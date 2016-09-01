@@ -8,14 +8,15 @@ private:
 public:
     CJoystick();
 
-    bool joy_in_center(unsigned int j);
-    bool joy_in_max(unsigned int j);
-    bool joy_in_min(unsigned int j);
-    bool joy_in_goto();
-    bool joy_in_store();
-    bool joy_in_goto_store_center();
-    bool joy_in_manual();
-    bool joy_in_clear();
+    bool in_center(unsigned int j);
+    bool in_max(unsigned int j);
+    bool in_min(unsigned int j);
+    bool in_goto();
+    bool in_store();
+    bool in_goto_store_center();
+    bool in_manual();
+    bool in_clear();
+    int to_perc(unsigned int raw);
 };
 
 #endif

@@ -9,7 +9,9 @@ private:
 public:
     // Auto steering related
     int restrict_dir;
+    bool arrived; // TRUE when arriving at the waypoint
 
+    float compass_course;
     float bearing_sp; // calculated initial bearing (from Haversine formulas)
     float pv_used;
     float sp_used;
@@ -30,6 +32,9 @@ public:
     double TUNE_I; // I-action
     double TUNE_D; // D-action
 
+    // Test (don't stop steering even after arriving at finish)
+    bool dont_stop_steering;
+
 	CSteering();
 
     float simple_pid(float pv, float sp,
@@ -44,6 +49,7 @@ public:
     //!\brief Calculate motor set points as a factor (-1.0 ... +1.0)
     void calc_motor_setpoints(float & motor_l, float & motor_r, float max_speed, float cv_clipped);
 
+    void toggle_dont_stop();
 };
 
 #endif

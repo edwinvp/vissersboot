@@ -50,6 +50,10 @@ private:
     void step_count_store_retn();
 
 public:
+    bool shown_stats;
+    bool straight_to_auto;
+    int joy_pulses; // # times the goto/store joystick has been pushed up/down
+
 
 	CStateMachine();		
 	TMainState Step();

@@ -5,13 +5,12 @@
 #include "steering.h"
 #include "state_machine.h"
 
-extern bool arrived; // TRUE when arriving at the waypoint
-extern float compass_course;
-extern bool dont_stop_steering;
 extern CStateMachine stm;
 
 CSteering::CSteering() :
     restrict_dir(0),
+    arrived(false),
+    compass_course(0.0f),
     bearing_sp(0.0f),
     pv_used(0.0f),
     sp_used(0.0f),
@@ -20,7 +19,8 @@ CSteering::CSteering() :
 	p_add(0),
 	i_add(0),
 	d_add(0),
-	pid_err(0)
+	pid_err(0),
+    dont_stop_steering(false)
 {
     // Auto steer PID-tune parameters
     TUNE_P=0.01; // P-action
@@ -193,3 +193,10 @@ void CSteering::calc_motor_setpoints(float & motor_l, float & motor_r, float max
     }
 }
 
+void CSteering::toggle_dont_stop()
+{
+    if (dont_stop_steering)
+	    dont_stop_steering=false;
+    else
+	    dont_stop_steering=true;
+}
