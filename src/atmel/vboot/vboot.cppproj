@@ -145,6 +145,9 @@
     <Compile Include="crc.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="fifo.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="i2c.cpp">
       <SubType>compile</SubType>
     </Compile>

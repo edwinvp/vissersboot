@@ -5,6 +5,7 @@
 #include "joystick.h"
 #include "waypoints.h"
 #include "led_control.h"
+#include "fifo.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -71,7 +72,6 @@
 	"0123456789.,-+" (valid in PID configuration modi)
 */
 
-
 int tune_ptr(0);
 char tune_buf[16];
 
@@ -91,6 +91,7 @@ CLedControl ledctrl;
 bool subst_pv = false;
 bool subst_sp = false;
 
+// Periodic message type selector
 TMessageMode msg_mode;
 
 // GPS input related
@@ -104,6 +105,7 @@ long gps_lat, gps_lon, gps_course;
 TCompassTriple compass_raw;
 int16_t compass_smp;
 
+// Compass calibration, storage etc.
 CCompassCalibration cc;
 
 // Auto steering related
@@ -246,52 +248,17 @@ NOTE: vector name changes with different AVRs see AVRStudio -
 Help - AVR-Libc reference - Library Reference - <avr/interrupt.h>: Interrupts
 for vector names other than USART_RXC_vect for ATmega32 */
 
-volatile unsigned char head = 0,tail = 0;
-#define FIFO_SIZE 32
-#define FIFO_MASK (FIFO_SIZE-1)
-volatile char uart_fifo[FIFO_SIZE];
-// ----------------------------------------------------------------------------
-bool rb_avail()
-{
-	return (head != tail);
-}
-// ----------------------------------------------------------------------------
-char rb_read()
-{
-	char data(0);
-	if (head != tail) {
-		data = uart_fifo[tail];
-		unsigned char new_tail(tail);
-		new_tail++;
-		new_tail &= FIFO_MASK;
-		tail = new_tail;
-	}
-	return data;
-}
-// ----------------------------------------------------------------------------
-
 #ifndef _WIN32
 ISR(USART_RX_vect) {
 #else
 void Fake_UART_ISR(unsigned UDR0) {
 #endif
 
-	// Read UART register (the received byte)
+    // Read UART register (the received byte)
 	// into `value`
 	comms_char = UDR0;
 
-// // also happens with this disabled
-#if 1
-	// Store byte in FIFO (if FIFO isn't full)
-	unsigned char new_head;
-	new_head = head + 1;
-	new_head &= FIFO_MASK;
-
-	if (new_head != tail) {
-		uart_fifo[head] = comms_char;
-		head = new_head;
-	}
-#endif
+    fifo_write(comms_char);
 }
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
@@ -544,8 +511,8 @@ void handle_parameterization(char c)
 void read_uart()
 {
 
-	while (rb_avail()) {
-		char c = rb_read();
+	while (fifo_avail()) {
+		char c = fifo_read();
 
 		switch (c) {
 		case 't':
@@ -620,28 +587,32 @@ void manual_steering()
 }
 
 // ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
 // Periodic message
 // ----------------------------------------------------------------------------
-void periodic_msg()
+
+void print_servo_msg()
 {
 	int pd6_perc, pd5_perc, pd3_perc, pb3_perc, a1, b1;
 
+    // Display current servo signals as received (2000 ... 4000, 0 = no signal)
+	pd6_perc = joystick.to_perc(pd6_pulse_duration);
+	pd5_perc = joystick.to_perc(pd5_pulse_duration);
+	pd3_perc = joystick.to_perc(pd3_pulse_duration);
+	pb3_perc = joystick.to_perc(pb3_pulse_duration);
+	a1 = joystick.to_perc(OCR1A);
+	b1 = joystick.to_perc(OCR1B);
+
+	b_printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n",
+	pd6_perc, pd5_perc,
+	pd3_perc, pb3_perc,
+	a1, b1);
+}
+
+void periodic_msg()
+{
 	switch (msg_mode) {
 	case mmServoCapture:
-		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
-		pd6_perc = joystick.to_perc(pd6_pulse_duration);
-		pd5_perc = joystick.to_perc(pd5_pulse_duration);
-		pd3_perc = joystick.to_perc(pd3_pulse_duration);
-		pb3_perc = joystick.to_perc(pb3_pulse_duration);
-		a1 = joystick.to_perc(OCR1A);
-		b1 = joystick.to_perc(OCR1B);
-
-		b_printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n",
-			pd6_perc, pd5_perc,
-			pd3_perc, pb3_perc,
-			a1, b1);
+        print_servo_msg();
 		break;
 
 	case mmPAction:
