@@ -54,9 +54,7 @@ void CWayPoints::load_waypoints()
     for (unsigned int i(0); i<AR_SIZE; i++) {
         eeprom_busy_wait();
         rec[i]=eeprom_read_word((uint16_t*)addr);
-        addr+=2;
-        
-        int v=rec[i];
+        addr+=2;        
     }
 
     uint16_t chk = crc16((unsigned char*)rec,6 * sizeof(float));

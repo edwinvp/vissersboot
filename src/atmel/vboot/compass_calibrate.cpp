@@ -186,9 +186,7 @@ void CCompassCalibration::load_calibration()
     for (int i(0); i<8; i++) {
         eeprom_busy_wait();
         rec[i]=eeprom_read_word((uint16_t*)addr);
-        addr+=2;
-        
-        int v=rec[i];
+        addr+=2;       
     }
 
     // Calculate checksum over what has just been read
