@@ -4,17 +4,18 @@
 #include "joystick.h"
 #include "lat_lon.h"
 #include "waypoints.h"
+#include "led_control.h"
 
 extern CSteering steering;
 extern CJoystick joystick;
 extern CWayPoints waypoints;
+extern CLedControl ledctrl;
 
 extern bool gps_valid;
-extern int blink_times;
-extern bool slow_blink;
 void print_stats();
 bool set_finish(int memory_no);
 void store_waypoint(int memory_no);
+
 
 #ifndef _WIN32
 #include <stdio.h>
@@ -24,7 +25,7 @@ CStateMachine::CStateMachine() :
     main_state(msManualMode),next_state(msManualMode),
     state_time(0),
     shown_stats(false),
-    straight_to_auto(false), joy_pulses(0)    
+    straight_to_auto(false), joy_pulses(0)
 {	
 }
 
@@ -253,9 +254,9 @@ void CStateMachine::step_cmd_error_auto()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_goto_pos_x()
 {
-    if (blink_times > 3)
+    if (joy_pulses > 3)
         next_state = msCmdErrorMan;
-    else if (blink_times == 0) {
+    else if (ledctrl.done_blinking()) {
         if (waypoints.set_finish(joy_pulses)) {
             b_printf("Set finish to # %d\r\n", joy_pulses);
             next_state = msAutoModeCourse;
@@ -266,9 +267,9 @@ void CStateMachine::step_confirm_goto_pos_x()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_store_pos_x()
 {
-    if (blink_times > 3)
+    if (joy_pulses > 3)
         next_state = msCmdErrorMan;
-    else if (blink_times == 0) {
+    else if (ledctrl.done_blinking()) {
         b_printf("Store waypoint # %d\r\n", joy_pulses);
         // Define GPS coords as a waypoint.
         waypoints.store_waypoint(joy_pulses);
@@ -299,8 +300,8 @@ void CStateMachine::step_count_goto_retn()
         next_state = msCountJoyGoto;
     else if (joystick.in_store())
         next_state = msCmdErrorMan;
-    else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
-        blink_times = joy_pulses;
+    else if (state_time > JOY_CMD_ACCEPT_TIME && ledctrl.been_dark_for_a_while()) {
+        ledctrl.blink_x_times(joy_pulses);
         next_state = msConfirmGotoPosX;
     }
 }
@@ -326,8 +327,8 @@ void CStateMachine::step_count_store_retn()
         next_state = msCountJoyStore;
     else if (joystick.in_store())
         next_state = msCmdErrorMan;
-    else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
-        blink_times = joy_pulses;
+    else if (state_time > JOY_CMD_ACCEPT_TIME && ledctrl.been_dark_for_a_while()) {
+        ledctrl.blink_x_times(joy_pulses);
         next_state = msConfirmStorePosX;
     }
 }

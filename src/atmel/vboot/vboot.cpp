@@ -4,6 +4,7 @@
 #include "steering.h"
 #include "joystick.h"
 #include "waypoints.h"
+#include "led_control.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -84,6 +85,7 @@ CStateMachine stm;
 CSteering steering;
 CJoystick joystick;
 CWayPoints waypoints;
+CLedControl ledctrl;
 
 // Tests
 bool subst_pv = false;
@@ -106,13 +108,6 @@ CCompassCalibration cc;
 
 // Auto steering related
 float distance_m = 0; // distance to finish from current gps pos
-
-// LED control related
-int blink_times(0);
-bool slow_blink(false);
-bool slow_blink_prev(false);
-bool fast_blink(false);
-bool led_signal(false);
 
 // Global [ms] timer
 volatile unsigned long global_ms_timer = 0;
@@ -691,65 +686,32 @@ void periodic_msg()
 		break;
 	}
 }
-// ----------------------------------------------------------------------------
-// Update LED
-// ----------------------------------------------------------------------------
-void update_led()
+
+TLedMode Step2LedMode(TMainState step)
 {
-	fast_blink = !fast_blink;
+    TLedMode lm(lmOff);
 
-	switch (stm.Step()) {
-	/* in manual/auto mode, just show status of GPS receiver */
-	case msManualMode:
-		if (gps_valid) {
-			// Steady LED on GPS signal okay
-			led_signal = true;
-		} else {
-			// Slowly blink LED when there is no GPS reception
-			led_signal = slow_blink;
-		}
-		break;
-
-	case msAutoModeNormal:
-	case msAutoModeCourse:
-		led_signal = steering.arrived;
-		break;
-
-	case msCmdErrorMan:
-	case msCmdErrorAuto: // deliberate fall-through
-		// Blink LED fast when an invalid command is given,
-		led_signal = fast_blink;
-		break;
-
-	case msConfirmGotoPosX:
-	case msConfirmStorePosX: // deliberate fall-through
-
-		if (slow_blink_prev && !slow_blink) {
-			// We just blinked once
-			if (blink_times > 0)
-				blink_times--;
-		}
-
-		if (blink_times > 0) {
-			led_signal = slow_blink;
-		} else
-			led_signal = false;
-
-		slow_blink_prev = slow_blink;
-		break;
-
-	default:
-		led_signal = false;
+	switch (step) {
+    	/* in manual/auto mode, just show status of GPS receiver */
+    	case msManualMode:
+            lm = lmGpsStatus;
+        	break;
+    	case msAutoModeNormal:
+    	case msAutoModeCourse: // deliberate fall-through
+            lm = lmArriveStatus;
+    	    break;
+    	case msCmdErrorMan:
+    	case msCmdErrorAuto: // deliberate fall-through
+            lm = lmFastBlink;
+    	    break;
+    	case msConfirmGotoPosX:
+    	case msConfirmStorePosX: // deliberate fall-through
+            lm = lmSlowBlink;
+        	break;
+    	default:
+        	lm = lmOff;
 	}
-
-	// Update LED output (PORTB pin 5)
-	if (led_signal) {
-		// turn led on
-		PORTB |= _BV(PORTB5);
-	} else {
-		// turn led off
-		PORTB &= ~_BV(PORTB5);
-	}
+    return lm;
 }
 
 // ----------------------------------------------------------------------------
@@ -766,14 +728,17 @@ void process_100ms()
 	else
 		manual_steering();
 
-	update_led();
+    TLedMode lm = Step2LedMode(stm.Step());
+    ledctrl.set_mode(lm);
+
+	ledctrl.update(gps_valid,steering.arrived);
 }
 // ----------------------------------------------------------------------------
 // 500 [ms] process
 // ----------------------------------------------------------------------------
 void process_500ms()
 {
-	slow_blink = !slow_blink;
+    ledctrl.toggle_slow_blink();
 
 	// returns +- latitude/longitude in degrees
 	gps.get_position(&gps_lat, &gps_lon, &gps_fix_age);
