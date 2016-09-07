@@ -96,7 +96,6 @@ unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
 TinyGPS gps;
 bool gps_valid = false;
 bool gps_valid_prev = false;
-float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
 
 // Compass input
@@ -243,7 +242,7 @@ ISR(PCINT2_vect)
 }
 #endif
 // ----------------------------------------------------------------------------
-volatile unsigned char value;
+volatile unsigned char comms_char;
 /* This variable is volatile so both main and RX interrupt can use it.
 It could also be a uint8_t type */
 
@@ -284,7 +283,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 
 	// Read UART register (the received byte)
 	// into `value`
-	value = UDR0;
+	comms_char = UDR0;
 
 // // also happens with this disabled
 #if 1
@@ -294,7 +293,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 	new_head &= FIFO_MASK;
 
 	if (new_head != tail) {
-		uart_fifo[head] = value;
+		uart_fifo[head] = comms_char;
 		head = new_head;
 	}
 #endif
@@ -779,8 +778,7 @@ void process_500ms()
 	// returns +- latitude/longitude in degrees
 	gps.get_position(&gps_lat, &gps_lon, &gps_fix_age);
 	gps_course = gps.course();
-	gps_cmg = gps_course / 100.0f;
-
+	
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE) {
 		// No gps fix
 		gps_valid = false;
@@ -904,6 +902,7 @@ int main (void)
 	b_printf("Boot!\r\n");
 
 	cc.load_calibration();
+    waypoints.load_waypoints();
 
 	// Setup other peripherals
 	setup_capture_inputs();

@@ -26,6 +26,10 @@
 // Time to find out GPS course - before PID starts steering
 #define COURSE_DET_TIME 4000
 
+// EEPROM offsets
+#define COMPASS_EEPROM_OFFSET 0
+#define WAYPOINT_EEPROM_OFFSET 32
+
 // Periodic message type (which message to log periodically to console)
 enum TMessageMode {
 	mmNone, // don't log any message

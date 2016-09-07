@@ -151,10 +151,10 @@ void CCompassCalibration::set_north()
 
 void CCompassCalibration::store_calibration()
 {
-    b_printf("Storing calibration settings...");
+    b_printf("Storing compass calibration to EEPROM.\r\n");
     
+    // Put data in array of `raw` words
     uint16_t rec[8];
-
     rec[0]=(uint16_t)compass_north_offset;
     rec[1]=compass_min_x.fin;
     rec[2]=compass_max_x.fin;
@@ -162,9 +162,11 @@ void CCompassCalibration::store_calibration()
     rec[4]=compass_max_y.fin;
     rec[5]=compass_min_z.fin;
     rec[6]=compass_max_z.fin;
-    rec[7]=crc16((unsigned char*)rec,7);
+    // Calculate checksum over those 7 words
+    rec[7]=crc16((unsigned char*)rec,14);
     
-    unsigned int addr=0;
+    // Write data as words to EEPROM
+    unsigned int addr=COMPASS_EEPROM_OFFSET;
     for (int i(0); i<8; i++) {
         eeprom_busy_wait();
         eeprom_write_word((uint16_t*)addr,rec[i]);
@@ -174,23 +176,28 @@ void CCompassCalibration::store_calibration()
 // ----------------------------------------------------------------------------
 void CCompassCalibration::load_calibration()
 {
-    b_printf("Loading calibration settings...");
-    
-    unsigned int addr=0;
+    b_printf("Loading compass calibration from EEPROM...");
+
+    // Array to receive 'raw' words from EEPROM    
     uint16_t rec[8];
-    
+
+    // Read data as words from EEPROM    
+    unsigned int addr=COMPASS_EEPROM_OFFSET;
     for (int i(0); i<8; i++) {
         eeprom_busy_wait();
         rec[i]=eeprom_read_word((uint16_t*)addr);
         addr+=2;
         
         int v=rec[i];
-        b_printf("(Read: %04x)",v);
     }
 
-    uint16_t chk = crc16((unsigned char*)rec,7);
+    // Calculate checksum over what has just been read
+    uint16_t chk = crc16((unsigned char*)rec,14);
     
+    // Compare checksum with the one that was stored
     if (chk == rec[7]) {
+        // They were the same, data is okay.
+        // Now apply that calibration stored earlier:
         reset_compass_calibration();
         
         compass_north_offset=rec[0];
@@ -203,10 +210,10 @@ void CCompassCalibration::load_calibration()
         
         b_printf("OK\r\n");
         
-        } else {
+    } else {
+        // Data is corrupted somehow (or was never stored before).
         b_printf("FAILED (checksum)\r\n");
-    }
-    
+    }    
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::reset_compass_calibration()
@@ -219,9 +226,11 @@ void CCompassCalibration::reset_compass_calibration()
 // ----------------------------------------------------------------------------
 void CCompassCalibration::set_true_north()
 {
+    // Set whatever the boat is pointing to now as 'true north'.
     b_printf("Setting true north.\r\n");
     set_north();
     
+    // Then store compass calibration.
     store_calibration();
 }
 // ----------------------------------------------------------------------------
@@ -234,8 +243,8 @@ void CCompassCalibration::toggle_calibration_mode()
 
     b_printf("Calibration mode: ");
     if (calibration_mode)
-    b_printf("ON\r\n");
+        b_printf("ON\r\n");
     else
-    b_printf("OFF\r\n");
-}
+        b_printf("OFF\r\n");
+}   
 // ----------------------------------------------------------------------------

@@ -254,24 +254,26 @@ void CStateMachine::step_cmd_error_auto()
 void CStateMachine::step_confirm_goto_pos_x()
 {
     if (blink_times > 3)
-    next_state = msCmdErrorMan;
+        next_state = msCmdErrorMan;
     else if (blink_times == 0) {
-
         if (waypoints.set_finish(joy_pulses)) {
             b_printf("Set finish to # %d\r\n", joy_pulses);
             next_state = msAutoModeCourse;
         } else
-        next_state = msCmdErrorMan;
+            next_state = msCmdErrorMan;
     }
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_store_pos_x()
 {
     if (blink_times > 3)
-    next_state = msCmdErrorMan;
+        next_state = msCmdErrorMan;
     else if (blink_times == 0) {
         b_printf("Store waypoint # %d\r\n", joy_pulses);
+        // Define GPS coords as a waypoint.
         waypoints.store_waypoint(joy_pulses);
+        // Store waypoints defined so far to EEPROM.
+        waypoints.store_waypoints();
         next_state = msManualMode;
     }
 }

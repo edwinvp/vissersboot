@@ -21,6 +21,8 @@ public:
     void store_waypoint(int memory_no);
     bool set_finish(int memory_no);
     void forget_all();
+    void load_waypoints();
+    void store_waypoints();
    
 };
 
