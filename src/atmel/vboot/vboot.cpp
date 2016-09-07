@@ -918,13 +918,6 @@ int main (void)
 
 	cc.reset_compass_calibration();
 
-#if 1
-	cc.compass_min_x.fin = -307;
-	cc.compass_max_x.fin = 364;
-	cc.compass_min_z.fin = -532;
-	cc.compass_max_z.fin = 76;
-#endif
-
 	clear_stats();
 
 	// Initialize I2C-bus I/O
