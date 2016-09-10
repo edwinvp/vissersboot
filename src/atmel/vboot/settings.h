@@ -26,24 +26,9 @@
 // Time to find out GPS course - before PID starts steering
 #define COURSE_DET_TIME 4000
 
-
-// Main state machine state definitions
-enum TMainState {
-	msManualMode=0, // manual control mode
-	msAutoModeCourse, // 'course' adjustments
-	msAutoModeNormal, // automatic waypoint mode
-	msCountJoyGoto, // count joystick 'up' command
-	msCountJoyGotoRetn,
-	msConfirmGotoPosX,
-	msCountJoyStore, // count joystick 'down' command
-	msCountJoyStoreRetn,
-	msConfirmStorePosX,
-	msClear1,
-	msClear2,
-	msCmdErrorMan,
-	msCmdErrorAuto,
-	msLast
-};
+// EEPROM offsets
+#define COMPASS_EEPROM_OFFSET 0
+#define WAYPOINT_EEPROM_OFFSET 32
 
 // Periodic message type (which message to log periodically to console)
 enum TMessageMode {
@@ -62,5 +47,8 @@ enum TMessageMode {
 	mmLast
 };
 
+#ifndef _WIN32
+#define b_printf printf
 #endif
 
+#endif
