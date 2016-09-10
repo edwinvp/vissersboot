@@ -74,7 +74,7 @@
 // ----------------------------------------------------------------------------
 // Auto steer PID-tune parameters
 // ----------------------------------------------------------------------------
-double TUNE_P(0.01); // P-action
+double TUNE_P(0.6); // P-action
 double TUNE_I(0.0000001); // I-action
 double TUNE_D(0.0);  // D-action
 
@@ -825,7 +825,7 @@ void abort_auto_if()
 void step_auto_mode_course()
 {
 	if (state_time > 2000) {
-		if (fabs(pid_err) < 16)
+		if (fabs(pid_err) < 10)
 			next_state = msAutoModeNormal;
 	}
 
@@ -1673,7 +1673,7 @@ void process()
 	distance_m =
 		TinyGPS::distance_between (gp_finish.lat, gp_finish.lon,
 			gp_current.lat, gp_current.lon);
-	arrived = distance_m < 10;
+	arrived = distance_m < 3;
 
 
 	compass_raw.x = 0;
