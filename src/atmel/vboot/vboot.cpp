@@ -377,8 +377,8 @@ void print_compass_msg()
 	compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
 	int(steering.compass_course),
 	int(steering.bearing_sp));
-	//b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
-	//b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
+	
+	cc.print_cal();
 }
 // ----------------------------------------------------------------------------
 void print_debug_msg()
@@ -837,6 +837,8 @@ int main (void)
 
 	b_printf("Boot!\r\n");
 
+	cc.reset_compass_calibration();
+
 	cc.load_calibration();
     waypoints.load_waypoints();
 
@@ -852,7 +854,6 @@ int main (void)
 	msg_mode = mmDebug;
 	//msg_mode = mmNone;
 
-	cc.reset_compass_calibration();
 
 	clear_stats();
 

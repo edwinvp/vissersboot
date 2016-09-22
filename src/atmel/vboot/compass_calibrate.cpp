@@ -246,3 +246,8 @@ void CCompassCalibration::toggle_calibration_mode()
         b_printf("OFF\r\n");
 }   
 // ----------------------------------------------------------------------------
+void CCompassCalibration::print_cal()
+{
+	b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
+	b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
+}

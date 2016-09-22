@@ -51,7 +51,7 @@ public:
     void reset_compass_calibration();
     void set_true_north();
     void toggle_calibration_mode();
-
+	void print_cal();
 };
 
 //---------------------------------------------------------------------------
