@@ -4,6 +4,10 @@
 #include <avr/io.h>
 
 //---------------------------------------------------------------------------
+enum ECalibrationState {
+    csNotCalibrated, csCenterDetect, csTurns, csCalibrated
+};
+//---------------------------------------------------------------------------
 class TCompassTriple
 {
 	public:
@@ -20,6 +24,12 @@ struct comp_extreme {
 class CCompassCalibration
 {
 private:
+    ECalibrationState m_cal_state;
+    int prev_quadrant;
+    int quadrant_counter;
+    int stable_quadrant;
+    int prev_stable_quadrant;
+
 	void update_max(comp_extreme & x, int16_t newval);
 	void update_min(comp_extreme & x, int16_t newval);
 	void init_min(comp_extreme & x);
@@ -27,9 +37,14 @@ private:
 	int16_t c_avg(comp_extreme & x);
 	float coords_to_angle(float ix, float iz);
 	float clip_degrees(float d);
+    void SetCalState(ECalibrationState new_state);
+    int get_quadrant();
 		
 public:
     bool calibration_mode;
+
+    float m_ix;
+    float m_iz;
 
 	float compass_north_offset;
 	float compass_course_no_offset;
@@ -41,7 +56,8 @@ public:
 	comp_extreme compass_max_y;
 	comp_extreme compass_min_z;
 	comp_extreme compass_max_z;
-	
+
+    CCompassCalibration();	
 	void init();	
 	void calibrate(const TCompassTriple & compass_raw);
 	float calc_course(const TCompassTriple & compass_raw);
@@ -52,6 +68,7 @@ public:
     void set_true_north();
     void toggle_calibration_mode();
 	void print_cal();
+    void update100ms();
 };
 
 //---------------------------------------------------------------------------

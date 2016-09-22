@@ -8,6 +8,17 @@
 #define pi 3.1415926535897932384626433832795
 #define two_pi 6.283185307179586476925286766559
 
+CCompassCalibration::CCompassCalibration()
+{
+    m_cal_state = csNotCalibrated;
+    prev_quadrant=0;
+    quadrant_counter=0;
+    stable_quadrant=0;
+    prev_stable_quadrant=0;
+
+}
+
+
 void CCompassCalibration::init_min(comp_extreme & x)
 {
 	x.fin = 32767;
@@ -133,10 +144,10 @@ float CCompassCalibration::calc_course(const TCompassTriple & compass_raw)
 	}
 
 	if (w>0 && h>0) {
-		float ix = (float)centered.x / (w/2.0);
-		float iz = (float)centered.z / (h/2.0);
+        m_ix = (float)centered.x / (w/2.0);
+		m_iz = (float)centered.z / (h/2.0);
 
-		compass_course_no_offset = coords_to_angle(ix,iz);
+		compass_course_no_offset = coords_to_angle(m_ix,m_iz);
 	}
 
 	compass_course = clip_degrees(compass_course_no_offset + compass_north_offset);
@@ -207,7 +218,8 @@ void CCompassCalibration::load_calibration()
         compass_max_z.fin=rec[6];
         
         b_printf("OK\r\n");
-        
+        SetCalState(csCalibrated);
+
     } else {
         // Data is corrupted somehow (or was never stored before).
         b_printf("FAILED (checksum)\r\n");
@@ -220,6 +232,7 @@ void CCompassCalibration::reset_compass_calibration()
     
     calibration_mode=false;
     init();
+    SetCalState(csNotCalibrated);
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::set_true_north()
@@ -248,6 +261,87 @@ void CCompassCalibration::toggle_calibration_mode()
 // ----------------------------------------------------------------------------
 void CCompassCalibration::print_cal()
 {
+    int iNoOffset = compass_course_no_offset;
+    int iix = m_ix * 100.0;
+    int iiz = m_iz * 100.0;
+
+    b_printf(" no offset=%d px=%d%% pz=%d%%\r\n", iNoOffset, iix, iiz);
 	b_printf(" xr=%04d ... %04d\r\n", compass_min_x.fin, compass_max_x.fin);
 	b_printf(" zr=%04d ... %04d\r\n", compass_min_z.fin, compass_max_z.fin);
+}
+// ----------------------------------------------------------------------------
+void CCompassCalibration::SetCalState(ECalibrationState new_state)
+{
+    if (new_state != m_cal_state) {
+        m_cal_state = new_state;
+        switch (new_state) {
+        case csNotCalibrated:
+            b_printf("ccstate: not calibrated\r\n");
+            break;            
+        case csCenterDetect:
+            b_printf("ccstate: center detect\r\n");
+            break;
+        case csTurns:
+            b_printf("ccstate: turns\r\n");
+            break;
+        case csCalibrated:
+            b_printf("ccstate: calibrated\r\n");
+            break;
+        }
+    }
+}
+// ----------------------------------------------------------------------------
+int CCompassCalibration::get_quadrant()
+{
+    if (compass_course_no_offset >= 0 && compass_course_no_offset < 90)
+        return 0;
+    else if (compass_course_no_offset >= 90 && compass_course_no_offset < 180)
+        return 1;
+    else if (compass_course_no_offset >= 180 && compass_course_no_offset < 270)
+        return 2;
+    else if (compass_course_no_offset >= 270 && compass_course_no_offset < 360)
+        return 3;
+    return -1;
+}
+// ----------------------------------------------------------------------------
+void CCompassCalibration::update100ms()
+{
+    int q = get_quadrant();
+    bool bQuadrantChanged=false;
+
+    if (q == prev_quadrant)
+        quadrant_counter++;
+    else
+        quadrant_counter=0;
+
+    if (quadrant_counter > 5) {
+        if (stable_quadrant != q) {
+            prev_stable_quadrant = stable_quadrant;
+            stable_quadrant = q;
+            bQuadrantChanged=true;
+            b_printf("new quadrant=%d\r\n",stable_quadrant);
+        }
+    }        
+
+    switch (m_cal_state) {
+    case csNotCalibrated:
+        if (calibration_mode)
+            SetCalState(csCenterDetect);
+        break;
+    case csCenterDetect:
+        if (!calibration_mode)
+            SetCalState(csNotCalibrated);
+        break;
+    case csTurns:
+        if (!calibration_mode)
+            SetCalState(csNotCalibrated);
+        break;
+    case csCalibrated:
+        if (calibration_mode)
+            SetCalState(csCenterDetect);
+
+        break;
+    }
+
+    prev_quadrant = q;
 }

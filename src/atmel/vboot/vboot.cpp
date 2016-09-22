@@ -703,6 +703,8 @@ void process_100ms()
     ledctrl.set_mode(lm);
 
 	ledctrl.update(gps_valid,steering.arrived);
+
+    cc.update100ms();
 }
 // ----------------------------------------------------------------------------
 // 500 [ms] process
