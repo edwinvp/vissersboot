@@ -5,7 +5,7 @@
 
 //---------------------------------------------------------------------------
 enum ECalibrationState {
-    csNotCalibrated, csCenterDetect, csTurns, csCalibrated
+    csNotCalibrated, csCenterDetect, csTurn1, csTurn2, csFinish, csCalibrated
 };
 //---------------------------------------------------------------------------
 class TCompassTriple
@@ -29,6 +29,7 @@ private:
     int quadrant_counter;
     int stable_quadrant;
     int prev_stable_quadrant;
+    int cw_quadrants;
 
 	void update_max(comp_extreme & x, int16_t newval);
 	void update_min(comp_extreme & x, int16_t newval);
@@ -39,6 +40,8 @@ private:
 	float clip_degrees(float d);
     void SetCalState(ECalibrationState new_state);
     int get_quadrant();
+    void PrintCalState();
+    void DetectCwTurn();
 		
 public:
     bool calibration_mode;

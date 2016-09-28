@@ -504,6 +504,15 @@ void handle_parameterization(char c)
 		;		
 	}
 }
+// ----------------------------------------------------------------------------
+void toggle_msg_mode(TMessageMode mm)
+{
+    if (msg_mode == mm)
+        msg_mode = mmNone;
+    else
+        msg_mode = mm;
+}
+
 
 // ----------------------------------------------------------------------------
 // Handles GPS input
@@ -526,22 +535,22 @@ void read_uart()
 			cc.set_true_north();
 			break;
 		case 'c':
-			msg_mode = mmCompass;
+            toggle_msg_mode(mmCompass);
 			break;
 		case 'g':
-			msg_mode = mmGps;
+			toggle_msg_mode(mmGps);
 			break;
 		case 'p':
-			msg_mode = mmPAction;
+			toggle_msg_mode(mmPAction);
 			break;
 		case 'i':
-			msg_mode = mmIAction;
+			toggle_msg_mode(mmIAction);
 			break;
 		case 's':
-			msg_mode = mmSteering;
+			toggle_msg_mode(mmSteering);
 			break;
 		case 'e':
-			msg_mode = mmServoCapture;
+			toggle_msg_mode(mmServoCapture);
 			break;
 		case 'a':
 			stm.straight_to_auto = true;
@@ -652,9 +661,11 @@ void periodic_msg()
 		break;
 
 	case mmLast:
-	case mmNone:
 		msg_mode = mmSteering;
 		break;
+
+	case mmNone:
+        break;
 	}
 }
 
@@ -853,8 +864,8 @@ int main (void)
 	//msg_mode = mmServoCapture;
 	//msg_mode = mmGps;
 	//msg_mode = mmSteering;
-	msg_mode = mmDebug;
-	//msg_mode = mmNone;
+	//msg_mode = mmDebug;
+	msg_mode = mmNone;
 
 
 	clear_stats();
