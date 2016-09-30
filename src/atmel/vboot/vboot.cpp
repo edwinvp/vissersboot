@@ -101,6 +101,10 @@ bool gps_valid = false;
 bool gps_valid_prev = false;
 long gps_lat, gps_lon, gps_course;
 
+bool btn_prev_state(false);
+bool btn_state(false);
+bool btn_pressed(false);
+
 // Compass input
 TCompassTriple compass_raw;
 int16_t compass_smp;
@@ -664,6 +668,14 @@ void periodic_msg()
 		msg_mode = mmSteering;
 		break;
 
+    case mmButton:
+        b_printf("button: ");
+        if (PINC & (1<<PINC0))
+            b_printf("up\r\n");
+        else
+            b_printf("down\r\n");
+        break;
+
 	case mmNone:
         break;
 	}
@@ -701,6 +713,26 @@ TLedMode Step2LedMode(TMainState step)
 // ----------------------------------------------------------------------------
 void process_100ms()
 {
+    // Detect calibration button presses (when PORTC0 is low)
+    btn_state = (PINC & (1<<PINC0))==0;
+    // Detect rising edge (button pressed)
+    if (btn_state && (!btn_prev_state)) 
+        btn_pressed = true;
+    btn_prev_state = btn_state;
+
+    // Go to calibration mode if button is pressed
+    if (btn_pressed && !btn_state) {
+        btn_pressed = false;
+        if (!cc.calibration_mode) {
+            b_printf("calibration button pressed\r\n");
+            cc.reset_compass_calibration();
+            cc.toggle_calibration_mode();
+        } else {
+            b_printf("leaving calibration mode\r\n");
+            cc.load_calibration();
+        }   
+    }
+
 	// Run main state machine
     stm.Run();
 
@@ -850,6 +882,10 @@ int main (void)
 
 	b_printf("Boot!\r\n");
 
+    int sh = SPH;
+    int sl = SPL;
+    b_printf("stack: %x:%x\r\n",sh,sl);
+
 	cc.reset_compass_calibration();
 
 	cc.load_calibration();
@@ -859,21 +895,15 @@ int main (void)
 	setup_capture_inputs();
 	setup_pwm();
 
-	// Initial state machine / modes
-	//stm.Step() = msManualMode;
-	//msg_mode = mmServoCapture;
-	//msg_mode = mmGps;
-	//msg_mode = mmSteering;
-	//msg_mode = mmDebug;
+	// Initial periodic message mode
 	msg_mode = mmNone;
-
 
 	clear_stats();
 
-	// Initialize I2C-bus I/O
+	// Initialize I2C-bus I/O (and button input on RC0)
 #ifndef _WIN32
-	DDRC = 0b00110000;
-	PORTC = 0b00110000; //pullups on the I2C bus
+	DDRC = 0b00110000; // SDA/SCL pins as output (see Atmel manual) and RC0 as input
+	PORTC = 0b00110001; //pull-ups on the I2C bus
 
 	i2cInit();
 	i2cSetBitrate(15);
@@ -888,6 +918,7 @@ int main (void)
 
 #endif
 
+    b_printf("main_loop\r\n",sh,sl);
 
 #ifndef _WIN32
 	main_loop();

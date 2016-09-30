@@ -99,7 +99,7 @@ void CStateMachine::Run()
 
 	if (Step() != next_state) {
 		// Transitioning, reset step time and enter new step
-		b_printf("change step");
+		b_printf("change step:");
 
 		print_step_name(next_state);
 		b_printf("\r\n");

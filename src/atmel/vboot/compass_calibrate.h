@@ -17,7 +17,8 @@ class TCompassTriple
 //---------------------------------------------------------------------------
 struct comp_extreme {
 	int16_t avg[4];
-	int16_t fin;
+	int16_t fin_min;
+    int16_t fin_max;
 	int16_t cnt;
 };
 //---------------------------------------------------------------------------
@@ -31,10 +32,8 @@ private:
     int prev_stable_quadrant;
     int cw_quadrants;
 
-	void update_max(comp_extreme & x, int16_t newval);
-	void update_min(comp_extreme & x, int16_t newval);
-	void init_min(comp_extreme & x);
-	void init_max(comp_extreme & x);
+	void update_min_max(comp_extreme & x, int16_t newval);
+	void init_min_max(comp_extreme & x);
 	int16_t c_avg(comp_extreme & x);
 	float coords_to_angle(float ix, float iz);
 	float clip_degrees(float d);
@@ -53,12 +52,9 @@ public:
 	float compass_course_no_offset;
 	float compass_course;
 
-	comp_extreme compass_min_x;
-	comp_extreme compass_max_x;
-	comp_extreme compass_min_y;
-	comp_extreme compass_max_y;
-	comp_extreme compass_min_z;
-	comp_extreme compass_max_z;
+	comp_extreme mm_x;
+	comp_extreme mm_y;
+	comp_extreme mm_z;
 
     CCompassCalibration();	
 	void init();	

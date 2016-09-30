@@ -20,17 +20,10 @@ CCompassCalibration::CCompassCalibration()
 }
 
 
-void CCompassCalibration::init_min(comp_extreme & x)
+void CCompassCalibration::init_min_max(comp_extreme & x)
 {
-	x.fin = 32767;
-	for (int i(0);i<4;i++)
-	x.avg[i]=0;
-	x.cnt = 0;
-};
-
-void CCompassCalibration::init_max(comp_extreme & x)
-{
-	x.fin = -32768;
+	x.fin_min = 32767;
+    x.fin_max = -32768;
 	for (int i(0);i<4;i++)
 	x.avg[i]=0;
 	x.cnt = 0;
@@ -42,12 +35,9 @@ void CCompassCalibration::init()
 	compass_course = 0.0f;
     cw_quadrants=0;
 	
-	init_min(compass_min_x);
-	init_max(compass_max_x);
-	init_min(compass_min_y);
-	init_max(compass_max_y);
-	init_min(compass_min_z);
-	init_max(compass_max_z);
+	init_min_max(mm_x);
+	init_min_max(mm_y);
+	init_min_max(mm_z);	
 }
 
 int16_t CCompassCalibration::c_avg(comp_extreme & x)
@@ -60,27 +50,16 @@ int16_t CCompassCalibration::c_avg(comp_extreme & x)
 	return avg;
 }
 
-void CCompassCalibration::update_min(comp_extreme & x, int16_t newval)
+void CCompassCalibration::update_min_max(comp_extreme & x, int16_t newval)
 {
 	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
     	return;
 	if (x.cnt > 3) {
 		int16_t avg = c_avg(x);
-		if (avg < x.fin)
-		x.fin = avg;
-		x.cnt=0;
-	}
-	x.avg[x.cnt++] = newval;
-}
-
-void CCompassCalibration::update_max(comp_extreme & x, int16_t newval)
-{
-	if (newval == 0x7fff || newval == 0x8000 || newval == 0)
-	    return;
-	if (x.cnt > 3) {
-		int16_t avg = c_avg(x);
-		if (avg > x.fin)
-		x.fin = avg;
+		if (avg < x.fin_min)
+    		x.fin_min = avg;
+		if (avg > x.fin_max)
+		    x.fin_max = avg;
 		x.cnt=0;
 	}
 	x.avg[x.cnt++] = newval;
@@ -88,12 +67,9 @@ void CCompassCalibration::update_max(comp_extreme & x, int16_t newval)
 
 void CCompassCalibration::calibrate(const TCompassTriple & compass_raw)
 {
-	update_min(compass_min_x,compass_raw.x);
-	update_max(compass_max_x,compass_raw.x);
-	update_min(compass_min_y,compass_raw.y);
-	update_max(compass_max_y,compass_raw.y);
-	update_min(compass_min_z,compass_raw.z);
-	update_max(compass_max_z,compass_raw.z);
+	update_min_max(mm_x,compass_raw.x);
+	update_min_max(mm_y,compass_raw.y);
+    update_min_max(mm_z,compass_raw.z);	
 }
 
 float CCompassCalibration::clip_degrees(float d)
@@ -137,12 +113,12 @@ float CCompassCalibration::calc_course(const TCompassTriple & compass_raw)
 	centered.y=0;
 	centered.z=0;
 
-	float w = compass_max_x.fin - compass_min_x.fin;
-	float h = compass_max_z.fin - compass_min_z.fin;
+	float w = mm_x.fin_max - mm_x.fin_min;
+	float h = mm_z.fin_max - mm_z.fin_min;
 
 	if (w>=0 && h>=0) {
-		centered.x = (compass_raw.x - compass_min_x.fin - (w/2.0));
-		centered.z = -(compass_raw.z - compass_min_z.fin - (h/2.0));
+		centered.x = (compass_raw.x - mm_x.fin_min - (w/2.0));
+		centered.z = -(compass_raw.z - mm_z.fin_min - (h/2.0));
 	}
 
 	if (w>0 && h>0) {
@@ -169,12 +145,12 @@ void CCompassCalibration::store_calibration()
     // Put data in array of `raw` words
     uint16_t rec[8];
     rec[0]=(uint16_t)compass_north_offset;
-    rec[1]=compass_min_x.fin;
-    rec[2]=compass_max_x.fin;
-    rec[3]=compass_min_y.fin;
-    rec[4]=compass_max_y.fin;
-    rec[5]=compass_min_z.fin;
-    rec[6]=compass_max_z.fin;
+    rec[1]=mm_x.fin_min;
+    rec[2]=mm_x.fin_max;
+    rec[3]=mm_y.fin_min;
+    rec[4]=mm_y.fin_max;
+    rec[5]=mm_z.fin_min;
+    rec[6]=mm_z.fin_max;
     // Calculate checksum over those 7 words
     rec[7]=crc16((unsigned char*)rec,14);
     
@@ -212,12 +188,12 @@ void CCompassCalibration::load_calibration()
         reset_compass_calibration();
         
         compass_north_offset=rec[0];
-        compass_min_x.fin=rec[1];
-        compass_max_x.fin=rec[2];
-        compass_min_y.fin=rec[3];
-        compass_max_y.fin=rec[4];
-        compass_min_z.fin=rec[5];
-        compass_max_z.fin=rec[6];
+        mm_x.fin_min=rec[1];
+        mm_x.fin_max=rec[2];
+        mm_y.fin_min=rec[3];
+        mm_y.fin_max=rec[4];
+        mm_z.fin_min=rec[5];
+        mm_z.fin_max=rec[6];
         
         b_printf("OK\r\n");
         SetCalState(csCalibrated);
@@ -268,8 +244,8 @@ void CCompassCalibration::print_cal()
     int iiz = m_iz * 100.0;
 
     b_printf(" no offset=%d px=%d%% pz=%d%% ", iNoOffset, iix, iiz);
-	b_printf(" xr=%04d ... %04d ", compass_min_x.fin, compass_max_x.fin);
-	b_printf(" zr=%04d ... %04d ", compass_min_z.fin, compass_max_z.fin);
+	b_printf(" xr=%04d ... %04d ", mm_x.fin_min, mm_x.fin_max);
+	b_printf(" zr=%04d ... %04d ", mm_z.fin_min, mm_z.fin_max);
     b_printf(" q=%d cs=", get_quadrant());
     PrintCalState();
     b_printf("\r\n");

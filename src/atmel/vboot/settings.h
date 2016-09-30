@@ -43,6 +43,7 @@ enum TMessageMode {
 	mmIAction, // Configure I-action
 	mmPVSubst, // Set PV substitution
 	mmSPSubst, // Set SP substitution
+    mmButton, // Button input status
 
 	mmLast
 };
