@@ -49,7 +49,7 @@ enum TMessageMode {
 };
 
 #ifndef _WIN32
-#define b_printf printf
+#define b_printf printf_P
 #endif
 
 #endif

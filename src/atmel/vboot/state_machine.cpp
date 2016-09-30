@@ -5,6 +5,7 @@
 #include "lat_lon.h"
 #include "waypoints.h"
 #include "led_control.h"
+#include <avr/pgmspace.h>
 
 extern CSteering steering;
 extern CJoystick joystick;
@@ -99,10 +100,10 @@ void CStateMachine::Run()
 
 	if (Step() != next_state) {
 		// Transitioning, reset step time and enter new step
-		b_printf("change step:");
+		b_printf(PSTR("change step:"));
 
 		print_step_name(next_state);
-		b_printf("\r\n");
+		b_printf(PSTR("\r\n"));
 
 		state_time = 0;
 		SetNextStep(next_state);
@@ -117,19 +118,19 @@ void CStateMachine::Run()
 void CStateMachine::print_step_name(TMainState st)
 {
 	switch (st) {
-		case msAutoModeCourse: b_printf("msAutoModeCourse"); break;
-		case msAutoModeNormal: b_printf("msAutoModeNormal"); break;
-		case msManualMode: b_printf("msManualMode"); break;
-		case msCountJoyGoto: b_printf("msCountJoyGoto"); break;
-		case msCountJoyGotoRetn: b_printf("msCountJoyGotoRetn"); break;
-		case msConfirmGotoPosX: b_printf("msConfirmGotoPosX"); break;
-		case msCountJoyStore: b_printf("msCountJoyStore"); break;
-		case msCountJoyStoreRetn: b_printf("msCountJoyStoreRetn"); break;
-		case msConfirmStorePosX: b_printf("msConfirmStorePosX"); break;
-		case msClear1: b_printf("msClear1"); break;
-		case msClear2: b_printf("msClear2"); break;
-		case msCmdErrorMan: b_printf("msCmdErrorMan"); break;
-		case msCmdErrorAuto: b_printf("msCmdErrorAuto"); break;
+		case msAutoModeCourse: b_printf(PSTR("msAutoModeCourse")); break;
+		case msAutoModeNormal: b_printf(PSTR("msAutoModeNormal")); break;
+		case msManualMode: b_printf(PSTR("msManualMode")); break;
+		case msCountJoyGoto: b_printf(PSTR("msCountJoyGoto")); break;
+		case msCountJoyGotoRetn: b_printf(PSTR("msCountJoyGotoRetn")); break;
+		case msConfirmGotoPosX: b_printf(PSTR("msConfirmGotoPosX")); break;
+		case msCountJoyStore: b_printf(PSTR("msCountJoyStore")); break;
+		case msCountJoyStoreRetn: b_printf(PSTR("msCountJoyStoreRetn")); break;
+		case msConfirmStorePosX: b_printf(PSTR("msConfirmStorePosX")); break;
+		case msClear1: b_printf(PSTR("msClear1")); break;
+		case msClear2: b_printf(PSTR("msClear2")); break;
+		case msCmdErrorMan: b_printf(PSTR("msCmdErrorMan")); break;
+		case msCmdErrorAuto: b_printf(PSTR("msCmdErrorAuto")); break;
 	}
 }
 
@@ -137,7 +138,7 @@ void CStateMachine::print_step_name(TMainState st)
 void CStateMachine::check_arrived()
 {
     if (!steering.dont_stop_steering && steering.arrived) {
-        b_printf("Arrived!\r\n");
+        b_printf(PSTR("Arrived!\r\n"));
         next_state = msManualMode;
     }
 }
@@ -258,7 +259,7 @@ void CStateMachine::step_confirm_goto_pos_x()
         next_state = msCmdErrorMan;
     else if (ledctrl.done_blinking()) {
         if (waypoints.set_finish(joy_pulses)) {
-            b_printf("Set finish to # %d\r\n", joy_pulses);
+            b_printf(PSTR("Set finish to # %d\r\n"), joy_pulses);
             next_state = msAutoModeCourse;
         } else
             next_state = msCmdErrorMan;
@@ -270,7 +271,7 @@ void CStateMachine::step_confirm_store_pos_x()
     if (joy_pulses > 3)
         next_state = msCmdErrorMan;
     else if (ledctrl.done_blinking()) {
-        b_printf("Store waypoint # %d\r\n", joy_pulses);
+        b_printf(PSTR("Store waypoint # %d\r\n"), joy_pulses);
         // Define GPS coords as a waypoint.
         waypoints.store_waypoint(joy_pulses);
         // Store waypoints defined so far to EEPROM.

@@ -44,13 +44,13 @@ void i2cWaitForComplete(void)
     while ((!(TWCR & (1<<TWINT))) && (i < 10000))
 		i++;
 //	if (i>=20000)
-//		printf("i2c complete timed out\r\n");
+//		printf(PSTR("i2c complete timed out\r\n"));
 }
 
 void i2cSendByte(unsigned char data)
 {
 	_delay_us(10);
-	//printf("sending 0x%x\n", data);
+	//printf(PSTR("sending 0x%x\n"), data);
 	WRITE_sda();
 	// save data to the TWDR
 	TWDR = data;

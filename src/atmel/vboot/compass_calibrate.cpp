@@ -4,6 +4,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <avr/eeprom.h>
+#include <avr/pgmspace.h>
 
 #define pi 3.1415926535897932384626433832795
 #define two_pi 6.283185307179586476925286766559
@@ -140,7 +141,7 @@ void CCompassCalibration::set_north()
 
 void CCompassCalibration::store_calibration()
 {
-    b_printf("Storing compass calibration to EEPROM.\r\n");
+    b_printf(PSTR("Storing compass calibration to EEPROM.\r\n"));
     
     // Put data in array of `raw` words
     uint16_t rec[8];
@@ -165,7 +166,7 @@ void CCompassCalibration::store_calibration()
 // ----------------------------------------------------------------------------
 void CCompassCalibration::load_calibration()
 {
-    b_printf("Loading compass calibration from EEPROM...");
+    b_printf(PSTR("Loading compass calibration from EEPROM..."));
 
     // Array to receive 'raw' words from EEPROM    
     uint16_t rec[8];
@@ -195,12 +196,12 @@ void CCompassCalibration::load_calibration()
         mm_z.fin_min=rec[5];
         mm_z.fin_max=rec[6];
         
-        b_printf("OK\r\n");
+        b_printf(PSTR("OK\r\n"));
         SetCalState(csCalibrated);
 
     } else {
         // Data is corrupted somehow (or was never stored before).
-        b_printf("FAILED (checksum)\r\n");
+        b_printf(PSTR("FAILED (checksum)\r\n"));
     }    
 }
 // ----------------------------------------------------------------------------
@@ -216,7 +217,7 @@ void CCompassCalibration::reset_compass_calibration()
 void CCompassCalibration::set_true_north()
 {
     // Set whatever the boat is pointing to now as 'true north'.
-    b_printf("Setting true north.\r\n");
+    b_printf(PSTR("Setting true north.\r\n"));
     set_north();
     
     // Then store compass calibration.
@@ -230,11 +231,11 @@ void CCompassCalibration::toggle_calibration_mode()
     else
         calibration_mode=true;
 
-    b_printf("Calibration mode: ");
+    b_printf(PSTR("Calibration mode: "));
     if (calibration_mode)
-        b_printf("ON\r\n");
+        b_printf(PSTR("ON\r\n"));
     else
-        b_printf("OFF\r\n");
+        b_printf(PSTR("OFF\r\n"));
 }   
 // ----------------------------------------------------------------------------
 void CCompassCalibration::print_cal()
@@ -243,36 +244,36 @@ void CCompassCalibration::print_cal()
     int iix = m_ix * 100.0;
     int iiz = m_iz * 100.0;
 
-    b_printf(" no offset=%d px=%d%% pz=%d%% ", iNoOffset, iix, iiz);
-	b_printf(" xr=%04d ... %04d ", mm_x.fin_min, mm_x.fin_max);
-	b_printf(" zr=%04d ... %04d ", mm_z.fin_min, mm_z.fin_max);
-    b_printf(" q=%d cs=", get_quadrant());
+    b_printf(PSTR(" no offset=%d px=%d%% pz=%d%% "), iNoOffset, iix, iiz);
+	b_printf(PSTR(" xr=%04d ... %04d "), mm_x.fin_min, mm_x.fin_max);
+	b_printf(PSTR(" zr=%04d ... %04d "), mm_z.fin_min, mm_z.fin_max);
+    b_printf(PSTR(" q=%d cs="), get_quadrant());
     PrintCalState();
-    b_printf("\r\n");
+    b_printf(PSTR("\r\n"));
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::PrintCalState()
 {
     switch (m_cal_state) {
     case csNotCalibrated:
-        b_printf("not calibrated");
+        b_printf(PSTR("not calibrated"));
         break;
     case csCenterDetect:
-        b_printf("center detect");
+        b_printf(PSTR("center detect"));
         break;
     case csTurn1:
-        b_printf("turn1");
+        b_printf(PSTR("turn1"));
         break;
     case csTurn2:
-        b_printf("turn2");
+        b_printf(PSTR("turn2"));
         break;
     case csFinish:
-        b_printf("finish");
+        b_printf(PSTR("finish"));
     case csCalibrated:
-        b_printf("calibrated");
+        b_printf(PSTR("calibrated"));
         break;
     default:
-        b_printf("???");
+        b_printf(PSTR("???"));
     }
 }
 // ----------------------------------------------------------------------------
@@ -280,9 +281,9 @@ void CCompassCalibration::SetCalState(ECalibrationState new_state)
 {
     if (new_state != m_cal_state) {
         m_cal_state = new_state;
-        b_printf("ccstate: ");
+        b_printf(PSTR("ccstate: "));
         PrintCalState();
-        b_printf("\r\n");        
+        b_printf(PSTR("\r\n"));
     }
 }
 // ----------------------------------------------------------------------------
@@ -304,9 +305,9 @@ void CCompassCalibration::DetectCwTurn()
     if ((prev_stable_quadrant == (stable_quadrant-1)) ||
        (prev_stable_quadrant == 3 && stable_quadrant == 0)) {
             cw_quadrants++;
-            b_printf("+quadrant --> CW\r\n");
+            b_printf(PSTR("+quadrant --> CW\r\n"));
         } else {
-            b_printf("-starting over\r\n");
+            b_printf(PSTR("-starting over\r\n"));
             cw_quadrants =0;
     }
 
@@ -327,7 +328,7 @@ void CCompassCalibration::update100ms()
             prev_stable_quadrant = stable_quadrant;
             stable_quadrant = q;
             bQuadrantChanged=true;
-            b_printf("new quadrant=%d\r\n",stable_quadrant);
+            b_printf(PSTR("new quadrant=%d\r\n"),stable_quadrant);
         }
     }        
 
@@ -376,7 +377,7 @@ void CCompassCalibration::update100ms()
         break;
 
     case csFinish:
-        b_printf("Compass now calibrated\r\n");
+        b_printf(PSTR("Compass now calibrated\r\n"));
         calibration_mode = false;
         SetCalState(csCalibrated);
         break;

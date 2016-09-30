@@ -42,9 +42,9 @@ int multi_read_m8n(TinyGPS & gps)
 		if (valid && c < 100) {
 /*
 			if (d>=31)
-				printf("%c", d);
+				printf(PSTR("%c"), d);
 			else
-				printf(".");
+				printf(PSTR("."));
 */				
 			
 			gps.encode(d);

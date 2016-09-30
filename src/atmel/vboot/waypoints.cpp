@@ -2,6 +2,7 @@
 #include "waypoints.h"
 #include <avr/eeprom.h>
 #include <stdio.h>
+#include <avr/pgmspace.h>
 #include "crc.h"
 
 #define AR_SIZE (1 + 3 * 2 * (sizeof(float)/sizeof(uint16_t)))
@@ -46,7 +47,7 @@ void CWayPoints::forget_all()
 // ----------------------------------------------------------------------------
 void CWayPoints::load_waypoints()
 {
-    b_printf("Loading waypoint settings...");
+    b_printf(PSTR("Loading waypoint settings..."));
    
     uint16_t rec[AR_SIZE];
     
@@ -69,17 +70,17 @@ void CWayPoints::load_waypoints()
         gp_mem_3.lat=fp[4];
         gp_mem_3.lon=fp[5];               
         
-        b_printf("OK\r\n");
+        b_printf(PSTR("OK\r\n"));
         
-        } else {
-        b_printf("FAILED (checksum)\r\n");
+    } else {
+        b_printf(PSTR("FAILED (checksum)\r\n"));
     }
 
 }
 // ----------------------------------------------------------------------------
 void CWayPoints::store_waypoints()
 {
-    b_printf("Storing waypoints to EEPROM.\r\n");
+    b_printf(PSTR("Storing waypoints to EEPROM.\r\n"));
     
     uint16_t rec[AR_SIZE];
 

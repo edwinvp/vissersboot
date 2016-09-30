@@ -18,8 +18,8 @@ private:
     bool fast_blink;
     bool led_signal;
     bool slow_blink;
-    int blink_times;
-    int dark_cnt;
+    unsigned char blink_times;
+    unsigned char dark_cnt;
 
     TLedMode mode;
 

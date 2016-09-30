@@ -1,4 +1,5 @@
 #include "settings.h"
+#include <avr/pgmspace.h>
 #include "compass_calibrate.h"
 #include "state_machine.h"
 #include "steering.h"
@@ -337,11 +338,11 @@ void setup_pwm()
 void print_steering_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-	b_printf("GPS-NO_FIX ");
+	b_printf(PSTR("GPS-NO_FIX "));
 	else if (gps_fix_age > GPS_STALE_TIME)
-	b_printf("GPS-STALE ");
+	b_printf(PSTR("GPS-STALE "));
 	else {
-		b_printf("GPS-OK ");
+		b_printf(PSTR("GPS-OK "));
 	}
 
 	int a1 = joystick.to_perc(OCR1A);
@@ -351,33 +352,33 @@ void print_steering_msg()
 	unsigned int err_d = steering.pid_err;
 
 	if (stm.Step()==msAutoModeCourse)
-		b_printf("[autoC] ");
+		b_printf(PSTR("[autoC] "));
 	else if (stm.Step()==msAutoModeNormal)
-		b_printf("[autoN] ");
+		b_printf(PSTR("[autoN] "));
 	else
-		b_printf("[man] ");
+		b_printf(PSTR("[man] "));
 
-	b_printf("age=%ld ", gps_fix_age);
+	b_printf(PSTR("age=%ld "), gps_fix_age);
 
 	if (stm.Step()==msAutoModeCourse || stm.Step()==msAutoModeNormal) {
-		b_printf("sp=%d", sp_d);
+		b_printf(PSTR("sp=%d"), sp_d);
 		if (steering.SUBST_SP!=0)
-			b_printf("*");
+			b_printf(PSTR("*"));
 	
-		b_printf(" ");
+		b_printf(PSTR(" "));
 	
-		b_printf("pv=%d", pv_d);
+		b_printf(PSTR("pv=%d"), pv_d);
 		if (steering.SUBST_PV!=0)
-			b_printf("*");
+			b_printf(PSTR("*"));
 	} else
-		b_printf("sp=-- pv=-- ");
+		b_printf(PSTR("sp=-- pv=-- "));
 
-	b_printf(" err=%d: A=%d B=%d\r\n", err_d, a1,b1);
+	b_printf(PSTR(" err=%d: A=%d B=%d\r\n"), err_d, a1,b1);
 }
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
-    b_printf("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n",
+    b_printf(PSTR("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n"),
 	compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
 	int(steering.compass_course),
 	int(steering.bearing_sp));
@@ -395,11 +396,11 @@ void print_debug_msg()
 void print_gps_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-		b_printf("GPS-NO_FIX\r\n");
+		b_printf(PSTR("GPS-NO_FIX\r\n"));
 	else if (gps_fix_age > GPS_STALE_TIME)
-		b_printf("GPS-STALE\r\n");
+		b_printf(PSTR("GPS-STALE\r\n"));
 	else {
-			b_printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
+			b_printf(PSTR("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n"),
 			gps_fix_age, gps_lat, gps_lon, gps_course);
 	}
 }
@@ -429,12 +430,12 @@ void tune_PrintValue(double dblParam)
 	case mmPAction:
 	case mmIAction:
 		l = dblParam*1000.0;
-		b_printf("(set): %ld (x1000)\r\n",l);
+		b_printf(PSTR("(set): %ld (x1000)\r\n"),l);
 		break;
 	case mmPVSubst:
 	case mmSPSubst:
 		l = dblParam;
-		b_printf("(set): %ld (x1)\r\n",l);
+		b_printf(PSTR("(set): %ld (x1)\r\n"),l);
 		break;
 	case mmDebug:
 		break;
@@ -447,7 +448,7 @@ void tune_Config(double & dblParam, char c)
 
 	if (tune_ptr>15) {
 		tune_ptr=0;
-		b_printf("(err)\r\n");
+		b_printf(PSTR("(err)\r\n"));
 		return;
 	}
 
@@ -459,7 +460,7 @@ void tune_Config(double & dblParam, char c)
 		tune_ptr=0;
 		if (fields == 1) {
 			dblParam = nv;
-			b_printf("new value accepted) %ld\r\n",ld);
+			b_printf(PSTR("new value accepted) %ld\r\n"),ld);
 
 			switch (msg_mode) {
 			case mmNone:
@@ -482,7 +483,7 @@ void tune_Config(double & dblParam, char c)
 			};
 
 		} else {
-			b_printf("(err,bad)\r\n");
+            b_printf(PSTR("(err,bad)\r\n"));
 		}
 	}
 
@@ -533,7 +534,7 @@ void read_uart()
 			break;
 		case 'r':
 			cc.reset_compass_calibration();
-			b_printf("Compass calibration reset\r\n");
+			b_printf(PSTR("Compass calibration reset\r\n"));
 			break;
 		case 'n':
 			cc.set_true_north();
@@ -615,10 +616,10 @@ void print_servo_msg()
 	a1 = joystick.to_perc(OCR1A);
 	b1 = joystick.to_perc(OCR1B);
 
-	b_printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n",
-	pd6_perc, pd5_perc,
-	pd3_perc, pb3_perc,
-	a1, b1);
+	b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n"),
+    	pd6_perc, pd5_perc,
+    	pd3_perc, pb3_perc,
+    	a1, b1);
 }
 
 void periodic_msg()
@@ -629,22 +630,22 @@ void periodic_msg()
 		break;
 
 	case mmPAction:
-		b_printf("(set P-action): ");
+		b_printf(PSTR("(set P-action): "));
 		tune_PrintValue(steering.TUNE_P);
 		break;
 
 	case mmIAction:
-		b_printf("(set I-action): ");
+		b_printf(PSTR("(set I-action): "));
 		tune_PrintValue(steering.TUNE_I);
 		break;
 
 	case mmPVSubst:
-		b_printf("(set PV-subst): ");
+		b_printf(PSTR("(set PV-subst): "));
 		tune_PrintValue(steering.SUBST_PV);
 		break;
 
 	case mmSPSubst:
-		b_printf("(set SP-subst): ");
+		b_printf(PSTR("(set SP-subst): "));
 		tune_PrintValue(steering.SUBST_SP);
 		break;
 
@@ -669,11 +670,11 @@ void periodic_msg()
 		break;
 
     case mmButton:
-        b_printf("button: ");
+        b_printf(PSTR("button: "));
         if (PINC & (1<<PINC0))
-            b_printf("up\r\n");
+            b_printf(PSTR("up\r\n"));
         else
-            b_printf("down\r\n");
+            b_printf(PSTR("down\r\n"));
         break;
 
 	case mmNone:
@@ -724,11 +725,11 @@ void process_100ms()
     if (btn_pressed && !btn_state) {
         btn_pressed = false;
         if (!cc.calibration_mode) {
-            b_printf("calibration button pressed\r\n");
+            b_printf(PSTR("calibration button pressed\r\n"));
             cc.reset_compass_calibration();
             cc.toggle_calibration_mode();
         } else {
-            b_printf("leaving calibration mode\r\n");
+            b_printf(PSTR("leaving calibration mode\r\n"));
             cc.load_calibration();
         }   
     }
@@ -774,9 +775,9 @@ void process_500ms()
 	}
 
 	if (!gps_valid_prev && gps_valid)
-		b_printf("GPS up\r\n");
+		b_printf(PSTR("GPS up\r\n"));
 	if (gps_valid_prev && !gps_valid)
-		b_printf("GPS down\r\n");
+		b_printf(PSTR("GPS down\r\n"));
 
 	periodic_msg();
 
@@ -880,11 +881,7 @@ int main (void)
 #endif
 	sei();         // enable all interrupts
 
-	b_printf("Boot!\r\n");
-
-    int sh = SPH;
-    int sl = SPL;
-    b_printf("stack: %x:%x\r\n",sh,sl);
+	b_printf(PSTR("Boot!\r\n"));
 
 	cc.reset_compass_calibration();
 
@@ -918,7 +915,7 @@ int main (void)
 
 #endif
 
-    b_printf("main_loop\r\n",sh,sl);
+    b_printf(PSTR("main_loop\r\n"));
 
 #ifndef _WIN32
 	main_loop();

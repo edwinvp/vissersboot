@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include "settings.h"
 #include "steering.h"
 #include "state_machine.h"
@@ -39,9 +40,9 @@ bool enable_d, float Kd)
     bool bBigDiff = fabs(sp-pv) > 180;
 
     if (sp > 180 && bBigDiff)
-    sp -= 360;
+        sp -= 360;
     if (pv > 180 && bBigDiff)
-    pv -= 360;
+        pv -= 360;
 
     pid_err = sp - pv;
 
@@ -51,11 +52,11 @@ bool enable_d, float Kd)
 
     cv = 0;
     if (enable_p)
-    cv += p_add;
+        cv += p_add;
     if (enable_i)
-    cv += i_add;
+        cv += i_add;
     if (enable_d)
-    cv += d_add;
+        cv += d_add;
     
     if (!enable_i)
     i_add=0;
@@ -69,22 +70,22 @@ void CSteering::do_restrict_dir(float & pid_cv)
     // insist on maintaining either CW or CCW
     if (restrict_dir==0) {
         if (pid_err > 135.0) {
-            b_printf("Restrict dir -1\r\n");
+            b_printf(PSTR("Restrict dir -1\r\n"));
             restrict_dir = -1;
-            } else if (pid_err < -135) {
-            b_printf("Restrict dir +1\r\n");
+        } else if (pid_err < -135) {
+            b_printf(PSTR("Restrict dir +1\r\n"));
             restrict_dir = 1;
-        }
-        } else {
-        if (restrict_dir==1)
-        pid_cv = fabs(pid_cv);
-        else
-        pid_cv = -fabs(pid_cv);
+        }   
+    } else {
+            if (restrict_dir==1)
+                pid_cv = fabs(pid_cv);
+            else
+                pid_cv = -fabs(pid_cv);
         
-        if ( fabs(pid_err) < 90) {
-            b_printf("Cancel dir restrict\r\n");
-            restrict_dir=0;
-        }
+            if ( fabs(pid_err) < 90) {
+                b_printf(PSTR("Cancel dir restrict\r\n"));
+                restrict_dir=0;
+            }
     }
 }
 // ----------------------------------------------------------------------------
@@ -136,11 +137,11 @@ void CSteering::auto_steer()
     // Clip the PID control variable (CV)
     float cv_clipped(0.0);
     if (pid_cv > max_correct)
-    cv_clipped = max_correct;
+        cv_clipped = max_correct;
     else if (pid_cv < -max_correct)
-    cv_clipped = -max_correct;
+        cv_clipped = -max_correct;
     else
-    cv_clipped = pid_cv;
+        cv_clipped = pid_cv;
 
     // Take a moment to see where the boat is pointing at before doing anything
     if (stm.TimeInStep() < COURSE_DET_TIME) {
@@ -162,11 +163,11 @@ void CSteering::auto_steer()
 float CSteering::clip_motor(float mtr)
 {
     if (mtr>1.0)
-    return 1.0;
+        return 1.0;
     else if (mtr<-1.0)
-    return -1.0;
+        return -1.0;
     else
-    return mtr;
+        return mtr;
 }
 // ----------------------------------------------------------------------------
 //!\brief Calculate motor set points as a factor (-1.0 ... +1.0)
@@ -175,7 +176,7 @@ void CSteering::calc_motor_setpoints(float & motor_l, float & motor_r, float max
     if (stm.Step() == msAutoModeNormal) {
         motor_l = max_speed;
         motor_r = max_speed;
-        } else {
+    } else {
         motor_l = 0;
         motor_r = 0;
     }
