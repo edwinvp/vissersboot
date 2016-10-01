@@ -17,7 +17,7 @@ CCompassCalibration::CCompassCalibration()
     stable_quadrant=0;
     prev_stable_quadrant=0;
     cw_quadrants=0;
-
+    step_time=0;
 }
 
 
@@ -280,6 +280,7 @@ void CCompassCalibration::PrintCalState()
 void CCompassCalibration::SetCalState(ECalibrationState new_state)
 {
     if (new_state != m_cal_state) {
+        step_time=0;
         m_cal_state = new_state;
         b_printf(PSTR("ccstate: "));
         PrintCalState();
@@ -302,12 +303,13 @@ int CCompassCalibration::get_quadrant()
 // ----------------------------------------------------------------------------
 void CCompassCalibration::DetectCwTurn()
 {
+    // Detect CW turn
     if ((prev_stable_quadrant == (stable_quadrant-1)) ||
        (prev_stable_quadrant == 3 && stable_quadrant == 0)) {
             cw_quadrants++;
-            b_printf(PSTR("+quadrant --> CW\r\n"));
+            b_printf(PSTR("+turned CW to next quadrant: %d\r\n"),stable_quadrant);
         } else {
-            b_printf(PSTR("-starting over\r\n"));
+            b_printf(PSTR("-moved in other direction, restarting\r\n"));
             cw_quadrants =0;
     }
 
@@ -325,10 +327,10 @@ void CCompassCalibration::update100ms()
 
     if (quadrant_counter > 5) {
         if (stable_quadrant != q) {
+            // Compass now in another quadrant
             prev_stable_quadrant = stable_quadrant;
             stable_quadrant = q;
             bQuadrantChanged=true;
-            b_printf(PSTR("new quadrant=%d\r\n"),stable_quadrant);
         }
     }        
 
@@ -378,8 +380,14 @@ void CCompassCalibration::update100ms()
 
     case csFinish:
         b_printf(PSTR("Compass now calibrated\r\n"));
-        calibration_mode = false;
-        SetCalState(csCalibrated);
+
+        if (step_time > 10) {       
+            b_printf(PSTR("Saving to EEPROM\r\n"));
+            store_calibration();      
+            calibration_mode = false;
+            SetCalState(csCalibrated);
+        };
+
         break;
 
     case csCalibrated:
@@ -389,5 +397,11 @@ void CCompassCalibration::update100ms()
         break;
     }
 
+    step_time++;
     prev_quadrant = q;
+}
+
+ECalibrationState CCompassCalibration::get_state()
+{
+    return m_cal_state;
 }

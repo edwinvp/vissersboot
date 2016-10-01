@@ -31,6 +31,7 @@ private:
     int stable_quadrant;
     int prev_stable_quadrant;
     int cw_quadrants;
+    int step_time;
 
 	void update_min_max(comp_extreme & x, int16_t newval);
 	void init_min_max(comp_extreme & x);
@@ -68,6 +69,7 @@ public:
     void toggle_calibration_mode();
 	void print_cal();
     void update100ms();
+    ECalibrationState get_state();
 };
 
 //---------------------------------------------------------------------------

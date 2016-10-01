@@ -13,6 +13,8 @@ CLedControl::CLedControl() : slow_blink_prev(false),
     slow_blink(false),
     blink_times(0),
     dark_cnt(0),
+    msk_ctr(0),
+    msk_sreg(0),
     mode(lmOff)
 {
     // No further initialization needed.
@@ -28,6 +30,7 @@ void CLedControl::set_mode(TLedMode m)
     mode = m;
 }
 
+//!\brief Called at 100 [ms]
 void CLedControl::update(bool gps_valid, bool arrived)
 {
 	fast_blink = !fast_blink;
@@ -40,14 +43,14 @@ void CLedControl::update(bool gps_valid, bool arrived)
 	switch (mode) {
     	/* in manual/auto mode, just show status of GPS receiver */
     	case lmGpsStatus:
-    	if (gps_valid) {
-        	// Steady LED on GPS signal okay
-        	led_signal = true;
-        } else {
-        	// Slowly blink LED when there is no GPS reception
-        	led_signal = slow_blink;
-    	}
-    	break;
+    	    if (gps_valid) {
+            	// Steady LED on GPS signal okay
+            	led_signal = true;
+            } else {
+            	// Slowly blink LED when there is no GPS reception
+        	    led_signal = slow_blink;
+        	}
+        	break;
 
     	case lmArriveStatus:
     	    led_signal = arrived;
@@ -75,6 +78,14 @@ void CLedControl::update(bool gps_valid, bool arrived)
         case lmOff:
         	led_signal = false;
 
+        case lmCalibrationPhase1:
+        case lmCalibrationPhase2:
+        case lmCalibrationPhase3:
+        case lmCalibrationPhase4:
+            led_signal = (msk_sreg & 1)!=0;
+            msk_sreg >>= 1;
+            break;
+
     	default:
         	led_signal = false;
 	}
@@ -87,6 +98,25 @@ void CLedControl::update(bool gps_valid, bool arrived)
     	// turn led off
     	LED_REG &= ~_BV(LED_PIN);
 	}
+
+    if ((msk_ctr&7) == 0) {
+        switch (mode) {
+        case lmCalibrationPhase1:
+            msk_sreg = 0b00000011;
+            break;
+        case lmCalibrationPhase2:
+            msk_sreg = 0b11110000;
+            break;
+        case lmCalibrationPhase3:
+            msk_sreg = 0b11001100;
+            break;
+        case lmCalibrationPhase4:
+            msk_sreg = 0b11111111;
+            break;
+        }
+    }
+
+    msk_ctr++;
 }
 
 bool CLedControl::done_blinking()

@@ -744,6 +744,27 @@ void process_100ms()
 		manual_steering();
 
     TLedMode lm = Step2LedMode(stm.Step());
+
+    // If calibrating, override led mode
+    if (cc.calibration_mode) {
+        switch (cc.get_state()) {
+        case csNotCalibrated:
+        case csCenterDetect:
+            lm = lmCalibrationPhase1;
+            break;
+        case csTurn1:
+            lm = lmCalibrationPhase2;
+            break;
+        case csTurn2:
+            lm = lmCalibrationPhase3;
+            break;
+        case csFinish:
+        case csCalibrated:
+            lm = lmCalibrationPhase4;
+            break;                        
+        }
+    }
+
     ledctrl.set_mode(lm);
 
 	ledctrl.update(gps_valid,steering.arrived);

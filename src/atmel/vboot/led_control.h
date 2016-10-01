@@ -7,7 +7,12 @@ enum TLedMode {
     lmGpsStatus,
     lmArriveStatus,
     lmSlowBlink,
-    lmFastBlink  
+    lmFastBlink,
+
+    lmCalibrationPhase1,
+    lmCalibrationPhase2,
+    lmCalibrationPhase3,
+    lmCalibrationPhase4  
 };
 
 // LED control related
@@ -20,6 +25,9 @@ private:
     bool slow_blink;
     unsigned char blink_times;
     unsigned char dark_cnt;
+
+    unsigned char msk_ctr;
+    unsigned char msk_sreg;
 
     TLedMode mode;
 
