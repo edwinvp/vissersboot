@@ -1,6 +1,12 @@
-#include "Arduino.h"
 #include "settings.h"
-
+#include <avr/pgmspace.h>
+#include "compass_calibrate.h"
+#include "state_machine.h"
+#include "steering.h"
+#include "joystick.h"
+#include "waypoints.h"
+#include "led_control.h"
+#include "fifo.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -16,63 +22,99 @@
 #include <avr/common.h>
 #include <stdio.h>
 
+#include "i2c.h"
+#include "m8n.h"
+#include "hmc5843.h"
+
 #endif
 
-#include "SPI.h"
 #include "TinyGPS.h"
-#include "SD.h"
 #include "lat_lon.h"
 #include "uart.h"
+#include "vboot.h"
 
-const int chipSelect = 10; // 4  or 10
+// ----------------------------------------------------------------------------
+// Control (of motors)
+// ----------------------------------------------------------------------------
+
+// Vessel thruster CW/CCW:
+// joystick forward:
+//    CCW >0    CCW >0
+// joystick in reverse:
+//    CW  <0    CW  <0
+// joystick to the left:
+//    CW  <0    CCW >0
+// joystick to the right:
+//    CCW >0    CW  <0
+
+// ----------------------------------------------------------------------------
+// RS-232 console command overview
+// ----------------------------------------------------------------------------
+
+/*
+	(compass calibration)
+	t: go to (compass) calibration mode
+	r: reset (forget) compass calibration
+	n: set current direction vessel is pointing at as (true) 'North'
+	(screens)
+	c: view compass data screen
+	g: view GPS data screen
+	s: view steering screen
+	e: servo capture screen
+	(settings)
+	p: (PID 'P'-action configuration)
+	i: (PID 'I'-action configuration)
+	(auto steer test screen)
+	a: go straight to auto steer mode
+	x: don't stop steering (even after arriving)
+	d: substitute PV compass heading (enter 0 for no substution)
+	o: substitute SP heading (enter 0 for no substitution)
+
+	"0123456789.,-+" (valid in PID configuration modi)
+*/
+
+int tune_ptr(0);
+char tune_buf[16];
+
+int CfgMode(0);
 
 // ----------------------------------------------------------------------------
 // VARIABLES
 // ----------------------------------------------------------------------------
 
-// State machine current step, next step
-TMainState main_state,next_state;
-// Time elapsed in current state machine step [ms]
-unsigned long state_time = 0;
+CStateMachine stm;
+CSteering steering;
+CJoystick joystick;
+CWayPoints waypoints;
+CLedControl ledctrl;
 
-int joy_pulses = 0; // # times the goto/store joystick has been pushed up/down
+// Tests
+bool subst_pv = false;
+bool subst_sp = false;
 
+// Periodic message type selector
 TMessageMode msg_mode;
-
-// Memorized GPS positions
-CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
-CLatLon gp_mem_2; // memorized GPS position 2
-CLatLon gp_mem_3; // memorized GPS position 3
-// Current / destination GPS positions
-CLatLon gp_current; // current GPS position (may be stale or invalid!)
-CLatLon gp_start; // GPS position when auto steering was switched on
-CLatLon gp_finish; // auto steering target GPS position
 
 // GPS input related
 unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
 TinyGPS gps;
 bool gps_valid = false;
 bool gps_valid_prev = false;
-float gps_cmg = 0; // gps course made good
 long gps_lat, gps_lon, gps_course;
 
+bool btn_prev_state(false);
+bool btn_state(false);
+bool btn_pressed(false);
+
+// Compass input
+TCompassTriple compass_raw;
+int16_t compass_smp;
+
+// Compass calibration, storage etc.
+CCompassCalibration cc;
+
 // Auto steering related
-float bearing_sp = 0; // calculated initial bearing (from Haversine formulas)
 float distance_m = 0; // distance to finish from current gps pos
-bool arrived(false); // TRUE when arriving at the waypoint
-
-// LED control related
-int blink_times(0);
-bool slow_blink(false);
-bool slow_blink_prev(false);
-bool fast_blink(false);
-bool led_signal(false);
-
-// PID controller vars
-float p_add(0);
-float i_add(0);
-float d_add(0);
-
 
 // Global [ms] timer
 volatile unsigned long global_ms_timer = 0;
@@ -80,19 +122,6 @@ volatile unsigned long global_ms_timer = 0;
 // Timing for periodic processes
 unsigned long t_100ms_start_ms(0);
 unsigned long t_500ms_start_ms(0);
-unsigned long t_1000ms_start_ms(0);
-
-bool shown_stats(false);
-
-// ----------------------------------------------------------------------------
-// SD card logging vars
-// ----------------------------------------------------------------------------
-
-// set up variables using the SD utility library functions:
-Sd2Card card;
-File myFile;
-
-bool CardDetected = false;
 
 // ----------------------------------------------------------------------------
 // PWM/JOYSTICK/MOTOR vars
@@ -115,9 +144,14 @@ volatile unsigned char old_pind = 0;
 volatile unsigned char old_pinb = 0;
 // ----------------------------------------------------------------------------
 // Global millisecond timer value needed for TinyGps
-unsigned int epu_millis()
+unsigned long millis()
 {
-	return global_ms_timer;
+	unsigned long tmr;
+	cli();
+	tmr = global_ms_timer;
+	sei();
+	
+	return tmr;
 }
 // ----------------------------------------------------------------------------
 void copy_gps_pin(void)
@@ -210,7 +244,7 @@ ISR(PCINT2_vect)
 }
 #endif
 // ----------------------------------------------------------------------------
-volatile unsigned char value;
+volatile unsigned char comms_char;
 /* This variable is volatile so both main and RX interrupt can use it.
 It could also be a uint8_t type */
 
@@ -219,69 +253,17 @@ NOTE: vector name changes with different AVRs see AVRStudio -
 Help - AVR-Libc reference - Library Reference - <avr/interrupt.h>: Interrupts
 for vector names other than USART_RXC_vect for ATmega32 */
 
-volatile unsigned char head = 0,tail = 0;
-#define FIFO_SIZE 32
-#define FIFO_MASK (FIFO_SIZE-1)
-volatile char uart_fifo[FIFO_SIZE];
-// ----------------------------------------------------------------------------
-bool rb_avail()
-{
-	return (head != tail);
-}
-// ----------------------------------------------------------------------------
-char rb_read()
-{
-	char data(0);
-	if (head != tail) {
-		data = uart_fifo[tail];
-		unsigned char new_tail(tail);
-		new_tail++;
-		new_tail &= FIFO_MASK;
-		tail = new_tail;		
-	}		
-	return data;
-}
-// ----------------------------------------------------------------------------
-/*
 #ifndef _WIN32
 ISR(USART_RX_vect) {
 #else
 void Fake_UART_ISR(unsigned UDR0) {
 #endif
 
-	// Read UART register (the received byte)
+    // Read UART register (the received byte)
 	// into `value`
-	value = UDR0;
+	comms_char = UDR0;
 
-	// Store byte in FIFO (if FIFO isn't full)
-	unsigned char new_head;
-	new_head = head + 1;
-	new_head &= FIFO_MASK;
-
-	if (new_head != tail) {
-		uart_fifo[head] = value;
-		head = new_head;
-	}
-}
-*/
-// ----------------------------------------------------------------------------
-void setup_gps_input()
-{
-#ifndef _WIN32
-	// Configure PB0 as input
-	DDRB &= ~_BV(DDB0);
-	PORTB &= ~_BV(PORTB0);
-
-	// Setup PD7 as output
-	DDRD |= _BV(DDD7);
-	PORTD  &= ~_BV(PORTD7); // make zero
-
-	// Enable on-pin-change for pin
-	PCMSK0 |= _BV(PCINT0);
-
-	// Configure interrupt on logical state state on PB0 (so PCIE0)
-	PCICR |= _BV(PCIE0);
-#endif
+    fifo_write(comms_char);
 }
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
@@ -353,14 +335,72 @@ void setup_pwm()
 #endif
 }
 // ----------------------------------------------------------------------------
+void print_steering_msg()
+{
+	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
+	b_printf(PSTR("GPS-NO_FIX "));
+	else if (gps_fix_age > GPS_STALE_TIME)
+	b_printf(PSTR("GPS-STALE "));
+	else {
+		b_printf(PSTR("GPS-OK "));
+	}
+
+	int a1 = joystick.to_perc(OCR1A);
+	int b1 = joystick.to_perc(OCR1B);
+	unsigned int sp_d = steering.sp_used;
+	unsigned int pv_d = steering.pv_used;
+	unsigned int err_d = steering.pid_err;
+
+	if (stm.Step()==msAutoModeCourse)
+		b_printf(PSTR("[autoC] "));
+	else if (stm.Step()==msAutoModeNormal)
+		b_printf(PSTR("[autoN] "));
+	else
+		b_printf(PSTR("[man] "));
+
+	b_printf(PSTR("age=%ld "), gps_fix_age);
+
+	if (stm.Step()==msAutoModeCourse || stm.Step()==msAutoModeNormal) {
+		b_printf(PSTR("sp=%d"), sp_d);
+		if (steering.SUBST_SP!=0)
+			b_printf(PSTR("*"));
+	
+		b_printf(PSTR(" "));
+	
+		b_printf(PSTR("pv=%d"), pv_d);
+		if (steering.SUBST_PV!=0)
+			b_printf(PSTR("*"));
+	} else
+		b_printf(PSTR("sp=-- pv=-- "));
+
+	b_printf(PSTR(" err=%d: A=%d B=%d\r\n"), err_d, a1,b1);
+}
+// ----------------------------------------------------------------------------
+void print_compass_msg()
+{
+    b_printf(PSTR("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n"),
+	compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
+	int(steering.compass_course),
+	int(steering.bearing_sp));
+	
+	cc.print_cal();
+}
+// ----------------------------------------------------------------------------
+void print_debug_msg()
+{
+	print_steering_msg();
+	print_compass_msg(); 	
+}
+
+// ----------------------------------------------------------------------------
 void print_gps_msg()
 {
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-		Serial.println("GPS-NO_FIX\r\n");
+		b_printf(PSTR("GPS-NO_FIX\r\n"));
 	else if (gps_fix_age > GPS_STALE_TIME)
-		Serial.println("GPS-STALE\r\n");
+		b_printf(PSTR("GPS-STALE\r\n"));
 	else {
-		printf("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n",
+			b_printf(PSTR("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n"),
 			gps_fix_age, gps_lat, gps_lon, gps_course);
 	}
 }
@@ -375,423 +415,181 @@ void clear_stats(void)
 	//
 }
 // ----------------------------------------------------------------------------
-float clip_motor(float mtr)
+void tune_PrintValue(double dblParam)
 {
-	if (mtr>1.0)
-		return 1.0;
-	else if (mtr<-1.0)
-		return -1.0;
-	else
-		return mtr;
+	long l(0);
+
+	switch (msg_mode) {
+	case mmCompass:
+	case mmNone:
+	case mmGps:
+	case mmLast:
+	case mmServoCapture:
+	case mmSteering:
+		break;		
+	case mmPAction:
+	case mmIAction:
+		l = dblParam*1000.0;
+		b_printf(PSTR("(set): %ld (x1000)\r\n"),l);
+		break;
+	case mmPVSubst:
+	case mmSPSubst:
+		l = dblParam;
+		b_printf(PSTR("(set): %ld (x1)\r\n"),l);
+		break;
+	case mmDebug:
+		break;
+	}
 }
 // ----------------------------------------------------------------------------
-float simple_pid(float pv, float sp,
-	bool enable_p, float Kp,
-	bool enable_i, float Ki,
-	bool enable_d, float Kd)
+void tune_Config(double & dblParam, char c)
 {
-	float cv(0.0);
+	tune_buf[tune_ptr++] = c;
 
-	float err = bearing_sp - gps_cmg;
-
-	p_add = Kp * err;
-	i_add += Ki * err;
-	d_add = 0.0;
-
-	cv = 0;
-	if (enable_p)
-		cv += p_add;
-	if (enable_i)
-		cv += i_add;
-	if (enable_d)
-		cv += d_add;
-
-	return cv;
-}
-
-// ----------------------------------------------------------------------------
-void auto_steer()
-{
-	float motor_l(0), motor_r(0);
-
-	float max_speed(0.8f);
-	float max_correct(0.9*max_speed);
-
-	float pid_cv = simple_pid(
-		gps_cmg, // process-value (GPS course)
-		bearing_sp, // set point (bearing from Haversine)
-		true, 0.02, // P-action
-		true, 0.0000005, // I-action
-		false, 0.0  // D-action
-		);
-
-	motor_l = max_speed;
-	motor_r = max_speed;
-
-	float cv_clipped(0.0);
-
-	if (pid_cv > max_correct)
-		cv_clipped = max_correct;
-	else if (pid_cv < -max_correct)
-		cv_clipped = -max_correct;
-	else
-		cv_clipped = pid_cv;
-
-	if (state_time < COURSE_DET_TIME) {
-		// Still determining course, keep PID in reset
-		p_add=0;
-		i_add=0;
-		d_add=0;
-		cv_clipped=0;
+	if (tune_ptr>15) {
+		tune_ptr=0;
+		b_printf(PSTR("(err)\r\n"));
+		return;
 	}
 
-	motor_l += cv_clipped;
-	motor_r -= cv_clipped;
+	if (c==13 || c==10) {
+		double nv(0);
+		long ld(0);
+		tune_buf[tune_ptr]=0;
+		int fields = sscanf(tune_buf,"%ld",&ld);
+		tune_ptr=0;
+		if (fields == 1) {
+			dblParam = nv;
+			b_printf(PSTR("new value accepted) %ld\r\n"),ld);
 
-	motor_l = clip_motor(motor_l);
-	motor_r = clip_motor(motor_r);
+			switch (msg_mode) {
+			case mmNone:
+			case mmCompass:
+			case mmGps:
+			case mmServoCapture:
+			case mmSteering:
+				break;										
+			case mmPAction:
+			case mmIAction:
+				dblParam = ld / 1000.0;
+				break;
+			case mmPVSubst:
+			case mmSPSubst:
+				dblParam = ld;
+			case mmDebug:
+				break;
+			case mmLast:
+				break;				
+			};
 
-	if (arrived) {
-		motor_l = 0;
-		motor_r = 0;
-	}
-
-
-	OCR1A = (float)JOY_CENTER + (motor_l * 1000.0);
-	OCR1B = (float)JOY_CENTER + (motor_r * 1000.0);
-}
-// ----------------------------------------------------------------------------
-// Joystick center detect
-// ----------------------------------------------------------------------------
-bool joy_in_center(unsigned int j)
-{
-	return (j > (JOY_CENTER - JOY_BAND/2)) &&
-		(j < (JOY_CENTER + JOY_BAND/2));
-}
-// ----------------------------------------------------------------------------
-// Joystick down/right detect
-// ----------------------------------------------------------------------------
-bool joy_in_max(unsigned int j)
-{
-	return j > (JOY_MAX - JOY_BAND);
-}
-// ----------------------------------------------------------------------------
-// Joystick up/left detect
-// ----------------------------------------------------------------------------
-bool joy_in_min(unsigned int j)
-{
-	return j < (JOY_MIN + JOY_BAND);
-}
-// ----------------------------------------------------------------------------
-bool joy_in_goto()
-{
-	return joy_in_max(pd3_pulse_duration);
-}
-// ----------------------------------------------------------------------------
-bool joy_in_store()
-{
-	return joy_in_min(pd3_pulse_duration);
-}
-// ----------------------------------------------------------------------------
-bool joy_in_goto_store_center()
-{
-	return joy_in_center(pd3_pulse_duration);
-}
-// ----------------------------------------------------------------------------
-bool joy_in_manual()
-{
-	return joy_in_min(pb3_pulse_duration);
-}
-// ----------------------------------------------------------------------------
-bool joy_in_clear()
-{
-	return joy_in_max(pb3_pulse_duration);
-}
-// ----------------------------------------------------------------------------
-bool set_finish(int memory_no)
-{
-	gp_finish.clear();
-
-	if (memory_no >= 1 && memory_no <= 3) {
-		switch (memory_no) {
-		case 1: gp_finish = gp_mem_1; break;
-		case 2: gp_finish = gp_mem_2; break;
-		case 3: gp_finish = gp_mem_3; break;
+		} else {
+            b_printf(PSTR("(err,bad)\r\n"));
 		}
 	}
 
-	return !gp_finish.empty();
-}
-// ----------------------------------------------------------------------------
-void store_waypoint(int memory_no)
-{
-	if (memory_no >= 1 && memory_no <= 3) {
-		switch (memory_no) {
-		case 1: gp_mem_1 = gp_current; break;
-		case 2: gp_mem_2 = gp_current; break;
-		case 3: gp_mem_3 = gp_current; break;
-		}
-	}
 }
 
 // ----------------------------------------------------------------------------
-// State machine steps
-// ----------------------------------------------------------------------------
-void step_manual_mode()
+void handle_parameterization(char c)
 {
-	p_add=0;
-	i_add=0;
-	d_add=0;
-
-	// In manual mode
-	if (joy_in_goto()) {
-		joy_pulses = 0;
-
-		if (gps_valid)
-			next_state = msCountJoyGoto;
-		else
-			next_state = msCmdErrorMan;
-
-	} else if (joy_in_store()) {
-		joy_pulses = 0;
-		next_state = msCountJoyStore;
-	} else if (joy_in_clear()) {
-		shown_stats = false;
-		next_state = msClear1;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_auto_mode()
-{
-	// Blink LED fast when 'special' goto/store/clear command is given.
-	// We are now in auto mode and that is allowed only in manual mode.
-	if (!joy_in_goto_store_center() ||
-		joy_in_clear()) {
-		next_state = msCmdErrorAuto;
-	}
-
-	// Go to manual mode if GPS signal is absent for too long,
-	// or joystick is put in manual control mode.
-	if (joy_in_manual() || !gps_valid) {
-		next_state = msManualMode;
-	}
-
-	if (arrived) {
-		printf("Arrived!\r\n");
-		next_state = msManualMode;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_count_goto()
-{
-	if (joy_in_store())
-		next_state = msCmdErrorMan; // attempt to run 'opposite' command
-	else if (joy_in_goto_store_center()) {
-		if (state_time > MIN_JOY_PULSE_DURATION) {
-			// pulse valid, count
-			joy_pulses++;
-			next_state = msCountJoyGotoRetn;
-		} else
-			next_state = msCmdErrorMan; // pulse wasn't long enough
-	} else if (state_time > MAX_JOY_PULSE_DURATION)
-		next_state = msCmdErrorMan; // joystick takes too long to go back center
-}
-// ----------------------------------------------------------------------------
-void step_count_goto_retn()
-{
-	if (joy_in_goto())
-		next_state = msCountJoyGoto;
-	else if (joy_in_store())
-		next_state = msCmdErrorMan;
-	else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
-		blink_times = joy_pulses;
-		next_state = msConfirmGotoPosX;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_count_store()
-{
-	if (joy_in_goto())
-		next_state = msCmdErrorMan;
-	else if (joy_in_goto_store_center()) {
-		if (state_time > MIN_JOY_PULSE_DURATION) {
-			// pulse valid, count
-			joy_pulses++;
-			next_state = msCountJoyStoreRetn;
-		} else
-			next_state = msCmdErrorMan; // pulse wasn't long enough
-	} else if (state_time > MAX_JOY_PULSE_DURATION)
-		next_state = msCmdErrorMan; // joystick takes too long to go back center
-}
-// ----------------------------------------------------------------------------
-void step_count_store_retn()
-{
-	if (joy_in_store())
-		next_state = msCountJoyStore;
-	else if (joy_in_store())
-		next_state = msCmdErrorMan;
-	else if (state_time > JOY_CMD_ACCEPT_TIME && !slow_blink) {
-		blink_times = joy_pulses;
-		next_state = msConfirmStorePosX;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_clear1()
-{
-	if (!joy_in_clear())
-		next_state = msCmdErrorMan;
-	else if (!shown_stats) {
-		print_stats();
-		shown_stats=true;
-	}
-	else if (state_time > 1000) {
-		next_state = msClear2;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_clear2()
-{
-	if (!joy_in_clear()) {
-		gp_mem_1.clear();
-		gp_mem_2.clear();
-		gp_mem_3.clear();
-		next_state = msManualMode;
-	}
-
-	if (state_time > 5000)
-		next_state = msCmdErrorMan;
-}
-// ----------------------------------------------------------------------------
-void step_cmd_error_man()
-{
-	if (state_time > 2000) {
-		if (joy_in_goto_store_center() && !joy_in_clear()) {
-			next_state = msManualMode;
-		}
-	}
-}
-// ----------------------------------------------------------------------------
-void step_cmd_error_auto()
-{
-	bool bLetGoOfJoyStick = joy_in_goto_store_center() && !joy_in_clear();
-
-	if (state_time > 1000 || bLetGoOfJoyStick) {
-		next_state = msAutoMode;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_confirm_goto_pos_x()
-{
-	if (blink_times > 3)
-		next_state = msCmdErrorMan;
-	else if (blink_times == 0) {
-
-		if (set_finish(joy_pulses)) {
-			printf("Set finish to # %d\r\n", joy_pulses);
-			next_state = msAutoMode;
-		} else
-			next_state = msCmdErrorMan;
-	}
-}
-// ----------------------------------------------------------------------------
-void step_confirm_store_pos_x()
-{
-	if (blink_times > 3)
-		next_state = msCmdErrorMan;
-	else if (blink_times == 0) {
-		printf("Store waypoint # %d\r\n", joy_pulses);
-		store_waypoint(joy_pulses);
-		next_state = msManualMode;
-	}
-}
-// ----------------------------------------------------------------------------
-
-// ----------------------------------------------------------------------------
-// Main state machine
-// ----------------------------------------------------------------------------
-void state_mach()
-{
-	// next state defaults to current state (unchanged)
-	next_state = main_state;
-
-	switch (main_state) {
-	case msManualMode: // manual control mode
-		step_manual_mode();
+	switch (msg_mode) {
+	case mmPAction:
+		tune_Config(steering.TUNE_P, c);
 		break;
-	case msAutoMode: // automatic waypoint mode
-		step_auto_mode();
+	case mmIAction:
+		tune_Config(steering.TUNE_I, c);
 		break;
-
-	case msCountJoyGoto: // count joystick 'up' (goto pos.) command
-		step_count_goto();
+	case mmPVSubst:
+		tune_Config(steering.SUBST_PV, c);
 		break;
-	case msCountJoyGotoRetn:
-		step_count_goto_retn();
+	case mmSPSubst:
+		tune_Config(steering.SUBST_SP, c);
 		break;
-	case msConfirmGotoPosX:
-		step_confirm_goto_pos_x();
-		break;
-
-	case msCountJoyStore: // count joystick 'down' (store pos.) command
-		step_count_store();
-		break;
-	case msCountJoyStoreRetn:
-		step_count_store_retn();
-		break;
-	case msConfirmStorePosX:
-		step_confirm_store_pos_x();
-		break;
-
-	case msClear1:
-		step_clear1();
-		break;
-
-	case msClear2:
-		step_clear2();
-		break;
-
-	case msCmdErrorMan:
-		step_cmd_error_man();
-		break;
-
-	case msCmdErrorAuto:
-		step_cmd_error_auto();
-		break;
-
 	default:
-		// should never get here
-		next_state = msManualMode;
-	}
-
-	if (main_state != next_state) {
-		// Transitioning, reset step time and enter new step
-		state_time = 0;
-		main_state = next_state;
-	} else {
-		// we're in the 100 [ms] process,
-		// so we can increase step time like this...
-		state_time += 100;
+		;		
 	}
 }
+// ----------------------------------------------------------------------------
+void toggle_msg_mode(TMessageMode mm)
+{
+    if (msg_mode == mm)
+        msg_mode = mmNone;
+    else
+        msg_mode = mm;
+}
+
+
 // ----------------------------------------------------------------------------
 // Handles GPS input
 // ----------------------------------------------------------------------------
-void run_gps_input()
+void read_uart()
 {
-	// Soft pass through of gps pin due to the fact
-	// we don't have a second UART/USART and the GPS module
-	// is connected to an I/O-pin with limited (input capture)
-	// features.
-	copy_gps_pin();
 
-	// get bytes received by uart,
-	// and decode GPS serial stream
-	while (rb_avail()) {
-		char c=rb_read();
-		Serial.println((uint8_t)c,5);
-		gps.encode(c);
+	while (fifo_avail()) {
+		char c = fifo_read();
+
+		switch (c) {
+		case 't':
+			cc.toggle_calibration_mode();
+			break;
+		case 'r':
+			cc.reset_compass_calibration();
+			b_printf(PSTR("Compass calibration reset\r\n"));
+			break;
+		case 'n':
+			cc.set_true_north();
+			break;
+		case 'c':
+            toggle_msg_mode(mmCompass);
+			break;
+		case 'g':
+			toggle_msg_mode(mmGps);
+			break;
+		case 'p':
+			toggle_msg_mode(mmPAction);
+			break;
+		case 'i':
+			toggle_msg_mode(mmIAction);
+			break;
+		case 's':
+			toggle_msg_mode(mmSteering);
+			break;
+		case 'e':
+			toggle_msg_mode(mmServoCapture);
+			break;
+		case 'a':
+			stm.straight_to_auto = true;
+			break;
+		case 'x':
+            steering.toggle_dont_stop();
+			break;
+		case 'd':
+			msg_mode = mmPVSubst;
+			break;
+		case 'o':
+			msg_mode = mmSPSubst;
+			break;
+		case '0':
+		case '1':
+		case '2':
+		case '3':
+		case '4':
+		case '5':
+		case '6':
+		case '7':
+		case '8':
+		case '9':
+		case '.':
+		case '-':
+		case '+':
+		case 13:
+		case 10:
+			handle_parameterization(c);
+			break;
+		}
 	}
 }
+
 // ----------------------------------------------------------------------------
 // Manual mode (joystick 'pass through' steering)
 // ----------------------------------------------------------------------------
@@ -801,83 +599,114 @@ void manual_steering()
 	OCR1A = pd5_pulse_duration;
 	OCR1B = pd6_pulse_duration;
 }
+
 // ----------------------------------------------------------------------------
 // Periodic message
 // ----------------------------------------------------------------------------
+
+void print_servo_msg()
+{
+	int pd6_perc, pd5_perc, pd3_perc, pb3_perc, a1, b1;
+
+    // Display current servo signals as received (2000 ... 4000, 0 = no signal)
+	pd6_perc = joystick.to_perc(pd6_pulse_duration);
+	pd5_perc = joystick.to_perc(pd5_pulse_duration);
+	pd3_perc = joystick.to_perc(pd3_pulse_duration);
+	pb3_perc = joystick.to_perc(pb3_pulse_duration);
+	a1 = joystick.to_perc(OCR1A);
+	b1 = joystick.to_perc(OCR1B);
+
+	b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n"),
+    	pd6_perc, pd5_perc,
+    	pd3_perc, pb3_perc,
+    	a1, b1);
+}
+
 void periodic_msg()
 {
 	switch (msg_mode) {
-	case mmNone: ;
 	case mmServoCapture:
-		// Display current servo signals as received (2000 ... 4000, 0 = no signal)
-		printf(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d \r\n",
-			pd6_pulse_duration, pd5_pulse_duration,
-			pd3_pulse_duration, pb3_pulse_duration);
+        print_servo_msg();
 		break;
+
+	case mmPAction:
+		b_printf(PSTR("(set P-action): "));
+		tune_PrintValue(steering.TUNE_P);
+		break;
+
+	case mmIAction:
+		b_printf(PSTR("(set I-action): "));
+		tune_PrintValue(steering.TUNE_I);
+		break;
+
+	case mmPVSubst:
+		b_printf(PSTR("(set PV-subst): "));
+		tune_PrintValue(steering.SUBST_PV);
+		break;
+
+	case mmSPSubst:
+		b_printf(PSTR("(set SP-subst): "));
+		tune_PrintValue(steering.SUBST_SP);
+		break;
+
 	case mmGps:
 		print_gps_msg();
 		break;
-	case mmLast: ;		
+
+	case mmSteering:
+		print_steering_msg();
+		break;
+
+	case mmDebug:
+		print_debug_msg();
+	break;
+
+	case mmCompass:
+		print_compass_msg();
+		break;
+
+	case mmLast:
+		msg_mode = mmSteering;
+		break;
+
+    case mmButton:
+        b_printf(PSTR("button: "));
+        if (PINC & (1<<PINC0))
+            b_printf(PSTR("up\r\n"));
+        else
+            b_printf(PSTR("down\r\n"));
+        break;
+
+	case mmNone:
+        break;
 	}
 }
-// ----------------------------------------------------------------------------
-// Update LED
-// ----------------------------------------------------------------------------
-void update_led()
+
+TLedMode Step2LedMode(TMainState step)
 {
-	fast_blink = !fast_blink;
+    TLedMode lm(lmOff);
 
-	switch (main_state) {
-	/* in manual/auto mode, just show status of GPS receiver */
-	case msManualMode:
-		if (gps_valid) {
-			// Steady LED on GPS signal okay
-			led_signal = true;
-		} else {
-			// Slowly blink LED when there is no GPS reception
-			led_signal = slow_blink;
-		}
-		break;
-
-	case msAutoMode:
-		led_signal = arrived;
-		break;
-
-	case msCmdErrorMan:
-	case msCmdErrorAuto: // deliberate fall-through
-		// Blink LED fast when an invalid command is given,
-		led_signal = fast_blink;
-		break;
-
-	case msConfirmGotoPosX:
-	case msConfirmStorePosX: // deliberate fall-through
-
-		if (slow_blink_prev && !slow_blink) {
-			// We just blinked once
-			if (blink_times > 0)
-				blink_times--;
-		}
-
-		if (blink_times > 0) {
-			led_signal = slow_blink;
-		} else
-			led_signal = false;
-
-		slow_blink_prev = slow_blink;
-		break;
-
-	default:
-		led_signal = false;
+	switch (step) {
+    	/* in manual/auto mode, just show status of GPS receiver */
+    	case msManualMode:
+            lm = lmGpsStatus;
+        	break;
+    	case msAutoModeNormal:
+    	case msAutoModeCourse: // deliberate fall-through
+            lm = lmArriveStatus;
+    	    break;
+    	case msCmdErrorMan:
+    	case msCmdErrorAuto: // deliberate fall-through
+            lm = lmFastBlink;
+    	    break;
+    	case msConfirmGotoPosX:
+    	case msConfirmStorePosX: // deliberate fall-through
+            lm = lmSlowBlink;
+        	break;
+    	default:
+        	lm = lmOff;
 	}
-
-	// Update LED output (PORTB pin 5)
-	if (led_signal) {
-		// turn led on
-		PORTB |= _BV(PORTB5);
-	} else {
-		// turn led off
-		PORTB &= ~_BV(PORTB5);
-	}
+    return lm;
 }
 
 // ----------------------------------------------------------------------------
@@ -885,44 +714,74 @@ void update_led()
 // ----------------------------------------------------------------------------
 void process_100ms()
 {
+    // Detect calibration button presses (when PORTC0 is low)
+    btn_state = (PINC & (1<<PINC0))==0;
+    // Detect rising edge (button pressed)
+    if (btn_state && (!btn_prev_state)) 
+        btn_pressed = true;
+    btn_prev_state = btn_state;
+
+    // Go to calibration mode if button is pressed
+    if (btn_pressed && !btn_state) {
+        btn_pressed = false;
+        if (!cc.calibration_mode) {
+            b_printf(PSTR("calibration button pressed\r\n"));
+            cc.reset_compass_calibration();
+            cc.toggle_calibration_mode();
+        } else {
+            b_printf(PSTR("leaving calibration mode\r\n"));
+            cc.load_calibration();
+        }   
+    }
+
 	// Run main state machine
-	state_mach();
+    stm.Run();
 
 	// Steering
-	if (main_state == msAutoMode)
-		auto_steer();
+	if (stm.Step() == msAutoModeCourse || stm.Step() == msAutoModeNormal)
+		steering.auto_steer();
 	else
 		manual_steering();
 
-	update_led();
+    TLedMode lm = Step2LedMode(stm.Step());
 
-	periodic_msg();
-}
-// ----------------------------------------------------------------------------
-// 1000 [ms] process
-// ----------------------------------------------------------------------------
-void process_1000ms()
-{
-	Serial.println("1000 ms passed");
+    // If calibrating, override led mode
+    if (cc.calibration_mode) {
+        switch (cc.get_state()) {
+        case csNotCalibrated:
+        case csCenterDetect:
+            lm = lmCalibrationPhase1;
+            break;
+        case csTurn1:
+            lm = lmCalibrationPhase2;
+            break;
+        case csTurn2:
+            lm = lmCalibrationPhase3;
+            break;
+        case csFinish:
+        case csCalibrated:
+            lm = lmCalibrationPhase4;
+            break;                        
+        }
+    }
 
-	if (CardDetected) {
-		char para[80];
-		sprintf(para,"test!\r\n");
-		myFile.write(para,strlen(para));
-	}
+    ledctrl.set_mode(lm);
+
+	ledctrl.update(gps_valid,steering.arrived);
+
+    cc.update100ms();
 }
 // ----------------------------------------------------------------------------
 // 500 [ms] process
 // ----------------------------------------------------------------------------
 void process_500ms()
 {
-	slow_blink = !slow_blink;
+    ledctrl.toggle_slow_blink();
 
 	// returns +- latitude/longitude in degrees
 	gps.get_position(&gps_lat, &gps_lon, &gps_fix_age);
 	gps_course = gps.course();
-	gps_cmg = gps_course / 100.0f;
-
+	
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE) {
 		// No gps fix
 		gps_valid = false;
@@ -931,18 +790,22 @@ void process_500ms()
 		gps_valid = false;
 	} else {
 		// GPS-OK
-		gps.f_get_position(&gp_current.lat,&gp_current.lon,0);
+		gps.f_get_position(&waypoints.gp_current.lat,&waypoints.gp_current.lon,0);
 		gps_valid= true;
-		
+
 	}
-	
+
 	if (!gps_valid_prev && gps_valid)
-		printf("GPS up\r\n");
+		b_printf(PSTR("GPS up\r\n"));
 	if (gps_valid_prev && !gps_valid)
-		printf("GPS down\r\n");
-	
+		b_printf(PSTR("GPS down\r\n"));
+
+	periodic_msg();
+
 	gps_valid_prev = gps_valid;
 }
+
+
 
 // ----------------------------------------------------------------------------
 // MAIN PROCESS
@@ -952,19 +815,35 @@ void process()
 	unsigned long delta(0);
 
 	// Handle UART (GPS) input
-	run_gps_input();
-
-/*
+	read_uart(); // also happens with this disabled
 
 	// Calculate initial bearing with Haversine function
-	bearing_sp = gp_current.bearingTo(gp_finish);
+	steering.bearing_sp = waypoints.gp_current.bearingTo(waypoints.gp_finish);
 
 
 	distance_m =
-		TinyGPS::distance_between (gp_finish.lat, gp_finish.lon,
-			gp_current.lat, gp_current.lon);
-	arrived = distance_m < 10;
+		TinyGPS::distance_between (waypoints.gp_finish.lat, waypoints.gp_finish.lon,
+			waypoints.gp_current.lat, waypoints.gp_current.lon);
+	steering.arrived = distance_m < 3;
 
+
+	compass_raw.x = 0;
+	compass_raw.y = 0;
+	compass_raw.z = 0;
+
+	compass_raw.x = read_hmc5843(0x03);
+	compass_raw.y = read_hmc5843(0x05);
+	compass_raw.z = read_hmc5843(0x07);
+
+	if (cc.calibration_mode)
+		cc.calibrate(compass_raw);
+	
+	steering.compass_course = cc.calc_course(compass_raw);
+
+	compass_smp++;
+
+	m8n_set_reg_addr(0xff);
+	multi_read_m8n(gps);
 
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;
@@ -979,15 +858,20 @@ void process()
 		t_500ms_start_ms = global_ms_timer;
 		process_500ms();
 	}
-*/	
-	// Time to run 1000 [ms] process?
-	delta = global_ms_timer - t_1000ms_start_ms;
-	if (delta > 1000) {
-		t_1000ms_start_ms = global_ms_timer;
-		process_1000ms();
-	}
+}
+
+void delay_ms(uint16_t x)
+{
+	uint16_t s = millis();
+
+	uint16_t delta = 0;
+
+	do {
+		delta = millis() - s;
+	} while (delta < x) ;
 
 }
+
 // ----------------------------------------------------------------------------
 // Main loop (AVR only, do not use within simulator)
 // ----------------------------------------------------------------------------
@@ -1000,68 +884,6 @@ void main_loop()
 	}
 }
 
-
-// ----------------------------------------------------------------------------
-// Arduino libs compatibility
-// ----------------------------------------------------------------------------
-
-extern "C" void __cxa_pure_virtual() {
-	cli();
-	for (;;);
-}
-
-// ----------------------------------------------------------------------------
-// SD card objects
-// ----------------------------------------------------------------------------
-
-
-void setup_sd_card()
-{
-	CardDetected = false;
-	
-	pinMode(chipSelect, OUTPUT);
-
-	// we'll use the initialization code from the utility libraries
-	// since we're just testing if the card is working!
-	if (!card.init(SPI_HALF_SPEED, chipSelect)) {
-		Serial.println("initialization failed. Things to check:");
-		Serial.println("* is a card inserted?");
-		Serial.println("* is your wiring correct?");
-		Serial.println("* did you change the chipSelect pin to match your shield or module?");
-	} else {
-		CardDetected=true;
-		Serial.println("Wiring is correct and a card is present.");
-	}
-	
-	if (!CardDetected)
-		return;
-
-	// print the type of card
-	Serial.print("\nCard type: ");
-	switch (card.type()) {
-		case SD_CARD_TYPE_SD1:
-		Serial.println("SD1");
-		break;
-		case SD_CARD_TYPE_SD2:
-		Serial.println("SD2");
-		break;
-		case SD_CARD_TYPE_SDHC:
-		Serial.println("SDHC");
-		break;
-		default:
-		Serial.println("Unknown");
-	}
-
-	Serial.print("Initializing SD card...");
-
-	if (!SD.begin(chipSelect)) {
-		Serial.println("initialization failed!");
-		while (1);
-	}
-	Serial.println("initialization done.");
-
-}
-
 // ----------------------------------------------------------------------------
 // MAIN/STARTUP
 // ----------------------------------------------------------------------------
@@ -1071,8 +893,6 @@ int main_init (void)
 int main (void)
 #endif
 {
-	init();
-	
 #ifndef _WIN32
 	/* set pin 5 of PORTB for output*/
 	DDRB |= _BV(DDB5);
@@ -1082,41 +902,41 @@ int main (void)
 #endif
 	sei();         // enable all interrupts
 
+	b_printf(PSTR("Boot!\r\n"));
 
-	printf("Booting\r\n");
+	cc.reset_compass_calibration();
 
-	//setup_sd_card();
-	 
-	if (CardDetected) {
-		// delete existing logging file	
-		if (SD.exists("logging.txt")) {
-			Serial.println("logging.txt already exists, deleting it");
-			SD.remove("logging.txt");	
-		}	
-
-		// open logging file
-		Serial.println("Opening logging.txt...");
-		myFile = SD.open("example.txt", FILE_WRITE);
-		char * para = "-------------!\r\n";
-		myFile.write(para,strlen(para));
-		myFile.flush();
-	}
-		
-	Serial.println("Setting up other peripherals");
-
+	cc.load_calibration();
+    waypoints.load_waypoints();
 
 	// Setup other peripherals
-	//setup_capture_inputs();
-	//setup_pwm();
-	setup_gps_input();
+	setup_capture_inputs();
+	setup_pwm();
 
-	Serial.println("Init-done");
-	
-	// Initial state machine / modes
-	main_state = msManualMode;
+	// Initial periodic message mode
 	msg_mode = mmNone;
 
 	clear_stats();
+
+	// Initialize I2C-bus I/O (and button input on RC0)
+#ifndef _WIN32
+	DDRC = 0b00110000; // SDA/SCL pins as output (see Atmel manual) and RC0 as input
+	PORTC = 0b00110001; //pull-ups on the I2C bus
+
+	i2cInit();
+	i2cSetBitrate(15);
+
+	delay_ms(100);
+
+	init_hmc5843();
+
+	delay_ms(25);
+	init_hmc5843();
+	delay_ms(25);
+
+#endif
+
+    b_printf(PSTR("main_loop\r\n"));
 
 #ifndef _WIN32
 	main_loop();
@@ -1127,4 +947,3 @@ int main (void)
 // ----------------------------------------------------------------------------
 // EOF
 // ----------------------------------------------------------------------------
-

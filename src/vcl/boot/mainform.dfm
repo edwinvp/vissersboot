@@ -2,7 +2,7 @@ object MainFrm: TMainFrm
   Left = 0
   Top = 0
   Caption = 'Main simulation form'
-  ClientHeight = 583
+  ClientHeight = 635
   ClientWidth = 725
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -14,20 +14,11 @@ object MainFrm: TMainFrm
   Position = poOwnerFormCenter
   PixelsPerInch = 96
   TextHeight = 13
-  object PaintBox1: TPaintBox
-    Left = 0
-    Top = 0
-    Width = 368
-    Height = 432
-    Align = alClient
-    ExplicitWidth = 344
-    ExplicitHeight = 402
-  end
   object Splitter1: TSplitter
     Left = 368
     Top = 0
     Width = 16
-    Height = 432
+    Height = 484
     Align = alRight
     Beveled = True
     ExplicitLeft = 417
@@ -38,7 +29,7 @@ object MainFrm: TMainFrm
     Left = 384
     Top = 0
     Width = 341
-    Height = 432
+    Height = 484
     Align = alRight
     TabOrder = 0
     object Label1: TLabel
@@ -238,10 +229,10 @@ object MainFrm: TMainFrm
       OnClick = BtnZeroClick
     end
     object CbValidGps: TCheckBox
-      Left = 32
-      Top = 384
+      Left = 112
+      Top = 380
       Width = 225
-      Height = 33
+      Height = 17
       Caption = 'Send valid GPS position to AVR program'
       Checked = True
       State = cbChecked
@@ -256,20 +247,97 @@ object MainFrm: TMainFrm
       TabOrder = 9
       OnClick = BtnAutoModeClick
     end
+    object EdInput: TLabeledEdit
+      Left = 6
+      Top = 407
+      Width = 153
+      Height = 21
+      EditLabel.Width = 38
+      EditLabel.Height = 13
+      EditLabel.Caption = 'EdInput'
+      TabOrder = 10
+      OnKeyPress = OnInputKeyPress
+    end
+    object CbUseRealCompass: TCheckBox
+      Left = 176
+      Top = 401
+      Width = 153
+      Height = 25
+      Caption = 'Use real compass sensor'
+      TabOrder = 11
+    end
+    object TbCompass: TTrackBar
+      Left = 20
+      Top = 437
+      Width = 233
+      Height = 41
+      Max = 360
+      PageSize = 0
+      Frequency = 90
+      TabOrder = 12
+    end
   end
   object ListBox1: TListBox
     Left = 0
-    Top = 432
+    Top = 484
     Width = 725
     Height = 151
     Align = alBottom
     ItemHeight = 13
     TabOrder = 1
   end
+  object PageControl1: TPageControl
+    Left = 0
+    Top = 0
+    Width = 368
+    Height = 484
+    ActivePage = TsCourseOverview
+    Align = alClient
+    TabOrder = 2
+    object TsCourseOverview: TTabSheet
+      Caption = 'TsCourseOverview'
+      object PaintBox1: TPaintBox
+        Left = 0
+        Top = 0
+        Width = 360
+        Height = 456
+        Align = alClient
+        ExplicitLeft = 38
+        ExplicitTop = 32
+        ExplicitWidth = 368
+        ExplicitHeight = 432
+      end
+    end
+    object TsMagneto: TTabSheet
+      Caption = 'TsMagneto'
+      ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 404
+      object PaintBox2: TPaintBox
+        Left = 0
+        Top = 0
+        Width = 360
+        Height = 456
+        Align = alClient
+        ExplicitLeft = 24
+        ExplicitTop = 16
+        ExplicitWidth = 321
+        ExplicitHeight = 369
+      end
+    end
+  end
   object Timer1: TTimer
     Interval = 40
     OnTimer = Timer1Timer
     Left = 128
     Top = 128
+  end
+  object Timer2: TTimer
+    Interval = 250
+    OnTimer = Timer2Timer
+    Left = 148
+    Top = 232
   end
 end

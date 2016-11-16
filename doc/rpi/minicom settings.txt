@@ -1,0 +1,2 @@
+9600 baud, no parity, 1 stop bit, no handshake
+

@@ -23,37 +23,35 @@
 #define JOY_CMD_ACCEPT_TIME 2000
 
 // Time after last GPS valid update until current fix consired stale
-#define GPS_STALE_TIME 5000
+#define GPS_STALE_TIME 10000
 
 // Time to find out GPS course - before PID starts steering
-#define COURSE_DET_TIME 8000
+#define COURSE_DET_TIME 4000
 
-
-// Main state machine state definitions
-enum TMainState {
-	msManualMode=0, // manual control mode
-	msAutoMode, // automatic waypoint mode
-	msCountJoyGoto, // count joystick 'up' command
-	msCountJoyGotoRetn,
-	msConfirmGotoPosX,
-	msCountJoyStore, // count joystick 'down' command
-	msCountJoyStoreRetn,
-	msConfirmStorePosX,
-	msClear1,
-	msClear2,
-	msCmdErrorMan,
-	msCmdErrorAuto,
-	msLast
-};
+// EEPROM offsets
+#define COMPASS_EEPROM_OFFSET 0
+#define WAYPOINT_EEPROM_OFFSET 64
 
 // Periodic message type (which message to log periodically to console)
 enum TMessageMode {
 	mmNone, // don't log any message
 	mmServoCapture, // captured servo signals (remote ctrl. joystick values)
 	mmGps, // GPS input debugging
+	mmSteering, // Auto steering debugging
+	mmCompass, // Compass values
+	mmDebug, // Combination
+
+	mmPAction, // Configure P-action
+	mmIAction, // Configure I-action
+	mmPVSubst, // Set PV substitution
+	mmSPSubst, // Set SP substitution
+    mmButton, // Button input status
 
 	mmLast
 };
 
+#ifndef _WIN32
+#define b_printf printf_P
 #endif
 
+#endif

@@ -3,6 +3,7 @@
 #pragma hdrstop
 
 #include "drawing_area.h"
+
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 
@@ -474,6 +475,15 @@ void TDrawingArea::PlotVessel(TVessel & vessel)
 	arrow_head_pos.lat += r*cos(p);
 	arrow_head_pos.lon += r*sin(p);
 	DrawArrow(vessel.position,arrow_head_pos);
+
+	// compass heading
+	bmp->Canvas->Pen->Color=clYellow;
+	p = TGpsLoc::toRadians(vessel.compass_course);
+	arrow_head_pos = vessel.position;
+	arrow_head_pos.lat += r*cos(p);
+	arrow_head_pos.lon += r*sin(p);
+	DrawArrow(vessel.position,arrow_head_pos);
+
 
 
 }

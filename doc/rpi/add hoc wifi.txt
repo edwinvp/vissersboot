@@ -1,0 +1,83 @@
+=================================================================================================================
+WINDOWS 10
+=================================================================================================================
+
+https://globalcache.zendesk.com/entries/82172789-FAQ-Windows-8-1-and-Windows-10-AdHoc-network-support-solution
+
+Because the wireless network picker in Windows 8.1 doesn't show adhoc networks, connecting must be done by hand.
+To see all networks in range, including Adhoc, run the following command in command shell (cmd.exe):
+
+
+> netsh wlan show networks
+
+SETUP
+
+The following must be done once for each network:
+
+Go to "Network and Sharing Center"
+Click "Set up a new connection or network"
+Double click "Manually connect to a wireless network"
+Enter the SSID of the adhoc network (as shown by "netsh wlan show networks") into the "Network name" field
+Configure security settings accordingly
+Uncheck "Start this connection automatically" (important)
+Click "Next", then "Close"
+Run the following command. Replace <ssid> with the SSID of your network for all following commands:
+
+> netsh wlan set profileparameter <ssid> connectiontype=ibss
+***NOTE***
+
+For Windows 10, the command is:
+
+> netsh wlan set profileparameter <ssid> connectiontype=ibss connectionmode=manual
+
+CONNECT
+
+After setting up, run the following command whenever you want to connect:
+
+> netsh wlan connect <ssid>
+Replace <ssid> with the SSID of your network.
+
+Hovering over the WiFi icon in the system tray will show the name of the network you are currently connected to, even if it's an adhoc network (the network picker will not show it if it's adhoc). The name is also visible in "Network and Sharing Center" window.
+
+
+DISCONNECT
+
+To disconnect from the adhoc network connect to a different network, turn off WiFi, or run the following command:
+
+> netsh wlan disconnect
+
+CLEANUP
+
+To remove the network profile from Windows, run the following command:
+
+> netsh wlan delete profile <ssid>
+ 
+
+=================================================================================================================
+RPI (working)
+=================================================================================================================
+
+Changes /etc/network/interfaces:
+
+auto wlan0
+iface wlan0 inet static
+ address 192.168.1.1
+ netmask 255.255.255.0
+ wireless-channel 1
+ wireless-essid Pi
+ wireless-mode ad-hoc
+
+=================================================================================================================
+RPI (not working)
+=================================================================================================================
+
+From:
+https://www.raspberrypi.org/forums/viewtopic.php?f=36&t=18771
+
+(the first line might not be necessary)
+ifconfig wlan0 up
+iwconfig wlan0 mode ad-hoc
+iwconfig wlan0 essid "Pi"
+ifconfig wlan0 192.168.1.1 netmask 255.255.255.0
+
+=================================================================================================================

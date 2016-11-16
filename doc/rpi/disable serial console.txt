@@ -1,0 +1,11 @@
+sudo vi /boot/cmdline.txt
+and remove the two options referring to the serial port.
+So, this
+dwc_otg.lpm_enable=0 console=ttyAMA0,115200 kgdboc=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
+becomes this
+dwc_otg.lpm_enable=0 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait
+
+Second, disable the login prompt
+sudo vi /etc/inittab
+find the line near the end
+T0:23:respawn:/sbin/getty -L ttyAMA0 115200 vt100

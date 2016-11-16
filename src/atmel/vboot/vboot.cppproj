@@ -52,8 +52,6 @@
         <avrgcc.compiler.directories.IncludePaths>
           <ListValues>
             <Value>../TinyGPS-13</Value>
-            <Value>C:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\standard</Value>
-            <Value>C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
           </ListValues>
         </avrgcc.compiler.directories.IncludePaths>
         <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
@@ -61,19 +59,9 @@
         <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
         <avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>
         <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
-        <avrgcccpp.compiler.symbols.DefSymbols>
-          <ListValues>
-            <Value>F_CPU=16000000L</Value>
-            <Value>ARDUINO=101</Value>
-            <Value>NDEBUG</Value>
-          </ListValues>
-        </avrgcccpp.compiler.symbols.DefSymbols>
         <avrgcccpp.compiler.directories.IncludePaths>
           <ListValues>
             <Value>../TinyGPS-13</Value>
-            <Value>C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>C:/Program Files (x86)/Arduino/hardware/arduino/avr/variants/standard</Value>
-            <Value>../SD-master/utility</Value>
           </ListValues>
         </avrgcccpp.compiler.directories.IncludePaths>
         <avrgcccpp.compiler.optimization.PackStructureMembers>True</avrgcccpp.compiler.optimization.PackStructureMembers>
@@ -82,20 +70,19 @@
         <avrgcccpp.linker.libraries.Libraries>
           <ListValues>
             <Value>libm</Value>
-            <Value>libcore.a</Value>
           </ListValues>
         </avrgcccpp.linker.libraries.Libraries>
-        <avrgcccpp.linker.libraries.LibrarySearchPaths>
-          <ListValues>
-            <Value>C:\Users\Z\Documents\Atmel Studio\arduinoCore</Value>
-          </ListValues>
-        </avrgcccpp.linker.libraries.LibrarySearchPaths>
         <avrgcc.compiler.symbols.DefSymbols>
           <ListValues>
             <Value>NDEBUG</Value>
           </ListValues>
         </avrgcc.compiler.symbols.DefSymbols>
         <avrgcc.compiler.optimization.level>Optimize for size (-Os)</avrgcc.compiler.optimization.level>
+        <avrgcccpp.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>NDEBUG</Value>
+          </ListValues>
+        </avrgcccpp.compiler.symbols.DefSymbols>
         <avrgcccpp.compiler.optimization.level>Optimize for size (-Os)</avrgcccpp.compiler.optimization.level>
       </AvrGccCpp>
     </ToolchainSettings>
@@ -113,9 +100,6 @@
         <avrgcc.compiler.directories.IncludePaths>
           <ListValues>
             <Value>../TinyGPS-13</Value>
-            <Value>C:\Program Files (x86)\Arduino\hardware\arduino\avr\variants\standard</Value>
-            <Value>C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>../SD-master</Value>
           </ListValues>
         </avrgcc.compiler.directories.IncludePaths>
         <avrgcc.compiler.optimization.PackStructureMembers>True</avrgcc.compiler.optimization.PackStructureMembers>
@@ -123,21 +107,9 @@
         <avrgcc.compiler.warnings.AllWarnings>True</avrgcc.compiler.warnings.AllWarnings>
         <avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultCharTypeUnsigned>
         <avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>True</avrgcccpp.compiler.general.ChangeDefaultBitFieldUnsigned>
-        <avrgcccpp.compiler.symbols.DefSymbols>
-          <ListValues>
-            <Value>F_CPU=16000000L</Value>
-            <Value>ARDUINO=101</Value>
-            <Value>DEBUG</Value>
-          </ListValues>
-        </avrgcccpp.compiler.symbols.DefSymbols>
         <avrgcccpp.compiler.directories.IncludePaths>
           <ListValues>
             <Value>../TinyGPS-13</Value>
-            <Value>C:\Program Files (x86)\Arduino\hardware\arduino\avr\cores\arduino</Value>
-            <Value>C:/Program Files (x86)/Arduino/hardware/arduino/avr/variants/standard</Value>
-            <Value>../SD-master/utility</Value>
-            <Value>../SD-master</Value>
-            <Value>../SPI</Value>
           </ListValues>
         </avrgcccpp.compiler.directories.IncludePaths>
         <avrgcccpp.compiler.optimization.PackStructureMembers>True</avrgcccpp.compiler.optimization.PackStructureMembers>
@@ -146,22 +118,20 @@
         <avrgcccpp.linker.libraries.Libraries>
           <ListValues>
             <Value>libm</Value>
-            <Value>libcore.a</Value>
           </ListValues>
         </avrgcccpp.linker.libraries.Libraries>
-        <avrgcccpp.linker.libraries.LibrarySearchPaths>
-          <ListValues>
-            <Value>C:\Users\Z\Documents\Atmel Studio\arduinoCore</Value>
-          </ListValues>
-        </avrgcccpp.linker.libraries.LibrarySearchPaths>
         <avrgcc.compiler.symbols.DefSymbols>
           <ListValues>
             <Value>DEBUG</Value>
-            <Value>F_CPU=16000000L</Value>
           </ListValues>
         </avrgcc.compiler.symbols.DefSymbols>
         <avrgcc.compiler.optimization.level>Optimize (-O1)</avrgcc.compiler.optimization.level>
         <avrgcc.compiler.optimization.DebugLevel>Default (-g2)</avrgcc.compiler.optimization.DebugLevel>
+        <avrgcccpp.compiler.symbols.DefSymbols>
+          <ListValues>
+            <Value>DEBUG</Value>
+          </ListValues>
+        </avrgcccpp.compiler.symbols.DefSymbols>
         <avrgcccpp.compiler.optimization.level>Optimize (-O1)</avrgcccpp.compiler.optimization.level>
         <avrgcccpp.compiler.optimization.DebugLevel>Default (-g2)</avrgcccpp.compiler.optimization.DebugLevel>
         <avrgcccpp.assembler.debugging.DebugLevel>Default (-Wa,-g)</avrgcccpp.assembler.debugging.DebugLevel>
@@ -169,34 +139,49 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="File.cpp">
+    <Compile Include="compass_calibrate.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="crc.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="fifo.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="i2c.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="hmc5843.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="joystick.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="lat_lon.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="SD.cpp">
+    <Compile Include="led_control.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="Sd2Card.cpp">
+    <Compile Include="m8n.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="SdFile.cpp">
+    <Compile Include="state_machine.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="SdVolume.cpp">
-      <SubType>compile</SubType>
-    </Compile>
-    <Compile Include="SPI.cpp">
+    <Compile Include="steering.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="TinyGPS.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="vboot.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="uart.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="vboot.cpp">
+    <Compile Include="waypoints.cpp">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>
