@@ -7,5 +7,9 @@ Usb to Serial Programmer: COM10
 Command:
 C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avrdude.exe
 
-Arguments:
+Arguments (older?):
 -C"/cygdrive/c/Program Files (x86)/Arduino/hardware/tools/avr/etc/avrdude.conf" -v -v -patmega328p -carduino -P\\.\COM10 -D -Uflash:w:"$(ProjectDir)Debug\$(ItemFileName).hex":i
+
+Arguments (newer?):
+-C"C:\Program Files (x86)\Arduino\hardware\tools\avr\etc\avrdude.conf" -v -v -patmega328p -c arduino -P\\.\COM10 -b115200 -D -Uflash:w:"$(ProjectDir)Debug\$(ItemFileName).hex":i
+
