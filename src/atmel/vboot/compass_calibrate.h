@@ -1,7 +1,11 @@
 #ifndef compass_calibrateH
 #define compass_calibrateH
 
+#ifndef _WIN32
 #include <avr/io.h>
+#else
+#include "faketypes.h"
+#endif
 
 //---------------------------------------------------------------------------
 enum ECalibrationState {

@@ -61,6 +61,7 @@ public:
 	void Run();
 	static void print_step_name(TMainState st);
 	unsigned long TimeInStep();
+	void ForceStep(TMainState ns);
 };
 
 

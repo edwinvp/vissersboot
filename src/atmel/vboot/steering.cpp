@@ -1,7 +1,11 @@
 #include <math.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#else
+#include "fakeio.h"
+#endif
 #include "settings.h"
 #include "steering.h"
 #include "state_machine.h"

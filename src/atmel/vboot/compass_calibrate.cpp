@@ -3,8 +3,12 @@
 #include "crc.h"
 #include <math.h>
 #include <stdio.h>
+#ifndef _WIN32
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
+#else
+#include "fakeio.h"
+#endif
 
 #define pi 3.1415926535897932384626433832795
 #define two_pi 6.283185307179586476925286766559

@@ -6,6 +6,8 @@
 #include "mainform.h"
 #include "fakeio.h"
 #include "var_form.h"
+#include "compass_calibrate.h"
+#include "waypoints.h"
 #include "vboot.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
@@ -147,17 +149,17 @@ void __fastcall TMainFrm::AddLocations()
 #endif
 
 
-	gp_start.lat = start.loc.lat;
-	gp_start.lon = start.loc.lon;
+	waypoints.gp_start.lat = start.loc.lat;
+	waypoints.gp_start.lon = start.loc.lon;
 
-	gp_mem_1.lat = finish.loc.lat;
-	gp_mem_1.lon = finish.loc.lon;
+	waypoints.gp_mem_1.lat = finish.loc.lat;
+	waypoints.gp_mem_1.lon = finish.loc.lon;
 
-	gp_mem_2.lat = start.loc.lat;
-	gp_mem_2.lon = start.loc.lon;
+	waypoints.gp_mem_2.lat = start.loc.lat;
+	waypoints.gp_mem_2.lon = start.loc.lon;
 
-	gp_finish.lat = finish.loc.lat;
-	gp_finish.lon = finish.loc.lon;
+	waypoints.gp_finish.lat = finish.loc.lat;
+	waypoints.gp_finish.lon = finish.loc.lon;
 
 }
 //---------------------------------------------------------------------------
@@ -227,8 +229,8 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
-	vessel.compass_course = compass_course;
-	vessel.bearing_sp = bearing_sp;
+	vessel.compass_course = cc.compass_course;
+	vessel.bearing_sp = steering.bearing_sp;
 
 	float avr_motor_l(0),avr_motor_r(0);
 
@@ -254,18 +256,18 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"vessel.motor_left = " + FormatFloat(L"0.00",vessel.motor_left));
 	VarForm->AddLine(L"vessel.motor_right = " + FormatFloat(L"0.00",vessel.motor_right));
 	VarForm->AddLine(L"---");
-	VarForm->AddLine(L"gp_mem_1 = " + gp_mem_1.ToString());
-	VarForm->AddLine(L"gp_mem_2 = " + gp_mem_2.ToString());
-	VarForm->AddLine(L"gp_mem_3 = " + gp_mem_3.ToString());
+	VarForm->AddLine(L"gp_mem_1 = " + waypoints.gp_mem_1.ToString());
+	VarForm->AddLine(L"gp_mem_2 = " + waypoints.gp_mem_2.ToString());
+	VarForm->AddLine(L"gp_mem_3 = " + waypoints.gp_mem_3.ToString());
 	VarForm->AddLine(L"---");
-	VarForm->AddLine(L"gp_current = " + gp_current.ToString());
+	VarForm->AddLine(L"gp_current = " + waypoints.gp_current.ToString());
 	VarForm->AddLine(L"distance_m = "+ FloatToStr(distance_m));
-	VarForm->AddLine(L"arrived = "+ IntToStr((int)arrived));
+	VarForm->AddLine(L"arrived = "+ IntToStr((int)steering.arrived));
 
 	VarForm->AddLine(L"---");
-	VarForm->AddLine(L"main_state = " + MainStateToText(main_state));
-	VarForm->AddLine(L"state_time = " + IntToStr((int)state_time));
-	VarForm->AddLine(L"joy_pulses = " + IntToStr(joy_pulses));
+	VarForm->AddLine(L"main_state = " + MainStateToText(stm.Step()));
+	VarForm->AddLine(L"state_time = " + IntToStr((int)stm.TimeInStep()));
+	VarForm->AddLine(L"joy_pulses = " + IntToStr(stm.joy_pulses));
 
 	VarForm->AddLine(L"---");
 	VarForm->AddLine(L"pd3 pd = " + FloatToStr(pd3_pulse_duration));
@@ -274,9 +276,9 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"pd6 pd = " + FloatToStr(pd6_pulse_duration));
 
 	VarForm->AddLine(L"---");
-	VarForm->AddLine(L"p_add = " + FloatToStr(p_add));
-	VarForm->AddLine(L"i_add = " + FloatToStr(i_add));
-	VarForm->AddLine(L"d_add = " + FloatToStr(d_add));
+	VarForm->AddLine(L"p_add = " + FloatToStr(steering.p_add));
+	VarForm->AddLine(L"i_add = " + FloatToStr(steering.i_add));
+	VarForm->AddLine(L"d_add = " + FloatToStr(steering.d_add));
 
 
 	VarForm->Update();
@@ -322,7 +324,7 @@ void __fastcall TMainFrm::BtnZeroClick(TObject *Sender)
 
 void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
 {
-	main_state = msAutoModeCourse;
+	stm.ForceStep(msAutoModeCourse);
 }
 //---------------------------------------------------------------------------
 
@@ -362,10 +364,10 @@ void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
 
 		double phi = degs/360.0*2.0*pi;
 
-		double rx = (compass_max_x.fin - compass_min_x.fin)/2;
-		double rz = (compass_max_z.fin - compass_min_z.fin)/2;
-		double cent_x = compass_min_x.fin + rx;
-		double cent_z = compass_min_z.fin + rz;
+		double rx = (cc.mm_x.fin_max - cc.mm_x.fin_min)/2;
+		double rz = (cc.mm_z.fin_max - cc.mm_z.fin_min)/2;
+		double cent_x = cc.mm_x.fin_min + rx;
+		double cent_z = cc.mm_z.fin_min + rz;
 
 		int x = cent_x - sin(phi)*rx;
 		int y = 0;
@@ -414,8 +416,8 @@ void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 
 	// Show entire (normal) sensor min/max range as rectangle
 	int x1,y1,x2,y2;
-	C2Scr(bmp.get(),x1,y1,compass_min_x.fin,compass_min_z.fin);
-	C2Scr(bmp.get(),x2,y2,compass_max_x.fin,compass_max_z.fin);
+	C2Scr(bmp.get(),x1,y1,cc.mm_x.fin_min,cc.mm_z.fin_min);
+	C2Scr(bmp.get(),x2,y2,cc.mm_x.fin_max,cc.mm_z.fin_max);
 	bmp->Canvas->Brush->Style = bsClear;
 	bmp->Canvas->Rectangle(x1,y1,x2,y2);
 	bmp->Canvas->Brush->Style = bsSolid;
@@ -429,12 +431,12 @@ void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 	if (!cvalues.empty()) {
 		const TCompassTriple & t = *cvalues.rbegin();
 
-		float w = compass_max_x.fin - compass_min_x.fin;
-		float h = compass_max_z.fin - compass_min_z.fin;
+		float w = cc.mm_x.fin_max - cc.mm_x.fin_min;
+		float h = cc.mm_z.fin_max - cc.mm_z.fin_min;
 
 		if (w>=0 && h>=0) {
-			centered.x = (t.x - compass_min_x.fin - (w/2.0));
-			centered.z = -(t.z - compass_min_z.fin - (h/2.0));
+			centered.x = (t.x - cc.mm_x.fin_min - (w/2.0));
+			centered.z = -(t.z - cc.mm_z.fin_min - (h/2.0));
 		}
 	}
 
@@ -454,12 +456,12 @@ void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 	bmp->Canvas->Brush->Style = bsSolid;
 	bmp->Canvas->Brush->Color = clBlue;
 
-	float w = compass_max_x.fin - compass_min_x.fin;
-	float h = compass_max_z.fin - compass_min_z.fin;
+	float w = cc.mm_x.fin_max - cc.mm_x.fin_min;
+	float h = cc.mm_z.fin_max - cc.mm_z.fin_min;
 
 
 	// True heading, 0=N, 270=W etc...
-	float d = compass_course;
+	float d = cc.compass_course;
 
 	bmp->Canvas->Pen->Color = clRed;
 

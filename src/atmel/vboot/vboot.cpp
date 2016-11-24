@@ -1,5 +1,7 @@
 #include "settings.h"
+#ifndef _WIN32
 #include <avr/pgmspace.h>
+#endif
 #include "compass_calibrate.h"
 #include "state_machine.h"
 #include "steering.h"

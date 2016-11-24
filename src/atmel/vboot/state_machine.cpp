@@ -5,7 +5,11 @@
 #include "lat_lon.h"
 #include "waypoints.h"
 #include "led_control.h"
+#ifndef _WIN32
 #include <avr/pgmspace.h>
+#else
+#include "fakeio.h"
+#endif
 
 extern CSteering steering;
 extern CJoystick joystick;
@@ -38,8 +42,13 @@ TMainState CStateMachine::Step()
 void CStateMachine::SetNextStep(TMainState ns)
 {
 	if (ns != main_state) {
-		main_state = ns;	
+		main_state = ns;
 	}
+}
+
+void CStateMachine::ForceStep(TMainState ns)
+{
+	main_state = ns;
 }
 
 void CStateMachine::Run()

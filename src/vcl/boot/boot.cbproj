@@ -117,9 +117,36 @@
         <BCC_PCHName_Clang>bootPCH.h</BCC_PCHName_Clang>
     </PropertyGroup>
     <ItemGroup>
+        <CppCompile Include="..\..\atmel\vboot\compass_calibrate.cpp">
+            <DependentOn>..\..\atmel\vboot\compass_calibrate.h</DependentOn>
+            <BuildOrder>13</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\atmel\vboot\crc.cpp">
+            <DependentOn>..\..\atmel\vboot\crc.h</DependentOn>
+            <BuildOrder>19</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\atmel\vboot\fifo.cpp">
+            <DependentOn>..\..\atmel\vboot\fifo.h</DependentOn>
+            <BuildOrder>18</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\atmel\vboot\joystick.cpp">
+            <DependentOn>..\..\atmel\vboot\joystick.h</DependentOn>
+            <BuildOrder>16</BuildOrder>
+        </CppCompile>
         <CppCompile Include="..\..\atmel\vboot\lat_lon.cpp">
             <DependentOn>..\..\atmel\vboot\lat_lon.h</DependentOn>
             <BuildOrder>9</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\atmel\vboot\led_control.cpp">
+            <BuildOrder>17</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\atmel\vboot\state_machine.cpp">
+            <DependentOn>..\..\atmel\vboot\state_machine.h</DependentOn>
+            <BuildOrder>14</BuildOrder>
+        </CppCompile>
+        <CppCompile Include="..\..\atmel\vboot\steering.cpp">
+            <DependentOn>..\..\atmel\vboot\steering.h</DependentOn>
+            <BuildOrder>15</BuildOrder>
         </CppCompile>
         <CppCompile Include="..\..\atmel\vboot\TinyGPS.cpp">
             <BuildOrder>3</BuildOrder>
@@ -130,6 +157,10 @@
         <None Include="..\..\atmel\vboot\vboot.h">
             <BuildOrder>11</BuildOrder>
         </None>
+        <CppCompile Include="..\..\atmel\vboot\waypoints.cpp">
+            <DependentOn>..\..\atmel\vboot\waypoints.h</DependentOn>
+            <BuildOrder>12</BuildOrder>
+        </CppCompile>
         <CppCompile Include="boot.cpp">
             <BuildOrder>0</BuildOrder>
         </CppCompile>
@@ -164,8 +195,8 @@
             <DependentOn>vessel.h</DependentOn>
             <BuildOrder>8</BuildOrder>
         </CppCompile>
-        <FormResources Include="mainform.dfm"/>
         <FormResources Include="var_form.dfm"/>
+        <FormResources Include="mainform.dfm"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

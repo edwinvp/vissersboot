@@ -1,6 +1,10 @@
 #include "settings.h"
 #include "led_control.h"
+#ifndef _WIN32
 #include <avr/io.h>
+#else
+#include "fakeio.h"
+#endif
 #include "state_machine.h"
 
 // LED output pin (currently PORTB pin 5)
@@ -102,16 +106,16 @@ void CLedControl::update(bool gps_valid, bool arrived)
     if ((msk_ctr&7) == 0) {
         switch (mode) {
         case lmCalibrationPhase1:
-            msk_sreg = 0b00000011;
-            break;
-        case lmCalibrationPhase2:
-            msk_sreg = 0b11110000;
-            break;
-        case lmCalibrationPhase3:
-            msk_sreg = 0b11001100;
+			msk_sreg = 0x03; // 0b00000011;
+			break;
+		case lmCalibrationPhase2:
+			msk_sreg = 0xf0; // 0b11110000;
+			break;
+		case lmCalibrationPhase3:
+            msk_sreg = 0xcc; // 0b11001100;
             break;
         case lmCalibrationPhase4:
-            msk_sreg = 0b11111111;
+            msk_sreg = 0xff; // 0b11111111;
             break;
         }
     }

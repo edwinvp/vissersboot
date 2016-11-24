@@ -1,8 +1,12 @@
 #include "settings.h"
 #include "waypoints.h"
-#include <avr/eeprom.h>
 #include <stdio.h>
+#ifndef _WIN32
+#include <avr/eeprom.h>
 #include <avr/pgmspace.h>
+#else
+#include "fakeio.h"
+#endif
 #include "crc.h"
 
 #define AR_SIZE (1 + 3 * 2 * (sizeof(float)/sizeof(uint16_t)))

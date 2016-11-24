@@ -8,6 +8,8 @@
 #include <Vcl.StdCtrls.hpp>
 #include <Vcl.Forms.hpp>
 #include <Vcl.ExtCtrls.hpp>
+#include "waypoints.h"
+#include "compass_calibrate.h"
 //---------------------------------------------------------------------------
 #include "drawing_area.h"
 #include <Vcl.ComCtrls.hpp>
