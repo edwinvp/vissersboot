@@ -285,6 +285,7 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"p_add = " + FloatToStr(steering.p_add));
 	VarForm->AddLine(L"i_add = " + FloatToStr(steering.i_add));
 	VarForm->AddLine(L"d_add = " + FloatToStr(steering.d_add));
+	VarForm->AddLine(L"cv(clipped) = " + FormatFloat("0.00",steering.cv_clipped));
 
 
 	VarForm->Update();

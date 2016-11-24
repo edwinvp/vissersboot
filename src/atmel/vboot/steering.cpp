@@ -25,12 +25,25 @@ CSteering::CSteering() :
 	i_add(0),
 	d_add(0),
 	pid_err(0),
-    dont_stop_steering(false)
+	dont_stop_steering(false),
+	global_max_speed(1.0f)
 {
-    // Auto steer PID-tune parameters
-    TUNE_P=0.6; // P-action
-    TUNE_I=0.0000001; // I-action
-    TUNE_D=0.0;  // D-action
+	// Auto steer PID-tune parameters
+
+	// PID settings for initial vessel pointing (more agressive)
+	pid_agressive.TUNE_P=1.0; // P-action
+	pid_agressive.TUNE_I=0.005; // I-action
+	pid_agressive.TUNE_D=0.0;  // D-action
+	// Max steering action done by controller
+	pid_agressive.max_steering = 0.9*global_max_speed;
+
+	// PID settings for 'normal' sailing (calmer)
+	pid_normal.TUNE_P=0.6;
+	pid_normal.TUNE_I=0.0000001;
+	pid_normal.TUNE_D=0.0;
+	// Max steering action done by controller
+	pid_normal.max_steering = 0.3*global_max_speed;
+
 }
 
 // ----------------------------------------------------------------------------
@@ -63,7 +76,7 @@ bool enable_d, float Kd)
         cv += d_add;
     
     if (!enable_i)
-    i_add=0;
+	    i_add=0;
 
     return cv;
 }
@@ -95,23 +108,15 @@ void CSteering::do_restrict_dir(float & pid_cv)
 // ----------------------------------------------------------------------------
 void CSteering::auto_steer()
 {
-    float motor_l(0), motor_r(0);
+	float rel_pid_err = fabs(pid_err) / 180.0f;
+	float max_correct(0.0);
 
-    // Max speed in straight line
-    float max_speed(1.0f); // This equals 100 [%] speed
-    // Max steering action
-    // ... in normal auto mode (sailing with small PID-error)
-    float max_correct_normal(0.3*max_speed);
-    // ... in "course" auto mode (while initially manoeuvering the vessel)
-    float max_correct_course(0.9*max_speed);
+	bool bPointingTheVessel = (stm.Step() == msAutoModeCourse);
 
-    float rel_pid_err = fabs(pid_err) / 180.0f;
-
-    float max_correct(0.0);
-    if (stm.Step() == msAutoModeCourse)
-        max_correct = max_correct_course*rel_pid_err;
-    else
-        max_correct = max_correct_normal;
+	if (bPointingTheVessel)
+		max_correct = pid_agressive.max_steering*rel_pid_err;
+	else
+		max_correct = pid_normal.max_steering;
 
     // Use different, manually entered course (a test mode)
     if (SUBST_SP != 0.0)
@@ -126,21 +131,26 @@ void CSteering::auto_steer()
         pv_used = compass_course;
 
     // Only enable I-action when in normal auto mode (not course mode)
-    bool enable_i = (stm.Step() == msAutoModeNormal);
+	CPidParams * params(0);
+	if (bPointingTheVessel)
+		params = &pid_agressive; // use agressive settings when pointing vessel
+	else
+		params = &pid_normal; // when sailing use less agressive settings
 
-    float pid_cv = simple_pid(
-        pv_used, // process-value (GPS course)
-        sp_used, // set point (bearing from Haversine)
-        true, TUNE_P, // P-action
-        enable_i, TUNE_I, // I-action
-        false, TUNE_D  // D-action
-        );
+	// Run PI-controller (D-action not implemented yet)
+	float pid_cv = simple_pid(
+		pv_used, // process-value (GPS course)
+		sp_used, // set point (bearing from Haversine)
+		params->p_enable, params->TUNE_P, // P-action
+		params->i_enable, params->TUNE_I, // I-action
+		params->d_enable, params->TUNE_D  // D-action
+		);
 
-    do_restrict_dir(pid_cv);
+	do_restrict_dir(pid_cv);
 
-    // Clip the PID control variable (CV)
-    float cv_clipped(0.0);
-    if (pid_cv > max_correct)
+	// Clip the PID control variable (CV)
+	cv_clipped=0.0f;
+	if (pid_cv > max_correct)
         cv_clipped = max_correct;
     else if (pid_cv < -max_correct)
         cv_clipped = -max_correct;
@@ -156,8 +166,9 @@ void CSteering::auto_steer()
         cv_clipped=0;
     }
 
-    // Calculate L+R motor speed factors (-1.0 ... +1.0)
-    calc_motor_setpoints(motor_l,motor_r,max_speed,cv_clipped);
+	// Calculate L+R motor speed factors (-1.0 ... +1.0)
+	float motor_l(0), motor_r(0);
+    calc_motor_setpoints(motor_l,motor_r,global_max_speed,cv_clipped);
 
     // Convert to values that the servo hardware understands (2000...4000)
     OCR1A = (float)JOY_CENTER + (motor_l * 1000.0);
@@ -200,8 +211,13 @@ void CSteering::calc_motor_setpoints(float & motor_l, float & motor_r, float max
 
 void CSteering::toggle_dont_stop()
 {
-    if (dont_stop_steering)
-	    dont_stop_steering=false;
-    else
-	    dont_stop_steering=true;
+	if (dont_stop_steering)
+		dont_stop_steering=false;
+	else
+		dont_stop_steering=true;
+}
+
+void CSteering::reset_i_action()
+{
+	i_add=0;
 }

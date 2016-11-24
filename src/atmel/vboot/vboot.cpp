@@ -496,10 +496,10 @@ void handle_parameterization(char c)
 {
 	switch (msg_mode) {
 	case mmPAction:
-		tune_Config(steering.TUNE_P, c);
+		tune_Config(steering.pid_normal.TUNE_P, c);
 		break;
 	case mmIAction:
-		tune_Config(steering.TUNE_I, c);
+		tune_Config(steering.pid_normal.TUNE_I, c);
 		break;
 	case mmPVSubst:
 		tune_Config(steering.SUBST_PV, c);
@@ -633,12 +633,12 @@ void periodic_msg()
 
 	case mmPAction:
 		b_printf(PSTR("(set P-action): "));
-		tune_PrintValue(steering.TUNE_P);
+		tune_PrintValue(steering.pid_normal.TUNE_P);
 		break;
 
 	case mmIAction:
 		b_printf(PSTR("(set I-action): "));
-		tune_PrintValue(steering.TUNE_I);
+		tune_PrintValue(steering.pid_normal.TUNE_I);
 		break;
 
 	case mmPVSubst:
