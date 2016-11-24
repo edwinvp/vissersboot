@@ -61,11 +61,11 @@ void TVessel::CalcSpeedAndHeading()
 	float corner_adj = 0.01;
 
 	// 1. Left motor (on positive throttle) causes a clockwise turn
-	float ml_heading = corner_adj * ml * 90.0;
+	float ml_heading = corner_adj * ml * -90.0;
 	float ml_speed = speed_adj * ml;
 
 	// 2. Right motor (on positive throttle) causes a counter clockwise turn
-	float mr_heading = corner_adj * mr * -90.0;
+	float mr_heading = corner_adj * mr * 90.0;
 	float mr_speed = speed_adj * mr;
 
 	// 3+4. Add effects together

@@ -84,6 +84,8 @@ private:	// User declarations
 	std::deque<TCompassTriple> cvalues;
 
 	void __fastcall C2Scr(Graphics::TBitmap * bmp, int & sx, int & sy, float x, float y);
+	float __fastcall CompassFollowsTrackbar();
+	float __fastcall CompassFollowsVessel();
 
 public:		// User declarations
 	__fastcall TMainFrm(TComponent* Owner);

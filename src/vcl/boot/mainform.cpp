@@ -22,6 +22,7 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 	//da.SetZoomFactor(8400000);
 	//da.SetZoomFactor(10000); // kral. plas
 	da.SetZoomFactor(80000); // lage bergse plas
+	da.SetZoomFactor(300000); // view of boat
 
 	vessel.heading = 40.0f;
 
@@ -48,8 +49,13 @@ __fastcall TMainFrm::TMainFrm(TComponent* Owner)
 
 	UnicodeString fnPuttyLog=L"C:\\Users\\Z\\Desktop\\putty.log";
 
-	putty_log_file.reset(new TFileStream(fnPuttyLog,fmOpenRead | fmShareDenyNone));
-	putty_log_file->Position = putty_log_file->Size;
+	try {
+		putty_log_file.reset(new TFileStream(fnPuttyLog,fmOpenRead | fmShareDenyNone));
+		putty_log_file->Position = putty_log_file->Size;
+	} catch (Exception & e) {
+		putty_log_file.reset(0);
+	}
+
 
 	main_init();
 
@@ -355,12 +361,15 @@ void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
 			}
 		}
 	} else {
-		// Convert trackbar to 'fake' compass reading
 
+#if 0
+		// Convert trackbar to 'fake' compass reading
 		// Use scrollbar
-		//int degs = TbCompass->Position;
+		float degs = CompassFollowsTrackbar();
+#else
 		// Use virtual vessel:
-        int degs = vessel.heading;
+		float degs = CompassFollowsVessel();
+#endif
 
 		double phi = degs/360.0*2.0*pi;
 
@@ -500,5 +509,43 @@ void __fastcall TMainFrm::OnInputKeyPress(TObject *Sender, System::WideChar &Key
 
 	Fake_UART_ISR(c);
 }
+//---------------------------------------------------------------------------
+float __fastcall TMainFrm::CompassFollowsTrackbar()
+{
+	// Convert trackbar to 'fake' compass reading
+	// Use scrollbar
+	static float degs(0);
+
+	float delta(0.0);
+	delta =TbCompass->Position / 100.0;
+
+	if (fabs(delta) > 5.0)
+		degs += delta;
+
+	if (degs >= 360)
+		degs-=360;
+	if (degs < 0)
+		degs+=360;
+
+	// Act as if compass calibration yielded these values
+	cc.mm_x.fin_min = -1000;
+	cc.mm_z.fin_min = -1000;
+	cc.mm_x.fin_max = 1000;
+	cc.mm_z.fin_max = 1000;
+
+	return degs;
+}
+//---------------------------------------------------------------------------
+float __fastcall TMainFrm::CompassFollowsVessel()
+{
+	// Act as if compass calibration yielded these values
+	cc.mm_x.fin_min = -1000;
+	cc.mm_z.fin_min = -1000;
+	cc.mm_x.fin_max = 1000;
+	cc.mm_z.fin_max = 1000;
+
+	return vessel.heading;
+}
+
 //---------------------------------------------------------------------------
 

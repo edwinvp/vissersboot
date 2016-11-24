@@ -147,7 +147,7 @@ object MainFrm: TMainFrm
       EditLabel.Height = 13
       EditLabel.Caption = 'EdZoomFactor'
       TabOrder = 3
-      Text = '100'
+      Text = '300000'
       OnKeyDown = OnZoomFactKeyDown
     end
     object SbMotorL: TScrollBar
@@ -271,9 +271,10 @@ object MainFrm: TMainFrm
       Top = 437
       Width = 233
       Height = 41
-      Max = 360
+      Max = 1000
+      Min = -1000
       PageSize = 0
-      Frequency = 90
+      Frequency = 250
       TabOrder = 12
     end
   end
@@ -296,10 +297,6 @@ object MainFrm: TMainFrm
     TabOrder = 2
     object TsCourseOverview: TTabSheet
       Caption = 'TsCourseOverview'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object PaintBox1: TPaintBox
         Left = 0
         Top = 0
@@ -315,10 +312,6 @@ object MainFrm: TMainFrm
     object TsMagneto: TTabSheet
       Caption = 'TsMagneto'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 404
       object PaintBox2: TPaintBox
         Left = 0
         Top = 0
