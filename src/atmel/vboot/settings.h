@@ -24,7 +24,7 @@
 #define GPS_STALE_TIME 10000
 
 // Time to find out GPS course - before PID starts steering
-#define COURSE_DET_TIME 4000
+#define COURSE_DET_TIME 250
 
 // EEPROM offsets
 #define COMPASS_EEPROM_OFFSET 0
