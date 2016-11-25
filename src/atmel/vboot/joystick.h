@@ -16,7 +16,7 @@ public:
     bool in_goto_store_center();
     bool in_manual();
     bool in_clear();
-    int to_perc(unsigned int raw);
+    static int to_perc(unsigned int raw);
 };
 
 #endif

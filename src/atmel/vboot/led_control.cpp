@@ -137,3 +137,4 @@ void CLedControl::blink_x_times(int n)
 {
     blink_times = n;
 }
+

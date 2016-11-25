@@ -274,6 +274,8 @@ void setup_capture_inputs()
 	// Configure PD6 as input
 	DDRD &= ~_BV(DDD6);
 	PORTD &= ~_BV(PORTD6);
+    // Configure PD1 as output (head lights / tail lights)
+    PORTD |= _BV(PORTD1);
 	// Configure PD5 as input
 	DDRD &= ~_BV(DDD5);
 	PORTD &= ~_BV(PORTD5);
@@ -593,16 +595,6 @@ void read_uart()
 }
 
 // ----------------------------------------------------------------------------
-// Manual mode (joystick 'pass through' steering)
-// ----------------------------------------------------------------------------
-void manual_steering()
-{
-	// Pass through motor left and right setpoints to PWM module
-	OCR1A = pd5_pulse_duration;
-	OCR1B = pd6_pulse_duration;
-}
-
-// ----------------------------------------------------------------------------
 // Periodic message
 // ----------------------------------------------------------------------------
 
@@ -736,6 +728,12 @@ void process_100ms()
         }   
     }
 
+    // Switch head lights / tail lights on or off    
+    if (steering.motor_running())
+        PORTD |= _BV(PORTD1);
+    else
+        PORTD &= ~_BV(PORTD1);
+
 	// Run main state machine
     stm.Run();
 
@@ -743,7 +741,7 @@ void process_100ms()
 	if (stm.Step() == msAutoModeCourse || stm.Step() == msAutoModeNormal)
 		steering.auto_steer();
 	else
-		manual_steering();
+		steering.manual_steering(pd5_pulse_duration,pd6_pulse_duration);
 
     TLedMode lm = Step2LedMode(stm.Step());
 

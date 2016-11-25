@@ -57,6 +57,8 @@ __published:	// IDE-managed Components
 	TLabeledEdit *EdInput;
 	TCheckBox *CbUseRealCompass;
 	TTrackBar *TbCompass;
+	TGroupBox *GroupBox2;
+	TShape *ShHeadLight;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);

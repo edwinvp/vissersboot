@@ -139,8 +139,8 @@ object MainFrm: TMainFrm
       end
     end
     object EdZoomFactor: TLabeledEdit
-      Left = 112
-      Top = 235
+      Left = 136
+      Top = 236
       Width = 121
       Height = 21
       EditLabel.Width = 69
@@ -276,6 +276,20 @@ object MainFrm: TMainFrm
       PageSize = 0
       Frequency = 250
       TabOrder = 12
+    end
+    object GroupBox2: TGroupBox
+      Left = 71
+      Top = 208
+      Width = 59
+      Height = 66
+      Caption = 'HEAD/TAIL'
+      TabOrder = 13
+      object ShHeadLight: TShape
+        Left = 16
+        Top = 24
+        Width = 25
+        Height = 25
+      end
     end
   end
   object ListBox1: TListBox

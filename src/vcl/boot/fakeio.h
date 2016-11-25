@@ -15,6 +15,7 @@
 #include "faketypes.h"
 //---------------------------------------------------------------------------
 #define PORTB5 5
+#define PORTD1 1
 #define PINC0 0
 //---------------------------------------------------------------------------
 #define _BV(x) (1 << x)
@@ -32,6 +33,7 @@ extern uint8_t PORTB;
 extern AnsiString prog_op;
 extern uint8_t DDRC;
 extern uint8_t PORTC;
+extern uint8_t PORTD;
 extern uint8_t PINC;
 //---------------------------------------------------------------------------
 extern int16_t ext_compass_x;

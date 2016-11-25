@@ -23,6 +23,7 @@ uint8_t PORTB;
 
 uint8_t DDRC;
 uint8_t PORTC;
+uint8_t PORTD;
 uint8_t PINC;
 //---------------------------------------------------------------------------
 std::queue<char> gps_buffer;

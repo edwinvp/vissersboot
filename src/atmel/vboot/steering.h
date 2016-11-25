@@ -25,6 +25,10 @@ class CSteering
 private:
     void do_restrict_dir(float & pid_cv);
 
+	float motor_l;
+    float motor_r;
+
+
 public:
     // Auto steering related
     int restrict_dir;
@@ -75,6 +79,8 @@ public:
 
 	void toggle_dont_stop();
 	void reset_i_action();
+    void manual_steering(unsigned int pd5_pulse_duration,unsigned int pd6_pulse_duration);
+    bool motor_running();
 };
 
 #endif

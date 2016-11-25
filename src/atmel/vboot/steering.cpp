@@ -9,10 +9,13 @@
 #include "settings.h"
 #include "steering.h"
 #include "state_machine.h"
+#include "joystick.h"
 
 extern CStateMachine stm;
 
 CSteering::CSteering() :
+    motor_l(0),
+    motor_r(0),
     restrict_dir(0),
     arrived(false),
     compass_course(0.0f),
@@ -25,8 +28,8 @@ CSteering::CSteering() :
 	i_add(0),
 	d_add(0),
 	pid_err(0),
-	dont_stop_steering(false),
-	global_max_speed(1.0f)
+	global_max_speed(1.0f),
+	dont_stop_steering(false)
 {
 	// Auto steer PID-tune parameters
 
@@ -167,7 +170,8 @@ void CSteering::auto_steer()
     }
 
 	// Calculate L+R motor speed factors (-1.0 ... +1.0)
-	float motor_l(0), motor_r(0);
+	motor_l=0;
+    motor_r=0;
     calc_motor_setpoints(motor_l,motor_r,global_max_speed,cv_clipped);
 
     // Convert to values that the servo hardware understands (2000...4000)
@@ -220,4 +224,23 @@ void CSteering::toggle_dont_stop()
 void CSteering::reset_i_action()
 {
 	i_add=0;
+}
+
+// ----------------------------------------------------------------------------
+// Manual mode (joystick 'pass through' steering)
+// ----------------------------------------------------------------------------
+void CSteering::manual_steering(unsigned int pd5_pulse_duration,unsigned int pd6_pulse_duration)
+{
+    motor_l = CJoystick::to_perc(pd5_pulse_duration)/100.0f;
+    motor_r = CJoystick::to_perc(pd6_pulse_duration)/100.0f;
+
+    // Pass through motor left and right setpoints to PWM module
+    OCR1A = pd5_pulse_duration;
+    OCR1B = pd6_pulse_duration;
+}
+
+bool CSteering::motor_running()
+{
+    float thresh(0.05); // 5 [%]
+    return (fabs(motor_l) > thresh) || (fabs(motor_r) > thresh);
 }

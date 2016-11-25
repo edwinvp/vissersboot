@@ -235,6 +235,11 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	else
 		ShLed->Brush->Color=clBlack;
 
+	if (PORTD & _BV(PORTD1))
+		ShHeadLight->Brush->Color=clRed;
+	else
+		ShHeadLight->Brush->Color=clBlack;
+
 	vessel.compass_course = cc.compass_course;
 	vessel.bearing_sp = steering.bearing_sp;
 
