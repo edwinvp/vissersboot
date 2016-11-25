@@ -182,6 +182,7 @@ UnicodeString MainStateToText(TMainState s)
 	switch (s) {
 	case msManualMode: return L"msManualMode";
 	case msAutoModeNormal: return L"msAutoModeNormal";
+	case msReverseThrust: return L"msReverseThrust";
 	case msAutoModeCourse: return L"msAutoModeCourse";
 	case msCountJoyGoto: return L"msCountJoyGoto";
 	case msConfirmGotoPosX: return L"msConfirmGotoPosX";
@@ -291,6 +292,9 @@ void __fastcall TMainFrm::Timer1Timer(TObject *Sender)
 	VarForm->AddLine(L"i_add = " + FloatToStr(steering.i_add));
 	VarForm->AddLine(L"d_add = " + FloatToStr(steering.d_add));
 	VarForm->AddLine(L"cv(clipped) = " + FormatFloat("0.00",steering.cv_clipped));
+
+	TbMotorL->Position = steering.get_motor_L_perc() * 100.0;
+	TbMotorR->Position = steering.get_motor_R_perc() * 100.0;
 
 
 	VarForm->Update();

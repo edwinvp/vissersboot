@@ -174,15 +174,14 @@ void CSteering::auto_steer()
     motor_r=0;
     calc_motor_setpoints(motor_l,motor_r,global_max_speed,cv_clipped);
 
-    // Convert to values that the servo hardware understands (2000...4000)
-    OCR1A = (float)JOY_CENTER + (motor_l * 1000.0);
-    OCR1B = (float)JOY_CENTER + (motor_r * 1000.0);
+	// Convert to values that the servo hardware understands (2000...4000)
+	SetMotorSpeeds(motor_l,motor_r);
 }
 // ----------------------------------------------------------------------------
 float CSteering::clip_motor(float mtr)
 {
-    if (mtr>1.0)
-        return 1.0;
+	if (mtr>1.0)
+		return 1.0;
     else if (mtr<-1.0)
         return -1.0;
     else
@@ -212,7 +211,7 @@ void CSteering::calc_motor_setpoints(float & motor_l, float & motor_r, float max
         motor_r = 0;
     }
 }
-
+// ----------------------------------------------------------------------------
 void CSteering::toggle_dont_stop()
 {
 	if (dont_stop_steering)
@@ -220,7 +219,7 @@ void CSteering::toggle_dont_stop()
 	else
 		dont_stop_steering=true;
 }
-
+// ----------------------------------------------------------------------------
 void CSteering::reset_i_action()
 {
 	i_add=0;
@@ -229,18 +228,49 @@ void CSteering::reset_i_action()
 // ----------------------------------------------------------------------------
 // Manual mode (joystick 'pass through' steering)
 // ----------------------------------------------------------------------------
-void CSteering::manual_steering(unsigned int pd5_pulse_duration,unsigned int pd6_pulse_duration)
+void CSteering::manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc)
 {
-    motor_l = CJoystick::to_perc(pd5_pulse_duration)/100.0f;
-    motor_r = CJoystick::to_perc(pd6_pulse_duration)/100.0f;
+	motor_l = CJoystick::to_perc(mot_L_dc)/100.0f;
+	motor_r = CJoystick::to_perc(mot_R_dc)/100.0f;
 
-    // Pass through motor left and right setpoints to PWM module
-    OCR1A = pd5_pulse_duration;
-    OCR1B = pd6_pulse_duration;
+	// Pass through motor left and right setpoints to PWM module
+	OCR1A = mot_L_dc;
+    OCR1B = mot_R_dc;
 }
-
+// ----------------------------------------------------------------------------
 bool CSteering::motor_running()
 {
-    float thresh(0.05); // 5 [%]
-    return (fabs(motor_l) > thresh) || (fabs(motor_r) > thresh);
+	float thresh(0.05); // 5 [%]
+	return (fabs(motor_l) > thresh) || (fabs(motor_r) > thresh);
 }
+// ----------------------------------------------------------------------------
+void CSteering::do_reverse_thrust()
+{
+	// Go reverse (fill out negative motor setpoint here)
+	float reversing_speed(0.3);
+	motor_l = -1.0*reversing_speed;
+	motor_r = -1.0*reversing_speed;
+
+	// Convert to values that the servo hardware understands (2000...4000)
+	SetMotorSpeeds(motor_l,motor_r);
+}
+// ----------------------------------------------------------------------------
+void CSteering::SetMotorSpeeds(float ml, float mr)
+{
+	// Convert to values that the servo hardware understands (2000...4000)
+	OCR1A = (float)JOY_CENTER + (ml * 1000.0);
+	OCR1B = (float)JOY_CENTER + (mr * 1000.0);
+}
+// ----------------------------------------------------------------------------
+float CSteering::get_motor_L_perc()
+{
+	return motor_l;
+}
+// ----------------------------------------------------------------------------
+float CSteering::get_motor_R_perc()
+{
+	return motor_r;
+}
+// ----------------------------------------------------------------------------
+
+

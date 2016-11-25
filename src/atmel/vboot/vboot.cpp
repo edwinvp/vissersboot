@@ -357,6 +357,8 @@ void print_steering_msg()
 
 	if (stm.Step()==msAutoModeCourse)
 		b_printf(PSTR("[autoC] "));
+	else if (stm.Step()==msReverseThrust)
+		b_printf(PSTR("[reverse] "));
 	else if (stm.Step()==msAutoModeNormal)
 		b_printf(PSTR("[autoN] "));
 	else
@@ -443,6 +445,8 @@ void tune_PrintValue(double dblParam)
 		break;
 	case mmDebug:
 		break;
+    case mmButton:
+        break;
 	}
 }
 // ----------------------------------------------------------------------------
@@ -483,7 +487,9 @@ void tune_Config(double & dblParam, char c)
 			case mmDebug:
 				break;
 			case mmLast:
-				break;				
+				break;
+            case mmButton:
+                break;
 			};
 
 		} else {
@@ -686,7 +692,8 @@ TLedMode Step2LedMode(TMainState step)
             lm = lmGpsStatus;
         	break;
     	case msAutoModeNormal:
-    	case msAutoModeCourse: // deliberate fall-through
+		case msAutoModeCourse: // deliberate fall-through
+		case msReverseThrust:  // deliberate fall-through
             lm = lmArriveStatus;
     	    break;
     	case msCmdErrorMan:
@@ -738,7 +745,10 @@ void process_100ms()
     stm.Run();
 
 	// Steering
-	if (stm.Step() == msAutoModeCourse || stm.Step() == msAutoModeNormal)
+	TMainState step = stm.Step();
+	if (step == msReverseThrust)
+		steering.do_reverse_thrust();
+	else if (step == msAutoModeCourse || step == msAutoModeNormal)
 		steering.auto_steer();
 	else
 		steering.manual_steering(pd5_pulse_duration,pd6_pulse_duration);

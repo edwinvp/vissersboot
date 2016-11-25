@@ -59,6 +59,8 @@ __published:	// IDE-managed Components
 	TTrackBar *TbCompass;
 	TGroupBox *GroupBox2;
 	TShape *ShHeadLight;
+	TTrackBar *TbMotorL;
+	TTrackBar *TbMotorR;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);

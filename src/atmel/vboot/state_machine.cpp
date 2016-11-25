@@ -66,6 +66,9 @@ void CStateMachine::Run()
 	case msAutoModeNormal: // automatic waypoint mode (normal)
 		step_auto_mode_normal();
 		break;
+	case msReverseThrust: // brake using reverse setpoint for a small time
+		step_reverse_thrust();
+		break;
 	case msCountJoyGoto: // count joystick 'up' (goto pos.) command
 		step_count_goto();
 		break;
@@ -129,6 +132,7 @@ void CStateMachine::print_step_name(TMainState st)
 	switch (st) {
 		case msAutoModeCourse: b_printf(PSTR("msAutoModeCourse")); break;
 		case msAutoModeNormal: b_printf(PSTR("msAutoModeNormal")); break;
+		case msReverseThrust: b_printf(PSTR("msReverseThrust")); break;
 		case msManualMode: b_printf(PSTR("msManualMode")); break;
 		case msCountJoyGoto: b_printf(PSTR("msCountJoyGoto")); break;
 		case msCountJoyGotoRetn: b_printf(PSTR("msCountJoyGotoRetn")); break;
@@ -140,6 +144,7 @@ void CStateMachine::print_step_name(TMainState st)
 		case msClear2: b_printf(PSTR("msClear2")); break;
 		case msCmdErrorMan: b_printf(PSTR("msCmdErrorMan")); break;
 		case msCmdErrorAuto: b_printf(PSTR("msCmdErrorAuto")); break;
+		case msLast: b_printf(PSTR("msLast")); break;
 	}
 }
 
@@ -147,8 +152,9 @@ void CStateMachine::print_step_name(TMainState st)
 void CStateMachine::check_arrived()
 {
     if (!steering.dont_stop_steering && steering.arrived) {
-        b_printf(PSTR("Arrived!\r\n"));
-        next_state = msManualMode;
+		b_printf(PSTR("Arrived!\r\n"));
+
+        next_state = msReverseThrust;
     }
 }
 // ----------------------------------------------------------------------------
@@ -161,10 +167,10 @@ void CStateMachine::abort_auto_if()
         next_state = msCmdErrorAuto;
     }
 
-    // Go to manual mode if GPS signal is absent for too long,
-    // or joystick is put in manual control mode.
+	// Go to manual mode (via reverse burst) if GPS signal is absent for
+	// too long, or joystick is put in manual control mode.
     if (joystick.in_manual() || !gps_valid) {
-        next_state = msManualMode;
+        next_state = msReverseThrust;
     }
 }
 
@@ -216,10 +222,17 @@ void CStateMachine::step_auto_mode_course()
 void CStateMachine::step_auto_mode_normal()
 {
     if (fabs(steering.pid_err) > 32)
-    next_state = msAutoModeCourse;
+		next_state = msAutoModeCourse;
     
     abort_auto_if();
     check_arrived();
+}
+// ----------------------------------------------------------------------------
+void CStateMachine::step_reverse_thrust()
+{
+	if (state_time > 1000) {
+		next_state = msManualMode;
+	}
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_clear1()
@@ -347,7 +360,7 @@ void CStateMachine::step_count_store_retn()
 // ----------------------------------------------------------------------------
 unsigned long CStateMachine::TimeInStep()
 {
-    return state_time;
+	return state_time;
 }
 // ----------------------------------------------------------------------------
 

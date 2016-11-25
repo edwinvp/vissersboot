@@ -8,6 +8,7 @@ enum TMainState {
 	msManualMode=0, // manual control mode
 	msAutoModeCourse, // 'course' adjustments
 	msAutoModeNormal, // automatic waypoint mode
+	msReverseThrust, // reverse thrust after arriving at wp
 	msCountJoyGoto, // count joystick 'up' command
 	msCountJoyGotoRetn,
 	msConfirmGotoPosX,
@@ -37,7 +38,8 @@ private:
 	// Steps / actions
 	void step_manual_mode();
     void step_auto_mode_course();
-    void step_auto_mode_normal();
+	void step_auto_mode_normal();
+	void step_reverse_thrust();
     void step_clear1();
     void step_clear2();
     void step_cmd_error_man();

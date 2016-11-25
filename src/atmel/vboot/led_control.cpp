@@ -117,6 +117,12 @@ void CLedControl::update(bool gps_valid, bool arrived)
         case lmCalibrationPhase4:
             msk_sreg = 0xff; // 0b11111111;
             break;
+        case lmArriveStatus:
+        case lmFastBlink:
+        case lmGpsStatus:
+        case lmOff:
+        case lmSlowBlink:
+            break;        
         }
     }
 

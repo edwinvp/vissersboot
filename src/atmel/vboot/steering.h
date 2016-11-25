@@ -26,8 +26,9 @@ private:
     void do_restrict_dir(float & pid_cv);
 
 	float motor_l;
-    float motor_r;
+	float motor_r;
 
+	void SetMotorSpeeds(float motor_l, float motor_r);
 
 public:
     // Auto steering related
@@ -79,8 +80,11 @@ public:
 
 	void toggle_dont_stop();
 	void reset_i_action();
-    void manual_steering(unsigned int pd5_pulse_duration,unsigned int pd6_pulse_duration);
-    bool motor_running();
+    void manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc);
+	bool motor_running();
+	void do_reverse_thrust();
+	float get_motor_L_perc();
+	float get_motor_R_perc();
 };
 
 #endif

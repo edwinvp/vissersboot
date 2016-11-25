@@ -269,7 +269,7 @@ object MainFrm: TMainFrm
     object TbCompass: TTrackBar
       Left = 20
       Top = 437
-      Width = 233
+      Width = 157
       Height = 41
       Max = 1000
       Min = -1000
@@ -290,6 +290,26 @@ object MainFrm: TMainFrm
         Width = 25
         Height = 25
       end
+    end
+    object TbMotorL: TTrackBar
+      Left = 221
+      Top = 424
+      Width = 97
+      Height = 25
+      Max = 100
+      Min = -100
+      Frequency = 25
+      TabOrder = 14
+    end
+    object TbMotorR: TTrackBar
+      Left = 221
+      Top = 455
+      Width = 97
+      Height = 25
+      Max = 100
+      Min = -100
+      Frequency = 25
+      TabOrder = 15
     end
   end
   object ListBox1: TListBox
