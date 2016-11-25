@@ -160,7 +160,7 @@ void CStateMachine::check_arrived()
 // ----------------------------------------------------------------------------
 void CStateMachine::abort_auto_if()
 {
-    // Blink LED fast when 'special' goto/store/clear command is given.
+	// Blink LED fast when 'special' goto/store/clear command is given.
     // We are now in auto mode and that is allowed only in manual mode.
     if (!joystick.in_goto_store_center() ||
         joystick.in_clear()) {
@@ -237,8 +237,8 @@ void CStateMachine::step_reverse_thrust()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_clear1()
 {
-    if (!joystick.in_clear())
-    next_state = msCmdErrorMan;
+	if (!joystick.in_clear())
+	next_state = msCmdErrorMan;
     else if (!shown_stats) {
         print_stats();
         shown_stats=true;
@@ -256,7 +256,7 @@ void CStateMachine::step_clear2()
     }
 
     if (state_time > 5000)
-        next_state = msCmdErrorMan;
+		next_state = msCmdErrorMan;
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_cmd_error_man()
@@ -274,12 +274,12 @@ void CStateMachine::step_cmd_error_auto()
 
     if (state_time > 1000 || bLetGoOfJoyStick) {
         next_state = msAutoModeCourse;
-    }
+	}
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_goto_pos_x()
 {
-    if (joy_pulses > 3)
+    if (!gps_valid || joy_pulses > 3)
         next_state = msCmdErrorMan;
     else if (ledctrl.done_blinking()) {
         if (waypoints.set_finish(joy_pulses)) {
@@ -287,45 +287,45 @@ void CStateMachine::step_confirm_goto_pos_x()
             next_state = msAutoModeCourse;
         } else
             next_state = msCmdErrorMan;
-    }
+	}
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_store_pos_x()
 {
-    if (joy_pulses > 3)
-        next_state = msCmdErrorMan;
-    else if (ledctrl.done_blinking()) {
-        b_printf(PSTR("Store waypoint # %d\r\n"), joy_pulses);
-        // Define GPS coords as a waypoint.
-        waypoints.store_waypoint(joy_pulses);
-        // Store waypoints defined so far to EEPROM.
-        waypoints.store_waypoints();
-        next_state = msManualMode;
-    }
+	if (!gps_valid || joy_pulses > 3)
+		next_state = msCmdErrorMan;
+	else if (ledctrl.done_blinking()) {
+		b_printf(PSTR("Store waypoint # %d\r\n"), joy_pulses);
+		// Define GPS coords as a waypoint.
+		waypoints.store_waypoint(joy_pulses);
+		// Store waypoints defined so far to EEPROM.
+		waypoints.store_waypoints();
+		next_state = msManualMode;
+	}
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_goto()
 {
-    if (joystick.in_store())
+    if (!gps_valid || joystick.in_store())
         next_state = msCmdErrorMan; // attempt to run 'opposite' command
     else if (joystick.in_goto_store_center()) {
         if (state_time > MIN_JOY_PULSE_DURATION) {
             // pulse valid, count
             joy_pulses++;
-            next_state = msCountJoyGotoRetn;
-        } else
-        next_state = msCmdErrorMan; // pulse wasn't long enough
-    } else if (state_time > MAX_JOY_PULSE_DURATION)
-    next_state = msCmdErrorMan; // joystick takes too long to go back center
+			next_state = msCountJoyGotoRetn;
+		} else
+		next_state = msCmdErrorMan; // pulse wasn't long enough
+	} else if (state_time > MAX_JOY_PULSE_DURATION)
+	next_state = msCmdErrorMan; // joystick takes too long to go back center
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_goto_retn()
 {
-    if (joystick.in_goto())
-        next_state = msCountJoyGoto;
-    else if (joystick.in_store())
-        next_state = msCmdErrorMan;
-    else if (state_time > JOY_CMD_ACCEPT_TIME && ledctrl.been_dark_for_a_while()) {
+	if (joystick.in_goto())
+		next_state = msCountJoyGoto;
+	else if (!gps_valid || joystick.in_store())
+		next_state = msCmdErrorMan;
+	else if (state_time > JOY_CMD_ACCEPT_TIME && ledctrl.been_dark_for_a_while()) {
         ledctrl.blink_x_times(joy_pulses);
         next_state = msConfirmGotoPosX;
     }
@@ -333,29 +333,29 @@ void CStateMachine::step_count_goto_retn()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_store()
 {
-    if (joystick.in_goto())
-        next_state = msCmdErrorMan;
-    else if (joystick.in_goto_store_center()) {
-        if (state_time > MIN_JOY_PULSE_DURATION) {
-            // pulse valid, count
-            joy_pulses++;
-            next_state = msCountJoyStoreRetn;
-        } else
-        next_state = msCmdErrorMan; // pulse wasn't long enough
-    } else if (state_time > MAX_JOY_PULSE_DURATION)
-    next_state = msCmdErrorMan; // joystick takes too long to go back center
+	if (!gps_valid || joystick.in_goto())
+		next_state = msCmdErrorMan;
+	else if (joystick.in_goto_store_center()) {
+		if (state_time > MIN_JOY_PULSE_DURATION) {
+			// pulse valid, count
+			joy_pulses++;
+			next_state = msCountJoyStoreRetn;
+		} else
+		next_state = msCmdErrorMan; // pulse wasn't long enough
+	} else if (state_time > MAX_JOY_PULSE_DURATION)
+	next_state = msCmdErrorMan; // joystick takes too long to go back center
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_store_retn()
 {
-    if (joystick.in_store())
-        next_state = msCountJoyStore;
-    else if (joystick.in_store())
-        next_state = msCmdErrorMan;
-    else if (state_time > JOY_CMD_ACCEPT_TIME && ledctrl.been_dark_for_a_while()) {
-        ledctrl.blink_x_times(joy_pulses);
-        next_state = msConfirmStorePosX;
-    }
+	if (!gps_valid || joystick.in_store())
+		next_state = msCountJoyStore;
+	else if (joystick.in_store())
+		next_state = msCmdErrorMan;
+	else if (state_time > JOY_CMD_ACCEPT_TIME && ledctrl.been_dark_for_a_while()) {
+		ledctrl.blink_x_times(joy_pulses);
+		next_state = msConfirmStorePosX;
+	}
 }
 // ----------------------------------------------------------------------------
 unsigned long CStateMachine::TimeInStep()
