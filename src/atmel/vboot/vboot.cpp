@@ -9,6 +9,7 @@
 #include "waypoints.h"
 #include "led_control.h"
 #include "fifo.h"
+#include "compass_stream_check.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -110,7 +111,9 @@ bool btn_pressed(false);
 
 // Compass input
 TCompassTriple compass_raw;
+CCompassStreamCheck compass_stream_chk;
 int16_t compass_smp;
+bool compass_sends_values(false);
 
 // Compass calibration, storage etc.
 CCompassCalibration cc;
@@ -372,7 +375,7 @@ void print_steering_msg()
 			b_printf(PSTR("*"));
 	
 		b_printf(PSTR(" "));
-	
+
 		b_printf(PSTR("pv=%d"), pv_d);
 		if (steering.SUBST_PV!=0)
 			b_printf(PSTR("*"));
@@ -689,7 +692,7 @@ TLedMode Step2LedMode(TMainState step)
 	switch (step) {
     	/* in manual/auto mode, just show status of GPS receiver */
     	case msManualMode:
-            lm = lmGpsStatus;
+			lm = lmGpsStatus;
         	break;
     	case msAutoModeNormal:
 		case msAutoModeCourse: // deliberate fall-through
@@ -715,15 +718,18 @@ TLedMode Step2LedMode(TMainState step)
 // ----------------------------------------------------------------------------
 void process_100ms()
 {
-    // Detect calibration button presses (when PORTC0 is low)
-    btn_state = (PINC & (1<<PINC0))==0;
-    // Detect rising edge (button pressed)
-    if (btn_state && (!btn_prev_state)) 
-        btn_pressed = true;
-    btn_prev_state = btn_state;
+	// Detect calibration button presses (when PORTC0 is low)
+	btn_state = (PINC & (1<<PINC0))==0;
+	// Detect rising edge (button pressed)
+	if (btn_state && (!btn_prev_state))
+		btn_pressed = true;
+	btn_prev_state = btn_state;
 
-    // Go to calibration mode if button is pressed
-    if (btn_pressed && !btn_state) {
+	// Detect frozen compass raw values
+	compass_sends_values = compass_stream_chk.check(compass_raw);
+
+	// Go to calibration mode if button is pressed
+	if (btn_pressed && !btn_state) {
         btn_pressed = false;
         if (!cc.calibration_mode) {
             b_printf(PSTR("calibration button pressed\r\n"));
@@ -753,7 +759,7 @@ void process_100ms()
 	else
 		steering.manual_steering(pd5_pulse_duration,pd6_pulse_duration);
 
-    TLedMode lm = Step2LedMode(stm.Step());
+	TLedMode lm = Step2LedMode(stm.Step());
 
     // If calibrating, override led mode
     if (cc.calibration_mode) {
@@ -777,7 +783,7 @@ void process_100ms()
 
     ledctrl.set_mode(lm);
 
-	ledctrl.update(gps_valid,steering.arrived);
+	ledctrl.update(gps_valid,steering.arrived,compass_sends_values);
 
     cc.update100ms();
 }

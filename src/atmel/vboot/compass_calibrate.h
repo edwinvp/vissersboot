@@ -17,6 +17,9 @@ class TCompassTriple
 	public:
 	int16_t x,y,z;
 	TCompassTriple() : x(0), y(0), z(0) {};
+	bool equals(const TCompassTriple & rhs) {
+		return (x==rhs.x) && (y==rhs.y) && (z==rhs.z);
+	};
 };
 //---------------------------------------------------------------------------
 struct comp_extreme {

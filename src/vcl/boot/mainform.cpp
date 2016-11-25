@@ -378,7 +378,7 @@ void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
 		float degs = CompassFollowsTrackbar();
 #else
 		// Use virtual vessel:
-		float degs = CompassFollowsVessel();
+		float degs = CompassFollowsVessel() + (rand()%20-5)/10.0f;
 #endif
 
 		double phi = degs/360.0*2.0*pi;
@@ -392,7 +392,8 @@ void __fastcall TMainFrm::Timer2Timer(TObject *Sender)
 		int y = 0;
 		int z = cent_z - cos(phi)*rz;
 
-		ThreeNewCompassValues(x,y,z);
+		if (!CbFreezeCompass->Checked)
+			ThreeNewCompassValues(x,y,z);
 	}
 }
 //---------------------------------------------------------------------------
@@ -558,4 +559,5 @@ float __fastcall TMainFrm::CompassFollowsVessel()
 }
 
 //---------------------------------------------------------------------------
+
 

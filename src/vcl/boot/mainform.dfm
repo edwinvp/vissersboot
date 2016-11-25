@@ -229,8 +229,8 @@ object MainFrm: TMainFrm
       OnClick = BtnZeroClick
     end
     object CbValidGps: TCheckBox
-      Left = 112
-      Top = 380
+      Left = 6
+      Top = 378
       Width = 225
       Height = 17
       Caption = 'Send valid GPS position to AVR program'
@@ -310,6 +310,14 @@ object MainFrm: TMainFrm
       Min = -100
       Frequency = 25
       TabOrder = 15
+    end
+    object CbFreezeCompass: TCheckBox
+      Left = 224
+      Top = 380
+      Width = 97
+      Height = 17
+      Caption = 'Freeze compass'
+      TabOrder = 16
     end
   end
   object ListBox1: TListBox

@@ -142,6 +142,9 @@
     <Compile Include="compass_calibrate.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="compass_stream_check.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="crc.cpp">
       <SubType>compile</SubType>
     </Compile>
