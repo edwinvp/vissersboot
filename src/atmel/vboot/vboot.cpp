@@ -277,7 +277,7 @@ void setup_capture_inputs()
 	// Configure PD6 as input
 	DDRD &= ~_BV(DDD6);
 	PORTD &= ~_BV(PORTD6);
-    // Configure PD1 as output (head lights / tail lights)
+    // Configure PD2 as output (head lights / tail lights)
     PORTD |= _BV(PORTD1);
 	// Configure PD5 as input
 	DDRD &= ~_BV(DDD5);
@@ -743,9 +743,9 @@ void process_100ms()
 
     // Switch head lights / tail lights on or off    
     if (steering.motor_running())
-        PORTD |= _BV(PORTD1);
+        PORTD |= _BV(PORTD2);
     else
-        PORTD &= ~_BV(PORTD1);
+        PORTD &= ~_BV(PORTD2);
 
 	// Run main state machine
     stm.Run();
