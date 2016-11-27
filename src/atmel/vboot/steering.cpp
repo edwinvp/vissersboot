@@ -34,8 +34,8 @@ CSteering::CSteering() :
 	// Auto steer PID-tune parameters
 
 	// PID settings for initial vessel pointing (more agressive)
-	pid_agressive.TUNE_P=1.0; // P-action
-	pid_agressive.TUNE_I=0.005; // I-action
+	pid_agressive.TUNE_P=10.0; // P-action
+	pid_agressive.TUNE_I=1.5; // I-action
 	pid_agressive.TUNE_D=0.0;  // D-action
 	// Max steering action done by controller
 	pid_agressive.max_steering = 0.9*global_max_speed;
@@ -111,13 +111,12 @@ void CSteering::do_restrict_dir(float & pid_cv)
 // ----------------------------------------------------------------------------
 void CSteering::auto_steer()
 {
-	float rel_pid_err = fabs(pid_err) / 180.0f;
 	float max_correct(0.0);
 
 	bool bPointingTheVessel = (stm.Step() == msAutoModeCourse);
 
 	if (bPointingTheVessel)
-		max_correct = pid_agressive.max_steering*rel_pid_err;
+		max_correct = pid_agressive.max_steering;
 	else
 		max_correct = pid_normal.max_steering;
 
@@ -247,7 +246,7 @@ bool CSteering::motor_running()
 void CSteering::do_reverse_thrust()
 {
 	// Go reverse (fill out negative motor setpoint here)
-	float reversing_speed(0.3);
+	float reversing_speed(1.0);
 	motor_l = -1.0*reversing_speed;
 	motor_r = -1.0*reversing_speed;
 

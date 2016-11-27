@@ -208,7 +208,7 @@ void CStateMachine::step_manual_mode()
 void CStateMachine::step_auto_mode_course()
 {
     if (state_time > 2000) {
-		if (fabs(steering.pid_err) < 10) {
+		if (fabs(steering.pid_err) < 20) {
 			steering.reset_i_action();
 			next_state = msAutoModeNormal;
 		}
