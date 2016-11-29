@@ -15,7 +15,7 @@
 #include "faketypes.h"
 //---------------------------------------------------------------------------
 #define PORTB5 5
-#define PORTD1 1
+#define PORTD2 2
 #define PINC0 0
 //---------------------------------------------------------------------------
 #define _BV(x) (1 << x)
@@ -27,7 +27,7 @@ extern uint16_t OCR1B; // motor left (out)
 extern volatile unsigned int pd6_pulse_duration; // left motor (in)
 extern volatile unsigned int pd5_pulse_duration; // right motor (in)
 extern volatile unsigned int pd3_pulse_duration; // Pos (RX channel 3)
-extern volatile unsigned int pb3_pulse_duration; // Man/auto (RX channel 4)
+extern volatile unsigned int pb4_pulse_duration; // Man/auto (RX channel 4)
 //---------------------------------------------------------------------------
 extern uint8_t PORTB;
 extern AnsiString prog_op;
