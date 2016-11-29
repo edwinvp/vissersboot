@@ -141,8 +141,8 @@ volatile unsigned int pd5_pulse_duration;
 volatile unsigned int pd3_rising;
 volatile unsigned int pd3_pulse_duration;
 // Man/auto (RX channel 4)
-volatile unsigned int pb3_rising;
-volatile unsigned int pb3_pulse_duration;
+volatile unsigned int pb4_rising;
+volatile unsigned int pb4_pulse_duration;
 // Old PORTD values for PORTD servo signal detection
 volatile unsigned char old_pind = 0;
 // Old PORTB values for PORTD servo signal detection
@@ -188,14 +188,14 @@ ISR(PCINT0_vect)
 	unsigned int tmr_reg;
 	tmr_reg = TCNT1;
 
-	// PB3 servo pulse measurements
+	// PB4 servo pulse measurements
 	if ((PINB & _BV(PINB3)) ^ (old_pinb & _BV(PINB3))) {
 		if (PINB & _BV(PINB3))
-			pb3_rising = tmr_reg;
+			pb4_rising = tmr_reg;
 		else {
-			pb3_pulse_duration = tmr_reg - pb3_rising;
-			if (pb3_pulse_duration > 10000)
-				pb3_pulse_duration -= 25536;
+			pb4_pulse_duration = tmr_reg - pb4_rising;
+			if (pb4_pulse_duration > 10000)
+				pb4_pulse_duration -= 25536;
 		}
 	}
 
@@ -285,7 +285,7 @@ void setup_capture_inputs()
 	// Configure PD3 as input
 	DDRD &= ~_BV(DDD3);
 	PORTD &= ~_BV(PORTD3);
-	// Configure PB3 as input
+	// Configure PB4 as input
 	DDRB &= ~_BV(DDB3);
 	PORTB &= ~_BV(PORTB3);
 
@@ -293,9 +293,9 @@ void setup_capture_inputs()
 	PCMSK2 |= _BV(PCINT22); // PD6
 	PCMSK2 |= _BV(PCINT21); // PD5
 	PCMSK2 |= _BV(PCINT19); // PD3
-	PCMSK0 |= _BV(PCINT3); // PB3
+	PCMSK0 |= _BV(PCINT3); // PB4
 
-	// Configure interrupt on logical state state on PB3 (so PCIE0)
+	// Configure interrupt on logical state state on PB4 (so PCIE0)
 	PCICR |= _BV(PCIE0);
 
 	// Configure interrupt on logical state state on PD3/PD5/PD6 (so PCIE2)
@@ -609,19 +609,19 @@ void read_uart()
 
 void print_servo_msg()
 {
-	int pd6_perc, pd5_perc, pd3_perc, pb3_perc, a1, b1;
+	int pd6_perc, pd5_perc, pd3_perc, pb4_perc, a1, b1;
 
     // Display current servo signals as received (2000 ... 4000, 0 = no signal)
 	pd6_perc = joystick.to_perc(pd6_pulse_duration);
 	pd5_perc = joystick.to_perc(pd5_pulse_duration);
 	pd3_perc = joystick.to_perc(pd3_pulse_duration);
-	pb3_perc = joystick.to_perc(pb3_pulse_duration);
+	pb4_perc = joystick.to_perc(pb4_pulse_duration);
 	a1 = joystick.to_perc(OCR1A);
 	b1 = joystick.to_perc(OCR1B);
 
-	b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb3=%05d A=%05d B=%05d\r\n"),
+	b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb4=%05d A=%05d B=%05d\r\n"),
     	pd6_perc, pd5_perc,
-    	pd3_perc, pb3_perc,
+    	pd3_perc, pb4_perc,
     	a1, b1);
 }
 
