@@ -1,5 +1,7 @@
 #include "i2c.h"
 
+#define I2C_TIMEOUT 10000
+
 /*********************
  ****I2C Functions****
  *********************/
@@ -36,15 +38,15 @@ void i2cSendStop(void)
 	TWCR = (1<<TWINT)|(1<<TWEN)|(1<<TWSTO);
 }
 
-void i2cWaitForComplete(void)
+bool i2cWaitForComplete(void)
 {
 	int i = 0;		//time out variable
 	
 	// wait for i2c interface to complete operation
-    while ((!(TWCR & (1<<TWINT))) && (i < 10000))
+    while ((!(TWCR & (1<<TWINT))) && (i < I2C_TIMEOUT))
 		i++;
-//	if (i>=20000)
-//		printf(PSTR("i2c complete timed out\r\n"));
+		
+	return (i!=I2C_TIMEOUT);
 }
 
 void i2cSendByte(unsigned char data)
@@ -63,12 +65,12 @@ void i2cReceiveByte(unsigned char ackFlag)
 	// begin receive over i2c
 	if( ackFlag )
 	{
-		// ackFlag = TRUE: ACK the recevied data
+		// ackFlag = TRUE: ACK the received data
 		outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT)|BV(TWEA));
 	}
 	else
 	{
-		// ackFlag = FALSE: NACK the recevied data
+		// ackFlag = FALSE: NACK the received data
 		outb(TWCR, (inb(TWCR)&TWCR_CMD_MASK)|BV(TWINT));
 	}
 }

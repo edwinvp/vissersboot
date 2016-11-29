@@ -126,6 +126,7 @@ void CLedControl::update(bool gps_valid, bool arrived, bool compass_sends_values
         case lmGpsStatus:
         case lmOff:
         case lmSlowBlink:
+		case lmSolidOn:
             break;        
         }
     }

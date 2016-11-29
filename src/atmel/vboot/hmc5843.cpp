@@ -3,7 +3,7 @@
 
 #ifndef _WIN32
 //Setup HMC5843 for constant measurement mode
-void init_hmc5843(void)
+bool init_hmc5843(void)
 {
 	i2cSendStart();
 	i2cWaitForComplete();
@@ -18,6 +18,8 @@ void init_hmc5843(void)
 	i2cWaitForComplete();
 
 	i2cSendStop();
+	
+	return true;
 }
 
 int16_t read_hmc5843(char reg_adr)

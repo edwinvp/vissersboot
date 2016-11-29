@@ -79,7 +79,7 @@ void i2cSendStart(void);
 //! Send an I2C stop condition in Master mode
 void i2cSendStop(void);
 //! Wait for current I2C operation to complete
-void i2cWaitForComplete(void);
+bool i2cWaitForComplete(void);
 //! Send an (address|R/W) combination or a data byte over I2C
 void i2cSendByte(unsigned char data);
 //! Receive a data byte over I2C  
