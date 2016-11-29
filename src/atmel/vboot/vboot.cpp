@@ -283,8 +283,8 @@ void setup_capture_inputs()
 	DDRD &= ~_BV(DDD5);
 	PORTD &= ~_BV(PORTD5);
 	// Configure PD3 as input
-	DDRD &= ~_BV(DDD4);
-	PORTD &= ~_BV(PORTD4);
+	DDRD &= ~_BV(DDD3);
+	PORTD &= ~_BV(PORTD3);
 	// Configure PB4 as input
 	DDRB &= ~_BV(DDB4);
 	PORTB &= ~_BV(PORTB4);
