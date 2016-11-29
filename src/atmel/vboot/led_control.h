@@ -7,7 +7,8 @@ enum TLedMode {
     lmGpsStatus,
     lmArriveStatus,
     lmSlowBlink,
-    lmFastBlink,
+	lmFastBlink,
+	lmSolidOn,
 
     lmCalibrationPhase1,
     lmCalibrationPhase2,

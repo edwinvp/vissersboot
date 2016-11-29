@@ -97,6 +97,10 @@ void CStateMachine::Run()
 		step_clear2();
 		break;
 
+	case msConfirmClear:
+		step_confirm_clear();
+		break;
+
 	case msCmdErrorMan:
 		step_cmd_error_man();
 		break;
@@ -142,6 +146,7 @@ void CStateMachine::print_step_name(TMainState st)
 		case msConfirmStorePosX: b_printf(PSTR("msConfirmStorePosX")); break;
 		case msClear1: b_printf(PSTR("msClear1")); break;
 		case msClear2: b_printf(PSTR("msClear2")); break;
+		case msConfirmClear: b_printf(PSTR("msConfirmClear")); break;
 		case msCmdErrorMan: b_printf(PSTR("msCmdErrorMan")); break;
 		case msCmdErrorAuto: b_printf(PSTR("msCmdErrorAuto")); break;
 		case msLast: b_printf(PSTR("msLast")); break;
@@ -238,7 +243,7 @@ void CStateMachine::step_reverse_thrust()
 void CStateMachine::step_clear1()
 {
 	if (!joystick.in_clear())
-	next_state = msCmdErrorMan;
+		next_state = msCmdErrorMan;
     else if (!shown_stats) {
         print_stats();
         shown_stats=true;
@@ -251,12 +256,20 @@ void CStateMachine::step_clear1()
 void CStateMachine::step_clear2()
 {
     if (!joystick.in_clear()) {
-        waypoints.forget_all();
-        next_state = msManualMode;
+		waypoints.forget_all();
+		waypoints.store_waypoints();
+		ledctrl.blink_x_times(2);
+        next_state = msConfirmClear;
     }
 
-    if (state_time > 5000)
+	if (state_time > 5000)
 		next_state = msCmdErrorMan;
+}
+// ----------------------------------------------------------------------------
+void CStateMachine::step_confirm_clear()
+{
+	if (state_time > 2000)
+		next_state = msManualMode;
 }
 // ----------------------------------------------------------------------------
 void CStateMachine::step_cmd_error_man()

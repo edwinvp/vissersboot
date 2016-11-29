@@ -17,6 +17,7 @@ enum TMainState {
 	msConfirmStorePosX,
 	msClear1,
 	msClear2,
+	msConfirmClear,
 	msCmdErrorMan,
 	msCmdErrorAuto,
 	msLast
@@ -49,7 +50,8 @@ private:
     void step_count_goto();
     void step_count_goto_retn();
     void step_count_store();
-    void step_count_store_retn();
+	void step_count_store_retn();
+	void step_confirm_clear();
 
 public:
     bool shown_stats;

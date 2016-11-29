@@ -192,6 +192,7 @@ UnicodeString MainStateToText(TMainState s)
 	case msCountJoyStoreRetn: return L"msCountJoyStoreRetn";
 	case msClear1: return L"msClear1";
 	case msClear2: return L"msClear2";
+	case msConfirmClear: return L"msConfirmClear";
 
 	case msCmdErrorMan: return L"msCmdErrorMan";
 	case msCmdErrorAuto: return L"msCmdErrorAuto";

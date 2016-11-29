@@ -702,11 +702,18 @@ TLedMode Step2LedMode(TMainState step)
     	case msCmdErrorMan:
     	case msCmdErrorAuto: // deliberate fall-through
             lm = lmFastBlink;
-    	    break;
-    	case msConfirmGotoPosX:
-    	case msConfirmStorePosX: // deliberate fall-through
-            lm = lmSlowBlink;
-        	break;
+			break;
+		case msConfirmGotoPosX:
+		case msConfirmStorePosX: // deliberate fall-through
+			lm = lmSlowBlink;
+			break;
+		case msClear2:
+			lm = lmSolidOn;
+			break;
+		case msConfirmClear:
+			lm = lmSlowBlink;
+			break;
+
     	default:
         	lm = lmOff;
 	}
@@ -776,8 +783,8 @@ void process_100ms()
             break;
         case csFinish:
         case csCalibrated:
-            lm = lmCalibrationPhase4;
-            break;                        
+			lm = lmCalibrationPhase4;
+			break;
         }
     }
 

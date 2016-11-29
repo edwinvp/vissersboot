@@ -64,6 +64,10 @@ void CLedControl::update(bool gps_valid, bool arrived, bool compass_sends_values
     	    led_signal = fast_blink;
     	    break;
 
+		case lmSolidOn:
+			led_signal = true;
+			break;
+
         case lmSlowBlink:
     	    if (slow_blink_prev && !slow_blink) {
             	// We just blinked once
