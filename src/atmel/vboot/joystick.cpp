@@ -2,7 +2,7 @@
 #include "joystick.h"
 
 extern volatile unsigned int pd3_pulse_duration;
-extern volatile unsigned int pb3_pulse_duration;
+extern volatile unsigned int pb4_pulse_duration;
 
 CJoystick::CJoystick()
 {
@@ -49,12 +49,12 @@ bool CJoystick::in_goto_store_center()
 // ----------------------------------------------------------------------------
 bool CJoystick::in_manual()
 {
-    return in_min(pb3_pulse_duration);
+    return in_min(pb4_pulse_duration);
 }
 // ----------------------------------------------------------------------------
 bool CJoystick::in_clear()
 {
-    return in_max(pb3_pulse_duration);
+    return in_max(pb4_pulse_duration);
 }
 // ----------------------------------------------------------------------------
 int CJoystick::to_perc(unsigned int raw)
