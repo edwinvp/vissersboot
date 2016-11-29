@@ -189,8 +189,8 @@ ISR(PCINT0_vect)
 	tmr_reg = TCNT1;
 
 	// PB4 servo pulse measurements
-	if ((PINB & _BV(PINB3)) ^ (old_pinb & _BV(PINB3))) {
-		if (PINB & _BV(PINB3))
+	if ((PINB & _BV(PINB4)) ^ (old_pinb & _BV(PINB4))) {
+		if (PINB & _BV(PINB4))
 			pb4_rising = tmr_reg;
 		else {
 			pb4_pulse_duration = tmr_reg - pb4_rising;
@@ -283,17 +283,17 @@ void setup_capture_inputs()
 	DDRD &= ~_BV(DDD5);
 	PORTD &= ~_BV(PORTD5);
 	// Configure PD3 as input
-	DDRD &= ~_BV(DDD3);
-	PORTD &= ~_BV(PORTD3);
+	DDRD &= ~_BV(DDD4);
+	PORTD &= ~_BV(PORTD4);
 	// Configure PB4 as input
-	DDRB &= ~_BV(DDB3);
-	PORTB &= ~_BV(PORTB3);
+	DDRB &= ~_BV(DDB4);
+	PORTB &= ~_BV(PORTB4);
 
 	// Enable on-pin-change for pins
 	PCMSK2 |= _BV(PCINT22); // PD6
 	PCMSK2 |= _BV(PCINT21); // PD5
 	PCMSK2 |= _BV(PCINT19); // PD3
-	PCMSK0 |= _BV(PCINT3); // PB4
+	PCMSK0 |= _BV(PCINT4); // PB4
 
 	// Configure interrupt on logical state state on PB4 (so PCIE0)
 	PCICR |= _BV(PCIE0);
