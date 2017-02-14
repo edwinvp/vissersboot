@@ -35,9 +35,6 @@ int16_t read_hmc5843(char reg_adr)
 	i2cSendByte(reg_adr);	//Read from a given address
 	i2cWaitForComplete();
 
-//	i2cSendStop();
-//	i2cWaitForComplete();
-
 	i2cSendStart();
 	i2cWaitForComplete();
 
