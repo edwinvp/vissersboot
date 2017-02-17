@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <avr/pgmspace.h>
 #include "hmc5843.h"
 #include "i2c.h"
 
@@ -22,38 +24,66 @@ bool init_hmc5843(void)
 	return true;
 }
 
-int16_t read_hmc5843(char reg_adr)
+TCompassRawValue read_hmc5843(char reg_adr)
 {
-	char lsb(0), msb(0);
+	TCompassRawValue rawvalue;
 
 	i2cSendStart();
-	i2cWaitForComplete();
+	bool a = i2cWaitForComplete();
 
 	i2cSendByte(HMC5843_W);	// write to this I2C address, R/*W cleared
-	i2cWaitForComplete();
+	bool b = i2cWaitForComplete();
 
 	i2cSendByte(reg_adr);	//Read from a given address
-	i2cWaitForComplete();
+	bool c = i2cWaitForComplete();
 
 	i2cSendStart();
-	i2cWaitForComplete();
-
+	bool d = i2cWaitForComplete();
+	
 	i2cSendByte(HMC5843_R); // read from this I2C address, R/*W Set
-	i2cWaitForComplete();
+	bool e = i2cWaitForComplete();
 
+	bool ae = a && b && c && d && e;
+	
+	if (!ae) {
+		// We coulnd't start the transaction or something else went wrong.
+		// Terminate I2C transaction and reset I2C peripheral.
+		i2cSendStop();
+		i2cWaitForComplete();
+		i2creset();
+		rawvalue.valid=false;
+		return rawvalue;		
+	}
+
+	// Read compass registers
 	i2cReceiveByte(TRUE);
-	i2cWaitForComplete();
-	msb = i2cGetReceivedByte(); //Read the LSB data
-	i2cWaitForComplete();
+	bool f = i2cWaitForComplete();
+	char msb = i2cGetReceivedByte(); //Read the LSB data
+	bool g = i2cWaitForComplete();
 
 	i2cReceiveByte(FALSE);
-	i2cWaitForComplete();
-	lsb = i2cGetReceivedByte(); //Read the MSB data
-	i2cWaitForComplete();
+	bool h = i2cWaitForComplete();
+	char lsb = i2cGetReceivedByte(); //Read the MSB data
+	bool i = i2cWaitForComplete();
 
+	bool fi = f && g && h && i;
+
+	// Terminate I2C transaction
 	i2cSendStop();
+	i2cWaitForComplete();
 
-	return( (msb<<8) | lsb);
+	if (!fi) {
+		// Something went wrong when receiving the values from the I2C-slave.
+		rawvalue.valid=false;
+		return rawvalue;
+	}
+
+	// We read the bytes okay. Make integer from those bytes
+	// and set status valid.
+	rawvalue.value = (msb<<8) | lsb;
+	rawvalue.valid = true;
+	
+	return rawvalue;
 }
 
 #else

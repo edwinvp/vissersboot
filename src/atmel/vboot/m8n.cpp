@@ -31,7 +31,6 @@ int multi_read_m8n(TinyGPS & gps)
 	do {
 		_delay_us(15);
 
-		//i2cReceiveByte(FALSE);
 		i2cReceiveByte(TRUE);
 		
 		i2cWaitForComplete();
@@ -39,14 +38,7 @@ int multi_read_m8n(TinyGPS & gps)
 		
 		valid = d != 0 && d != 0xff;
 		
-		if (valid && c < 100) {
-/*
-			if (d>=31)
-				printf(PSTR("%c"), d);
-			else
-				printf(PSTR("."));
-*/				
-			
+		if (valid && c < 100) {		
 			gps.encode(d);
 		}
 		

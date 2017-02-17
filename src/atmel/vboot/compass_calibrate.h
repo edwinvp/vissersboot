@@ -6,6 +6,7 @@
 #else
 #include "faketypes.h"
 #endif
+#include "compass_rawvalues.h"
 
 //---------------------------------------------------------------------------
 enum ECalibrationState {
@@ -15,9 +16,9 @@ enum ECalibrationState {
 class TCompassTriple
 {
 	public:
-	int16_t x,y,z;
-	TCompassTriple() : x(0), y(0), z(0) {};
-	bool equals(const TCompassTriple & rhs) {
+	TCompassRawValue x,y,z;
+	TCompassTriple() {};
+	bool equals(const TCompassTriple & rhs) const {
 		return (x==rhs.x) && (y==rhs.y) && (z==rhs.z);
 	};
 };

@@ -103,6 +103,7 @@ unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
 TinyGPS gps;
 bool gps_valid = false;
 bool gps_valid_prev = false;
+bool compass_working_prev = false;
 long gps_lat, gps_lon, gps_course;
 
 bool btn_prev_state(false);
@@ -112,6 +113,8 @@ bool btn_pressed(false);
 // Compass input
 TCompassTriple compass_raw;
 CCompassStreamCheck compass_stream_chk;
+int16_t good_compass_smp;
+int16_t bad_compass_smp;
 int16_t compass_smp;
 bool compass_sends_values(false);
 
@@ -387,10 +390,12 @@ void print_steering_msg()
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
-    b_printf(PSTR("x=%04d, y=%04d, z=%04d smp=%04d course=%04d sp=%04d\r\n"),
-	compass_raw.x, compass_raw.y, compass_raw.z, compass_smp,
-	int(steering.compass_course),
-	int(steering.bearing_sp));
+    b_printf(PSTR("x=%04d, y=%04d, z=%04d course=%04d sp=%04d "),
+		compass_raw.x, compass_raw.y, compass_raw.z,
+		int(steering.compass_course),
+		int(steering.bearing_sp));
+
+    b_printf(PSTR("smp#(good/bad)=%04d(%04d/%04d) \r\n"), compass_smp, good_compass_smp, bad_compass_smp);
 	
 	cc.print_cal();
 }
@@ -421,7 +426,9 @@ void print_stats()
 // ----------------------------------------------------------------------------
 void clear_stats(void)
 {
-	//
+	compass_smp=0;
+	bad_compass_smp=-0;
+	good_compass_smp=0;
 }
 // ----------------------------------------------------------------------------
 void tune_PrintValue(double dblParam)
@@ -828,7 +835,67 @@ void process_500ms()
 	gps_valid_prev = gps_valid;
 }
 
+// ----------------------------------------------------------------------------
+void read_compass_and_gps()
+{
+	compass_raw.x.clear();
+	compass_raw.y.clear();
+	compass_raw.z.clear();
 
+	bool expect_working_compass(bad_compass_smp < 4);
+	bool periodic_attempt((compass_smp%500)==0);
+	bool compass_working;
+
+	if (expect_working_compass || periodic_attempt) {
+		// Read compass X,Y,Z reading registers.
+		compass_raw.x = read_hmc5843(0x03);
+		if (compass_raw.x.valid)
+			compass_raw.y = read_hmc5843(0x05);
+		if (compass_raw.y.valid)
+			compass_raw.z = read_hmc5843(0x07);
+	}
+	
+	compass_smp++;
+	if (compass_smp>9999)
+	compass_smp=0;
+
+	bool sample_valid(compass_raw.x.valid && compass_raw.y.valid && compass_raw.z.valid);
+	
+	// Only process compass values if they were read successfully via I2C
+	if (sample_valid) {
+		if (cc.calibration_mode)
+			cc.calibrate(compass_raw);
+		
+		steering.compass_course = cc.calc_course(compass_raw);
+		
+		bad_compass_smp=0;
+		good_compass_smp++;
+		if (good_compass_smp>9999)
+			good_compass_smp=9999;
+		
+		} else {
+			bad_compass_smp++;
+			if (!expect_working_compass)
+				good_compass_smp=0;
+			if (bad_compass_smp>9999)
+				bad_compass_smp=9999;
+	}
+
+	compass_working = (good_compass_smp > 0);
+	
+	if (!compass_working_prev && compass_working)
+		b_printf(PSTR("COMPASS up\r\n"));
+	if (compass_working_prev && !compass_working)
+		b_printf(PSTR("COMPASS down\r\n"));
+	
+	compass_working_prev = compass_working;
+	
+	// Read GPS-bytes, but only if compass was reachable
+	if (compass_working) {
+		m8n_set_reg_addr(0xff);
+		multi_read_m8n(gps);
+	}	
+}
 
 // ----------------------------------------------------------------------------
 // MAIN PROCESS
@@ -849,24 +916,8 @@ void process()
 			waypoints.gp_current.lat, waypoints.gp_current.lon);
 	steering.arrived = distance_m < 3;
 
-
-	compass_raw.x = 0;
-	compass_raw.y = 0;
-	compass_raw.z = 0;
-
-	compass_raw.x = read_hmc5843(0x03);
-	compass_raw.y = read_hmc5843(0x05);
-	compass_raw.z = read_hmc5843(0x07);
-
-	if (cc.calibration_mode)
-		cc.calibrate(compass_raw);
-	
-	steering.compass_course = cc.calc_course(compass_raw);
-
-	compass_smp++;
-
-	m8n_set_reg_addr(0xff);
-	multi_read_m8n(gps);
+	// Read magnetometer (compass) bytes and GPS-bytes
+	read_compass_and_gps();
 
 	// Time to run 100 [ms] process?
 	delta = global_ms_timer - t_100ms_start_ms;

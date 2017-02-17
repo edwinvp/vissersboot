@@ -1,6 +1,6 @@
 #include "i2c.h"
 
-#define I2C_TIMEOUT 10000
+#define I2C_TIMEOUT 4000
 
 /*********************
  ****I2C Functions****
@@ -11,6 +11,14 @@ void i2cInit(void)
 	// set i2c bit rate
 	i2cSetBitrate(50);
 	// enable TWI (two-wire interface)
+	sbi(TWCR, TWEN);	// Enable TWI
+}
+
+void i2creset(void)
+{
+	cbi(TWCR, TWEN);	// Disable TWI
+	_delay_ms(5);
+	
 	sbi(TWCR, TWEN);	// Enable TWI
 }
 

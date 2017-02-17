@@ -72,9 +72,9 @@ void CCompassCalibration::update_min_max(comp_extreme & x, int16_t newval)
 
 void CCompassCalibration::calibrate(const TCompassTriple & compass_raw)
 {
-	update_min_max(mm_x,compass_raw.x);
-	update_min_max(mm_y,compass_raw.y);
-    update_min_max(mm_z,compass_raw.z);	
+	update_min_max(mm_x,compass_raw.x.value);
+	update_min_max(mm_y,compass_raw.y.value);
+    update_min_max(mm_z,compass_raw.z.value);	
 }
 
 float CCompassCalibration::clip_degrees(float d)
@@ -114,21 +114,21 @@ float CCompassCalibration::calc_course(const TCompassTriple & compass_raw)
 	compass_course_no_offset = 0.0f;
 	
 	TCompassTriple centered;
-	centered.x=0;
-	centered.y=0;
-	centered.z=0;
+	centered.x.value=0;
+	centered.y.value=0;
+	centered.z.value=0;
 
 	float w = mm_x.fin_max - mm_x.fin_min;
 	float h = mm_z.fin_max - mm_z.fin_min;
 
 	if (w>=0 && h>=0) {
-		centered.x = (compass_raw.x - mm_x.fin_min - (w/2.0));
-		centered.z = -(compass_raw.z - mm_z.fin_min - (h/2.0));
+		centered.x.value = (compass_raw.x.value - mm_x.fin_min - (w/2.0));
+		centered.z.value = -(compass_raw.z.value - mm_z.fin_min - (h/2.0));
 	}
 
 	if (w>0 && h>0) {
-        m_ix = (float)centered.x / (w/2.0);
-		m_iz = (float)centered.z / (h/2.0);
+        m_ix = (float)centered.x.value / (w/2.0);
+		m_iz = (float)centered.z.value / (h/2.0);
 
 		compass_course_no_offset = coords_to_angle(m_ix,m_iz);
 	}

@@ -91,6 +91,8 @@ unsigned char i2cGetReceivedByte(void);
 //! Get current I2c bus status from TWSR
 unsigned char i2cGetStatus(void);
 
+void i2creset(void);
+
 // high-level I2C transaction commands
 
 //! send I2C data to a device on the bus (non-interrupt based)
