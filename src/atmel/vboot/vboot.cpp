@@ -132,18 +132,29 @@ unsigned long t_500ms_start_ms(0);
 // ----------------------------------------------------------------------------
 // PWM/JOYSTICK/MOTOR vars
 // ----------------------------------------------------------------------------
+
 // ML - Motor Left (in)
 volatile unsigned int pd6_rising;
 volatile unsigned int pd6_pulse_duration;
+volatile unsigned char pd6_alive = 0;
 // MR - Motor Right (in)
 volatile unsigned int pd5_rising;
 volatile unsigned int pd5_pulse_duration;
+volatile unsigned char pd5_alive = 0;
 // Pos (RX channel 3)
 volatile unsigned int pd3_rising;
 volatile unsigned int pd3_pulse_duration;
+volatile unsigned char pd3_alive = 0;
 // Man/auto (RX channel 4)
 volatile unsigned int pb4_rising;
 volatile unsigned int pb4_pulse_duration;
+volatile unsigned char pb4_alive = 0;
+
+// Remote control channel live signal detection
+bool pd6_ok(false), pd5_ok(false), pd3_ok(false), pb4_ok(false);
+bool rc_okay(false);
+bool rc_okay_prev(false);
+
 // Old PORTD values for PORTD servo signal detection
 volatile unsigned char old_pind = 0;
 // Old PORTB values for PORTD servo signal detection
@@ -180,6 +191,7 @@ ISR(PCINT0_vect)
 			pb4_pulse_duration = tmr_reg - pb4_rising;
 			if (pb4_pulse_duration > 10000)
 				pb4_pulse_duration -= 25536;
+			++pb4_alive;
 		}
 	}
 
@@ -204,6 +216,7 @@ ISR(PCINT2_vect)
 			pd6_pulse_duration = tmr_reg - pd6_rising;
 			if (pd6_pulse_duration > 10000)
 				pd6_pulse_duration -= 25536;
+			++pd6_alive;				
 		}
 	}
 
@@ -215,6 +228,7 @@ ISR(PCINT2_vect)
 			pd5_pulse_duration = tmr_reg - pd5_rising;
 			if (pd5_pulse_duration > 10000)
 				pd5_pulse_duration -= 25536;
+			++pd5_alive;				
 		}
 	}
 
@@ -226,6 +240,7 @@ ISR(PCINT2_vect)
 			pd3_pulse_duration = tmr_reg - pd3_rising;
 			if (pd3_pulse_duration > 10000)
 				pd3_pulse_duration -= 25536;
+			++pd3_alive;				
 		}
 	}
 
@@ -611,6 +626,9 @@ void print_servo_msg()
     	pd6_perc, pd5_perc,
     	pd3_perc, pb4_perc,
     	a1, b1);
+	b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
+		pd6_alive,pd5_alive,pd3_alive,pb4_alive);
+		
 }
 
 void periodic_msg()
@@ -706,6 +724,34 @@ TLedMode Step2LedMode(TMainState step)
         	lm = lmOff;
 	}
     return lm;
+}
+
+void check_rc()
+{
+	// Check for remote control servo message activity
+	
+	pd6_ok = pd6_alive > 5;
+	pd5_ok = pd5_alive > 5;
+	pd3_ok = pd3_alive > 5;
+	pb4_ok = pb4_alive > 5;
+
+	rc_okay = pd6_ok && pd5_ok && pd3_ok && pb4_ok;
+	
+	if (rc_okay != rc_okay_prev) {
+		if (rc_okay)
+			b_printf(PSTR("RC UP\r\n"));
+		else {			
+			print_servo_msg();
+			b_printf(PSTR("RC DOWN\r\n"));			
+		}
+	}	
+	
+	rc_okay_prev = rc_okay;		
+	
+	pd6_alive=0;
+	pd5_alive=0;
+	pd3_alive=0;
+	pb4_alive=0;	
 }
 
 // ----------------------------------------------------------------------------
@@ -809,6 +855,8 @@ void process_500ms()
 		b_printf(PSTR("GPS up\r\n"));
 	if (gps_valid_prev && !gps_valid)
 		b_printf(PSTR("GPS down\r\n"));
+
+	check_rc();
 
 	periodic_msg();
 
