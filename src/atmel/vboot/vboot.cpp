@@ -183,9 +183,11 @@ ISR(PCINT0_vect)
 	unsigned int tmr_reg;
 	tmr_reg = TCNT1;
 
+	unsigned char PBPINS = PINB;
+
 	// PB4 servo pulse measurements
-	if ((PINB & _BV(PINB4)) ^ (old_pinb & _BV(PINB4))) {
-		if (PINB & _BV(PINB4))
+	if ((PBPINS & _BV(PINB4)) ^ (old_pinb & _BV(PINB4))) {
+		if (PBPINS & _BV(PINB4))
 			pb4_rising = tmr_reg;
 		else {
 			pb4_pulse_duration = tmr_reg - pb4_rising;
@@ -195,7 +197,7 @@ ISR(PCINT0_vect)
 		}
 	}
 
-	old_pinb = PINB;
+	old_pinb = PBPINS;
 }
 // ----------------------------------------------------------------------------
 ISR(PCINT1_vect)
@@ -208,9 +210,11 @@ ISR(PCINT2_vect)
 	unsigned int tmr_reg;
 	tmr_reg = TCNT1;
 
+	unsigned char PDPINS = PIND;
+
 	// PD6 servo pulse measurements
-	if ((PIND & _BV(PIND6)) ^ (old_pind & _BV(PIND6))) {
-		if (PIND & _BV(PIND6))
+	if ((PDPINS & _BV(PIND6)) ^ (old_pind & _BV(PIND6))) {
+		if (PDPINS & _BV(PIND6))
 			pd6_rising = tmr_reg;
 		else {
 			pd6_pulse_duration = tmr_reg - pd6_rising;
@@ -221,8 +225,8 @@ ISR(PCINT2_vect)
 	}
 
 	// PD5 servo pulse measurements
-	if ((PIND & _BV(PIND5)) ^ (old_pind & _BV(PIND5))) {
-		if (PIND & _BV(PIND5))
+	if ((PDPINS & _BV(PIND5)) ^ (old_pind & _BV(PIND5))) {
+		if (PDPINS & _BV(PIND5))
 			pd5_rising = tmr_reg;
 		else {
 			pd5_pulse_duration = tmr_reg - pd5_rising;
@@ -233,8 +237,8 @@ ISR(PCINT2_vect)
 	}
 
 	// PD3 servo pulse measurements
-	if ((PIND & _BV(PIND3)) ^ (old_pind & _BV(PIND3))) {
-		if (PIND & _BV(PIND3))
+	if ((PDPINS & _BV(PIND3)) ^ (old_pind & _BV(PIND3))) {
+		if (PDPINS & _BV(PIND3))
 			pd3_rising = tmr_reg;
 		else {
 			pd3_pulse_duration = tmr_reg - pd3_rising;
@@ -244,7 +248,7 @@ ISR(PCINT2_vect)
 		}
 	}
 
-	old_pind = PIND;
+	old_pind = PDPINS;
 }
 #endif
 // ----------------------------------------------------------------------------
