@@ -762,8 +762,12 @@ void check_rc()
 	if (!pb4_ok)
 		pb4_pulse_duration = JOY_CENTER;
 	
-	if (rc_okay != rc_okay_prev) {
+	if (rc_okay != rc_okay_prev) {		
 		print_servo_msg(false);
+		
+		// See description of `rc_ignore_first_command` declaration
+		if (rc_okay)
+			stm.rc_ignore_first_command=true;
 	}	
 	
 	rc_okay_prev = rc_okay;		

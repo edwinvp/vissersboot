@@ -30,7 +30,8 @@ CStateMachine::CStateMachine() :
     main_state(msManualMode),next_state(msManualMode),
     state_time(0),
     shown_stats(false),
-    straight_to_auto(false), joy_pulses(0)
+    straight_to_auto(false), joy_pulses(0),
+	rc_ignore_first_command(false)
 {	
 }
 
@@ -346,7 +347,13 @@ void CStateMachine::step_count_goto_retn()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_count_store()
 {
-	if (!gps_valid || joystick.in_goto())
+	if (rc_ignore_first_command) {
+		// On some remote controls the method to switch on the radio comms
+		// is the same as storing the first waypoint. So ignore the very first command.
+		b_printf(PSTR("Ignoring first command given after RC up.\r\n"));
+		rc_ignore_first_command = false;
+		next_state = msCmdErrorMan;	
+	} else if (!gps_valid || joystick.in_goto())
 		next_state = msCmdErrorMan;
 	else if (joystick.in_goto_store_center()) {
 		if (state_time > MIN_JOY_PULSE_DURATION) {

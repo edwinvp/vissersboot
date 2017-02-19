@@ -58,6 +58,11 @@ public:
     bool straight_to_auto;
     int joy_pulses; // # times the goto/store joystick has been pushed up/down
 
+	// Flag to ignore first joystick down/store way point command.
+	// This is because some joysticks require you to press the joystick down
+	// to activate the remote control radio link.
+	bool rc_ignore_first_command;
+
 
 	CStateMachine();		
 	TMainState Step();
