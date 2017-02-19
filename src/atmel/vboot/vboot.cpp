@@ -614,32 +614,43 @@ void read_uart()
 // Periodic message
 // ----------------------------------------------------------------------------
 
-void print_servo_msg()
+void print_servo_msg(bool full)
 {
-	int pd6_perc, pd5_perc, pd3_perc, pb4_perc, a1, b1;
+	// Tell whether application considers the remote control up or down
+	if (rc_okay)
+		b_printf(PSTR("RC UP\r\n"));
+	else
+		b_printf(PSTR("RC DOWN\r\n"));
+	
+	// Print the values of the incoming and outgoing servo channels
+	if (full) {
+		int pd6_perc, pd5_perc, pd3_perc, pb4_perc, a1, b1;
 
-    // Display current servo signals as received (2000 ... 4000, 0 = no signal)
-	pd6_perc = joystick.to_perc(pd6_pulse_duration);
-	pd5_perc = joystick.to_perc(pd5_pulse_duration);
-	pd3_perc = joystick.to_perc(pd3_pulse_duration);
-	pb4_perc = joystick.to_perc(pb4_pulse_duration);
-	a1 = joystick.to_perc(OCR1A);
-	b1 = joystick.to_perc(OCR1B);
+		// Display incoming servo signals as received (2000 ... 4000, 0 = no signal)
+		pd6_perc = joystick.to_perc(pd6_pulse_duration);
+		pd5_perc = joystick.to_perc(pd5_pulse_duration);
+		pd3_perc = joystick.to_perc(pd3_pulse_duration);
+		pb4_perc = joystick.to_perc(pb4_pulse_duration);
+		// Same for outgoing signals (to motors)
+		a1 = joystick.to_perc(OCR1A);
+		b1 = joystick.to_perc(OCR1B);
 
-	b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb4=%05d A=%05d B=%05d\r\n"),
-    	pd6_perc, pd5_perc,
-    	pd3_perc, pb4_perc,
-    	a1, b1);
-	b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
-		pd6_alive,pd5_alive,pd3_alive,pb4_alive);
-		
+		b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb4=%05d A=%05d B=%05d\r\n"),
+    		pd6_perc, pd5_perc,
+    		pd3_perc, pb4_perc,
+    		a1, b1);
+			
+		// Show how many pulses the capture interrupts have seen
+		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
+			pd6_alive,pd5_alive,pd3_alive,pb4_alive);
+	}
 }
 
 void periodic_msg()
 {
 	switch (msg_mode) {
 	case mmServoCapture:
-        print_servo_msg();
+        print_servo_msg(true);
 		break;
 
 	case mmPAction:
@@ -752,12 +763,7 @@ void check_rc()
 		pb4_pulse_duration = JOY_CENTER;
 	
 	if (rc_okay != rc_okay_prev) {
-		if (rc_okay)
-			b_printf(PSTR("RC UP\r\n"));
-		else {			
-			print_servo_msg();
-			b_printf(PSTR("RC DOWN\r\n"));			
-		}
+		print_servo_msg(false);
 	}	
 	
 	rc_okay_prev = rc_okay;		
