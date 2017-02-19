@@ -35,7 +35,7 @@ void CLedControl::set_mode(TLedMode m)
 }
 
 //!\brief Called at 100 [ms]
-void CLedControl::update(bool gps_valid, bool arrived, bool compass_sends_values)
+void CLedControl::update(bool gps_and_compass_valid, bool arrived)
 {
 	fast_blink = !fast_blink;
 
@@ -47,11 +47,11 @@ void CLedControl::update(bool gps_valid, bool arrived, bool compass_sends_values
 	switch (mode) {
     	/* in manual/auto mode, just show status of GPS receiver */
     	case lmGpsStatus:
-    	    if (gps_valid && compass_sends_values) {
-            	// Steady LED on GPS signal okay
+    	    if (gps_and_compass_valid) {
+            	// Steady LED on: both compass and GPS stream okay
             	led_signal = true;
             } else {
-            	// Slowly blink LED when there is no GPS reception
+            	// Slowly blink LED when there is no GPS&compass reception
         	    led_signal = slow_blink;
         	}
         	break;

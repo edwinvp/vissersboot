@@ -36,7 +36,7 @@ public:
 
     CLedControl();
     void set_mode(TLedMode m);
-    void update(bool gps_valid, bool arrived, bool compass_sends_values);
+    void update(bool gps_and_compass_valid, bool arrived);
     void toggle_slow_blink();
     bool done_blinking();
     bool been_dark_for_a_while();

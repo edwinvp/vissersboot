@@ -9,7 +9,6 @@
 #include "waypoints.h"
 #include "led_control.h"
 #include "fifo.h"
-#include "compass_stream_check.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -103,6 +102,7 @@ unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
 TinyGPS gps;
 bool gps_valid = false;
 bool gps_valid_prev = false;
+bool compass_working = false;
 bool compass_working_prev = false;
 long gps_lat, gps_lon, gps_course;
 
@@ -112,11 +112,9 @@ bool btn_pressed(false);
 
 // Compass input
 TCompassTriple compass_raw;
-CCompassStreamCheck compass_stream_chk;
 int16_t good_compass_smp;
 int16_t bad_compass_smp;
 int16_t compass_smp;
-bool compass_sends_values(false);
 
 // Compass calibration, storage etc.
 CCompassCalibration cc;
@@ -739,9 +737,6 @@ void process_100ms()
 		btn_pressed = true;
 	btn_prev_state = btn_state;
 
-	// Detect frozen compass raw values
-	compass_sends_values = compass_stream_chk.check(compass_raw);
-
 	// Go to calibration mode if button is pressed
 	if (btn_pressed && !btn_state) {
         btn_pressed = false;
@@ -797,7 +792,9 @@ void process_100ms()
 
     ledctrl.set_mode(lm);
 
-	ledctrl.update(gps_valid,steering.arrived,compass_sends_values);
+	bool gps_and_compass_working = gps_valid && compass_working;
+
+	ledctrl.update(gps_valid,steering.arrived);
 
     cc.update100ms();
 }
@@ -844,7 +841,6 @@ void read_compass_and_gps()
 
 	bool expect_working_compass(bad_compass_smp < 4);
 	bool periodic_attempt((compass_smp%500)==0);
-	bool compass_working;
 
 	if (expect_working_compass || periodic_attempt) {
 		// Read compass X,Y,Z reading registers.
