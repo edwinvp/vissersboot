@@ -7,12 +7,23 @@ FIXED:
 1 Programma blijft hangen en doet vreemd wanneer gps of kompas of ontvanger signalen niet in orde zijn (dit verklaart de meeste rare verschijnselen)
 [Opgelost 18-2-2017]
 
+5 Blijvende Controle van de ingangen gps/kompas en ontvanger pulsen werkt nu maar een keer (lamp aan wanneer alles goed is)
+[Nu gaat de LED knipperen als ook maar 1 van de 3 mist. En uiteraard weer aan als de boel weer in de lucht is.]
+
+8 Paar keer serieel gezien dat zonder zender aan alle in en uitgangen naar -300 gaan. Zender aan alles weer goed.
+[Dit heb ik vaker gezien, dit komt omdat de servo puls normaalgesproken tussen de 2000 en 4000 counts lang is (3000=centerpositie). 
+Alles lager dan 200 wordt negatief, dus bijvoorbeeld die -300 % die je zag. Nu doet de applicatie bij een missende 
+servo channel alsof die in de centerpositie staat.]
+
 CNR (Could not reproduce):
 ==========================
 2 Wanneer kompas nog niet gecalibreerd is wordt alles trager en zegt serieel "cannot write eeprom"
 [Er wordt alleen naar EEPROM geschreven als je waypoints gaat opslaan. Wat moet ik precies doen om dit te reproduceren?]
 
 9 Ziet soms ontvanger niet wanneer deze later dan Arduino aangezet wordt
+[Probleem niet gezien]
+
+10 Boot start niet altijd goed wanneer eerst de zender wordt aangezet. 
 [Probleem niet gezien]
 
 WON'T FIX / NOT-A-BUG:
@@ -23,11 +34,13 @@ WON'T FIX / NOT-A-BUG:
 OPEN:
 =====
 3 Waypoints bewaren na uitschakelen
+[Waypoints worden opgeslagen nadat je het 'store' commando geeft. En die worden opgeslagen in remanent geheugen (on-chip FLASH EEPROM).]
+
 4 Om zender na inschakelen te activeren moet de linker knuppel even naar beneden worden gedrukt, wat de boot nu als waypoint 1 ziet. Dat gaat mis wanneer je na een tijdje zender uit weer naar de opgeslagen punten wilt varen. Dus ignore 1e commando na inschakelen of altijd eerst de zender inschakelen en dan pas de boot. 
-5 Blijvende Controle van de ingangen gps/kompas en ontvanger pulsen werkt nu maar een keer (lamp aan wanneer alles goed is)
+
 7 Serieel vaak een blok willekeurige karakters , ca 3 regels
-8 Paar keer serieel gezien dat zonder zender aan alle in en uitgangen naar -300 gaan. Zender aan alles weer goed. 
-10 Boot start niet altijd goed wanneer eerst de zender wordt aangezet. 
+[Kan nog niet met zekerheid zeggen of ik deze opgelost heb. Hiervoor heb ik oude soft UART code preventief weggehaald.]
+
 
 Grt
 Jack Hoogewerff
