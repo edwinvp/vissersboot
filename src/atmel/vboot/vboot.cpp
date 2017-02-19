@@ -160,19 +160,6 @@ unsigned long millis()
 	return tmr;
 }
 // ----------------------------------------------------------------------------
-void copy_gps_pin(void)
-{
-#ifndef _WIN32
-	if (PINB & _BV(PINB0))
-	{
-		PORTD |= _BV(PORTD7);
-	} else
-	{
-		PORTD &= ~_BV(PORTD7);
-	}
-#endif
-}
-// ----------------------------------------------------------------------------
 ISR(TIMER1_OVF_vect)
 {
 	// Timer 1 overflow
@@ -182,10 +169,6 @@ ISR(TIMER1_OVF_vect)
 #ifndef _WIN32
 ISR(PCINT0_vect)
 {
-	// For PD0 (UART RX) equal to current value of soft GPS pin (PB0)
-	copy_gps_pin();
-
-
 	unsigned int tmr_reg;
 	tmr_reg = TCNT1;
 
