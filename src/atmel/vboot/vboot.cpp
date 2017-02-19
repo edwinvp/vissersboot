@@ -741,6 +741,16 @@ void check_rc()
 
 	rc_okay = pd6_ok && pd5_ok && pd3_ok && pb4_ok;
 	
+	// Set signals in 0% position (=3000)
+	if (!pd6_ok)
+		pd6_pulse_duration = JOY_CENTER;
+	if (!pd5_ok)
+		pd5_pulse_duration = JOY_CENTER;
+	if (!pd3_ok)
+		pd3_pulse_duration = JOY_CENTER;
+	if (!pb4_ok)
+		pb4_pulse_duration = JOY_CENTER;
+	
 	if (rc_okay != rc_okay_prev) {
 		if (rc_okay)
 			b_printf(PSTR("RC UP\r\n"));
@@ -798,8 +808,9 @@ void process_100ms()
 		steering.do_reverse_thrust();
 	else if (step == msAutoModeCourse || step == msAutoModeNormal)
 		steering.auto_steer();
-	else
+	else {	
 		steering.manual_steering(pd5_pulse_duration,pd6_pulse_duration);
+	}
 
 	TLedMode lm = Step2LedMode(stm.Step());
 
@@ -825,10 +836,10 @@ void process_100ms()
 
     ledctrl.set_mode(lm);
 
-	bool gps_and_compass_working = gps_valid && compass_working;
+	bool all_input_valid = gps_valid && compass_working && rc_okay;
 
-	ledctrl.update(gps_valid,steering.arrived);
-
+	ledctrl.update(all_input_valid,steering.arrived);
+	
     cc.update100ms();
 }
 // ----------------------------------------------------------------------------
