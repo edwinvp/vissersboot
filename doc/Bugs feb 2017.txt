@@ -15,6 +15,9 @@ FIXED:
 Alles lager dan 200 wordt negatief, dus bijvoorbeeld die -300 % die je zag. Nu doet de applicatie bij een missende 
 servo channel alsof die in de centerpositie staat.]
 
+4 Om zender na inschakelen te activeren moet de linker knuppel even naar beneden worden gedrukt, wat de boot nu als waypoint 1 ziet. Dat gaat mis wanneer je na een tijdje zender uit weer naar de opgeslagen punten wilt varen. Dus ignore 1e commando na inschakelen of altijd eerst de zender inschakelen en dan pas de boot. 
+[Het eerste commando na het ONLINE komen van de RC (remote control) wordt nu genegeerd. Daar komt ook een message over op de serial console.]
+
 CNR (Could not reproduce):
 ==========================
 2 Wanneer kompas nog niet gecalibreerd is wordt alles trager en zegt serieel "cannot write eeprom"
@@ -35,8 +38,6 @@ OPEN:
 =====
 3 Waypoints bewaren na uitschakelen
 [Waypoints worden opgeslagen nadat je het 'store' commando geeft. En die worden opgeslagen in remanent geheugen (on-chip FLASH EEPROM).]
-
-4 Om zender na inschakelen te activeren moet de linker knuppel even naar beneden worden gedrukt, wat de boot nu als waypoint 1 ziet. Dat gaat mis wanneer je na een tijdje zender uit weer naar de opgeslagen punten wilt varen. Dus ignore 1e commando na inschakelen of altijd eerst de zender inschakelen en dan pas de boot. 
 
 7 Serieel vaak een blok willekeurige karakters , ca 3 regels
 [Kan nog niet met zekerheid zeggen of ik deze opgelost heb. Hiervoor heb ik oude soft UART code preventief weggehaald.]
