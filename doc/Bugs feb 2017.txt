@@ -1,0 +1,33 @@
+Heel uitgebreid getest en ik denk dat onderstaand alles is. 
+
+Visboot bugs feb 2017
+
+FIXED:
+======
+1 Programma blijft hangen en doet vreemd wanneer gps of kompas of ontvanger signalen niet in orde zijn (dit verklaart de meeste rare verschijnselen)
+[Opgelost 18-2-2017]
+
+CNR (Could not reproduce):
+==========================
+2 Wanneer kompas nog niet gecalibreerd is wordt alles trager en zegt serieel "cannot write eeprom"
+[Er wordt alleen naar EEPROM geschreven als je waypoints gaat opslaan. Wat moet ik precies doen om dit te reproduceren?]
+
+9 Ziet soms ontvanger niet wanneer deze later dan Arduino aangezet wordt
+[Probleem niet gezien]
+
+WON'T FIX / NOT-A-BUG:
+======================
+6 Leesbaarheid seriele berichten vooral kompas
+[Enig idee wat je specifiek anders wenst?]
+
+OPEN:
+=====
+3 Waypoints bewaren na uitschakelen
+4 Om zender na inschakelen te activeren moet de linker knuppel even naar beneden worden gedrukt, wat de boot nu als waypoint 1 ziet. Dat gaat mis wanneer je na een tijdje zender uit weer naar de opgeslagen punten wilt varen. Dus ignore 1e commando na inschakelen of altijd eerst de zender inschakelen en dan pas de boot. 
+5 Blijvende Controle van de ingangen gps/kompas en ontvanger pulsen werkt nu maar een keer (lamp aan wanneer alles goed is)
+7 Serieel vaak een blok willekeurige karakters , ca 3 regels
+8 Paar keer serieel gezien dat zonder zender aan alle in en uitgangen naar -300 gaan. Zender aan alles weer goed. 
+10 Boot start niet altijd goed wanneer eerst de zender wordt aangezet. 
+
+Grt
+Jack Hoogewerff
