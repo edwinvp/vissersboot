@@ -7,3 +7,4 @@ src/vcl/boot/Win32/Debug/
 src/vcl/boot/boot.res
 src/atmel/vboot.atsuo
 
+src/atmel/.vs/vboot/v14/.atsuo
