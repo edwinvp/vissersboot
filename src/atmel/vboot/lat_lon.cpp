@@ -2,6 +2,10 @@
 #include <math.h>
 #ifdef _WIN32
 #include <Vcl.h>
+#else
+#include <stdio.h>
+#include <avr/pgmspace.h>
+#include "settings.h"
 #endif
 
 #ifdef WIN32
@@ -81,3 +85,18 @@ bool CLatLon::empty()
 {
 	return (lat==0) && (lon==0);
 }
+
+#ifndef _WIN32
+
+void CLatLon::print_wp()
+{
+	if (empty()) {
+		b_printf(PSTR("(empty)"));		
+	} else {
+		b_printf(PSTR("lat=%f"),lat);
+		b_printf(PSTR(" lon=%f"),lon);
+	}
+	b_printf(PSTR("\r\n"));
+}
+#endif
+// ----------------------------------------------------------------------------

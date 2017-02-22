@@ -20,27 +20,34 @@ servo channel alsof die in de centerpositie staat.]
 
 CNR (Could not reproduce):
 ==========================
-2 Wanneer kompas nog niet gecalibreerd is wordt alles trager en zegt serieel "cannot write eeprom"
-[Er wordt alleen naar EEPROM geschreven als je waypoints gaat opslaan. Wat moet ik precies doen om dit te reproduceren?]
-
 9 Ziet soms ontvanger niet wanneer deze later dan Arduino aangezet wordt
-[Probleem niet gezien]
+[Probleem niet gezien.]
 
 10 Boot start niet altijd goed wanneer eerst de zender wordt aangezet. 
-[Probleem niet gezien]
+[Probleem niet gezien. Wel gezien dat een keer heel de USB-poort niet werkte maar het programma wel.
+Heel de seriele poort was niet op de PC te zien (niets aangesloten op poort zei het "usbview" tooltje).
+Hierop moest ik alle spanning erafhalen en alles weer aanzetten. Daarna zag de PC de Arduino weer.]
 
 WON'T FIX / NOT-A-BUG:
 ======================
 6 Leesbaarheid seriele berichten vooral kompas
 [Enig idee wat je specifiek anders wenst?]
 
+3 Waypoints bewaren na uitschakelen
+[Werkt gewoon. Waypoints worden opgeslagen nadat je het 'store' commando geeft. 
+En die worden opgeslagen in remanent geheugen (on-chip FLASH EEPROM).
+Heb een extra print de waypoints routine ingebouwd om te zien of de waypoints na reboot terugkomen: 
+ja, dat doen ze. Je kunt dat nu ook zelf op de console zien.]
+
 OPEN:
 =====
-3 Waypoints bewaren na uitschakelen
-[Waypoints worden opgeslagen nadat je het 'store' commando geeft. En die worden opgeslagen in remanent geheugen (on-chip FLASH EEPROM).]
 
 7 Serieel vaak een blok willekeurige karakters , ca 3 regels
 [Kan nog niet met zekerheid zeggen of ik deze opgelost heb. Hiervoor heb ik oude soft UART code preventief weggehaald.]
+
+2 Wanneer kompas nog niet gecalibreerd is wordt alles trager en zegt serieel "cannot write eeprom"
+[Er wordt alleen naar EEPROM geschreven als je waypoints gaat opslaan. 
+Snap dus niet waarom je "cannot write eeprom" te zien krijgt. Hoe kan ik dit reproduceren?]
 
 
 Grt

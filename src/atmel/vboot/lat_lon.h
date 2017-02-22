@@ -26,6 +26,8 @@ public:
 
 #ifdef _WIN32
 	UnicodeString ToString() const;
+#else
+	void print_wp();	
 #endif
 
 };

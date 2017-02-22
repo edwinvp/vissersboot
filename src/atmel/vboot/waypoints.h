@@ -23,6 +23,7 @@ public:
     void forget_all();
     void load_waypoints();
     void store_waypoints();
+	void print_waypoints();
    
 };
 

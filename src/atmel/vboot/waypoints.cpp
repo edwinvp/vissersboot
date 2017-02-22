@@ -67,6 +67,7 @@ void CWayPoints::load_waypoints()
     if (chk == rec[AR_SIZE-1]) {
 
         float * fp = reinterpret_cast<float*>(&rec[0]);
+			
         gp_mem_1.lat=fp[0];
         gp_mem_1.lon=fp[1];
         gp_mem_2.lat=fp[2];
@@ -79,12 +80,14 @@ void CWayPoints::load_waypoints()
     } else {
         b_printf(PSTR("FAILED (checksum)\r\n"));
     }
-
+	
+	print_waypoints();
 }
 // ----------------------------------------------------------------------------
 void CWayPoints::store_waypoints()
 {
     b_printf(PSTR("Storing waypoints to EEPROM.\r\n"));
+	print_waypoints();
     
     uint16_t rec[AR_SIZE];
 
@@ -104,5 +107,15 @@ void CWayPoints::store_waypoints()
         addr+=2;
     }
 
+}
+// ----------------------------------------------------------------------------
+void CWayPoints::print_waypoints()
+{
+	b_printf(PSTR("WP1="));
+	gp_mem_1.print_wp();
+	b_printf(PSTR("WP2="));
+	gp_mem_2.print_wp();
+	b_printf(PSTR("WP3="));
+	gp_mem_3.print_wp();
 }
 // ----------------------------------------------------------------------------
