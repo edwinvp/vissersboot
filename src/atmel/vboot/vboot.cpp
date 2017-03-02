@@ -836,7 +836,7 @@ void process_100ms()
             break;
         case csTurn2:
             lm = lmCalibrationPhase3;
-            break;
+			break;
         case csFinish:
         case csCalibrated:
 			lm = lmCalibrationPhase4;
@@ -875,6 +875,9 @@ void process_500ms()
 		gps_valid= true;
 
 	}
+
+	if (global_ms_timer > MS_BEFORE_OP_ENABLE)
+		steering.set_output_enable(true);
 
 	if (!gps_valid_prev && gps_valid)
 		b_printf(PSTR("GPS up\r\n"));

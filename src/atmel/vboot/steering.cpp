@@ -29,7 +29,8 @@ CSteering::CSteering() :
 	d_add(0),
 	pid_err(0),
 	global_max_speed(1.0f),
-	dont_stop_steering(false)
+	dont_stop_steering(false),
+	m_output_enable(false)
 {
 	// Auto steer PID-tune parameters
 
@@ -233,8 +234,13 @@ void CSteering::manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc)
 	motor_r = CJoystick::to_perc(mot_R_dc)/100.0f;
 
 	// Pass through motor left and right setpoints to PWM module
-	OCR1A = mot_L_dc;
-    OCR1B = mot_R_dc;
+	if (m_output_enable) {
+		OCR1A = mot_L_dc;
+		OCR1B = mot_R_dc;
+	} else {
+		OCR1A = JOY_CENTER;
+		OCR1B = JOY_CENTER;
+	}
 }
 // ----------------------------------------------------------------------------
 bool CSteering::motor_running()
@@ -257,8 +263,13 @@ void CSteering::do_reverse_thrust()
 void CSteering::SetMotorSpeeds(float ml, float mr)
 {
 	// Convert to values that the servo hardware understands (2000...4000)
-	OCR1A = (float)JOY_CENTER + (ml * 1000.0);
-	OCR1B = (float)JOY_CENTER + (mr * 1000.0);
+	if (m_output_enable) {
+		OCR1A = (float)JOY_CENTER + (ml * 1000.0);
+		OCR1B = (float)JOY_CENTER + (mr * 1000.0);
+	} else {
+		OCR1A = JOY_CENTER;
+		OCR1B = JOY_CENTER;
+	}
 }
 // ----------------------------------------------------------------------------
 float CSteering::get_motor_L_perc()
@@ -271,5 +282,8 @@ float CSteering::get_motor_R_perc()
 	return motor_r;
 }
 // ----------------------------------------------------------------------------
-
+void CSteering::set_output_enable(bool output_enable)
+{
+	m_output_enable = output_enable;
+}
 

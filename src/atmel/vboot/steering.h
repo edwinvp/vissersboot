@@ -62,7 +62,12 @@ public:
 	CPidParams pid_normal;
 
     // Test (don't stop steering even after arriving at finish)
-    bool dont_stop_steering;
+	bool dont_stop_steering;
+
+	// When false: inhibit motor setpoints (keep PWM pulse in the middle),
+	// (motors will generally not be moving).
+	// When true: pass on manual and automatic motors set points.
+	bool m_output_enable;
 
 	CSteering();
 
@@ -85,6 +90,7 @@ public:
 	void do_reverse_thrust();
 	float get_motor_L_perc();
 	float get_motor_R_perc();
+	void set_output_enable(bool output_enable);
 };
 
 #endif

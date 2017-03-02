@@ -5,6 +5,10 @@
 // DEFINES
 // ----------------------------------------------------------------------------
 
+// Number of [ms] before meaningful motor setpoints are passed to the PWM-module
+// Until then it will send the 0% pulse.
+#define MS_BEFORE_OP_ENABLE 3000
+
 // CPU frequency [Hz]
 #define F_CPU 16000000
 
