@@ -121,10 +121,6 @@
             <DependentOn>..\..\atmel\vboot\compass_calibrate.h</DependentOn>
             <BuildOrder>13</BuildOrder>
         </CppCompile>
-        <CppCompile Include="..\..\atmel\vboot\compass_stream_check.cpp">
-            <DependentOn>..\..\atmel\vboot\compass_stream_check.h</DependentOn>
-            <BuildOrder>20</BuildOrder>
-        </CppCompile>
         <CppCompile Include="..\..\atmel\vboot\crc.cpp">
             <DependentOn>..\..\atmel\vboot\crc.h</DependentOn>
             <BuildOrder>19</BuildOrder>

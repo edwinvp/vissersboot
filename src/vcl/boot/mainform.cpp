@@ -411,9 +411,9 @@ void __fastcall TMainFrm::C2Scr(Graphics::TBitmap * bmp, int & sx, int & sy, flo
 void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 {
 	TCompassTriple t;
-	t.x = x;
-	t.y = y;
-	t.z = z;
+	t.x.value = x;
+	t.y.value = y;
+	t.z.value = z;
 	cvalues.push_back(t);
 
 	ext_compass_x = x;
@@ -430,7 +430,7 @@ void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 		int px(0),py(0);
 
 		const TCompassTriple & t = *it;
-		C2Scr(bmp.get(),px,py,t.x,t.z);
+		C2Scr(bmp.get(),px,py,t.x.value,t.z.value);
 
 		bmp->Canvas->Ellipse(px-4,py-4,px+4,py+4);
 	}
@@ -445,9 +445,9 @@ void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 
 
 	TCompassTriple centered;
-	centered.x=0;
-	centered.y=0;
-	centered.z=0;
+	centered.x.value=0;
+	centered.y.value=0;
+	centered.z.value=0;
 
 	if (!cvalues.empty()) {
 		const TCompassTriple & t = *cvalues.rbegin();
@@ -456,8 +456,8 @@ void __fastcall TMainFrm::ThreeNewCompassValues(int x, int y, int z)
 		float h = cc.mm_z.fin_max - cc.mm_z.fin_min;
 
 		if (w>=0 && h>=0) {
-			centered.x = (t.x - cc.mm_x.fin_min - (w/2.0));
-			centered.z = -(t.z - cc.mm_z.fin_min - (h/2.0));
+			centered.x.value = (t.x.value - cc.mm_x.fin_min - (w/2.0));
+			centered.z.value = -(t.z.value - cc.mm_z.fin_min - (h/2.0));
 		}
 	}
 
