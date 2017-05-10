@@ -72,7 +72,7 @@
 	d: substitute PV compass heading (enter 0 for no substution)
 	o: substitute SP heading (enter 0 for no substitution)
 
-	"0123456789.,-+" (valid in PID configuration modi)
+	"0123456789-+" (valid in PID configuration modi)
 */
 
 int tune_ptr(0);
