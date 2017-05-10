@@ -3,6 +3,8 @@
 
 #include "lat_lon.h"
 
+#define NUM_WAYPOINTS 5
+
 class CWayPoints
 {
 private:
@@ -12,6 +14,8 @@ public:
     CLatLon gp_mem_1; // memorized GPS position 1 (usually 'home')
     CLatLon gp_mem_2; // memorized GPS position 2
     CLatLon gp_mem_3; // memorized GPS position 3
+	CLatLon gp_mem_4; // memorized GPS position 4
+	CLatLon gp_mem_5; // memorized GPS position 5
     // Current / destination GPS positions
     CLatLon gp_current; // current GPS position (may be stale or invalid!)
     CLatLon gp_start; // GPS position when auto steering was switched on

@@ -9,7 +9,8 @@
 #endif
 #include "crc.h"
 
-#define AR_SIZE (1 + 3 * 2 * (sizeof(float)/sizeof(uint16_t)))
+#define NUM_WP_FLOATS (NUM_WAYPOINTS * 2)
+#define AR_SIZE (1 + NUM_WP_FLOATS * (sizeof(float)/sizeof(uint16_t)))
 
 CWayPoints::CWayPoints()
 {
@@ -20,11 +21,13 @@ bool CWayPoints::set_finish(int memory_no)
 {
     gp_finish.clear();
 
-    if (memory_no >= 1 && memory_no <= 3) {
+    if (memory_no >= 1 && memory_no <= NUM_WAYPOINTS) {
         switch (memory_no) {
             case 1: gp_finish = gp_mem_1; break;
             case 2: gp_finish = gp_mem_2; break;
             case 3: gp_finish = gp_mem_3; break;
+			case 4: gp_finish = gp_mem_4; break;
+			case 5: gp_finish = gp_mem_5; break;
         }
     }
 
@@ -33,11 +36,13 @@ bool CWayPoints::set_finish(int memory_no)
 // ----------------------------------------------------------------------------
 void CWayPoints::store_waypoint(int memory_no)
 {
-    if (memory_no >= 1 && memory_no <= 3) {
+    if (memory_no >= 1 && memory_no <= NUM_WAYPOINTS) {
         switch (memory_no) {
             case 1: gp_mem_1 = gp_current; break;
             case 2: gp_mem_2 = gp_current; break;
             case 3: gp_mem_3 = gp_current; break;
+			case 4: gp_mem_4 = gp_current; break;
+			case 5: gp_mem_5 = gp_current; break;
         }
     }
 }
@@ -47,6 +52,8 @@ void CWayPoints::forget_all()
     gp_mem_1.clear();
     gp_mem_2.clear();
     gp_mem_3.clear();
+	gp_mem_4.clear();
+	gp_mem_5.clear();
 }
 // ----------------------------------------------------------------------------
 void CWayPoints::load_waypoints()
@@ -62,7 +69,7 @@ void CWayPoints::load_waypoints()
         addr+=2;        
     }
 
-    uint16_t chk = crc16((unsigned char*)rec,6 * sizeof(float));
+    uint16_t chk = crc16((unsigned char*)rec,NUM_WP_FLOATS * sizeof(float));
     
     if (chk == rec[AR_SIZE-1]) {
 
@@ -74,6 +81,10 @@ void CWayPoints::load_waypoints()
         gp_mem_2.lon=fp[3];
         gp_mem_3.lat=fp[4];
         gp_mem_3.lon=fp[5];               
+        gp_mem_4.lat=fp[6];
+        gp_mem_4.lon=fp[7];
+        gp_mem_5.lat=fp[8];
+        gp_mem_5.lon=fp[9];
         
         b_printf(PSTR("OK\r\n"));
         
@@ -98,7 +109,12 @@ void CWayPoints::store_waypoints()
     fp[3]=gp_mem_2.lon;
     fp[4]=gp_mem_3.lat;
     fp[5]=gp_mem_3.lon;
-    rec[AR_SIZE-1]=crc16(reinterpret_cast<unsigned char*>(rec),6 * sizeof(float));
+    fp[6]=gp_mem_4.lat;
+    fp[7]=gp_mem_4.lon;
+    fp[8]=gp_mem_5.lat;
+    fp[9]=gp_mem_5.lon;
+
+    rec[AR_SIZE-1]=crc16(reinterpret_cast<unsigned char*>(rec),NUM_WP_FLOATS * sizeof(float));
     
     unsigned int addr=WAYPOINT_EEPROM_OFFSET;
     for (unsigned int i(0); i<AR_SIZE; i++) {
@@ -117,5 +133,9 @@ void CWayPoints::print_waypoints()
 	gp_mem_2.print_wp();
 	b_printf(PSTR("WP3="));
 	gp_mem_3.print_wp();
+	b_printf(PSTR("WP4="));
+	gp_mem_4.print_wp();
+	b_printf(PSTR("WP5="));
+	gp_mem_5.print_wp();	
 }
 // ----------------------------------------------------------------------------

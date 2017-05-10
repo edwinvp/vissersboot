@@ -293,7 +293,7 @@ void CStateMachine::step_cmd_error_auto()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_goto_pos_x()
 {
-    if (!gps_valid || joy_pulses > 3)
+    if (!gps_valid || joy_pulses > NUM_WAYPOINTS)
         next_state = msCmdErrorMan;
     else if (ledctrl.done_blinking()) {
         if (waypoints.set_finish(joy_pulses)) {
@@ -306,7 +306,7 @@ void CStateMachine::step_confirm_goto_pos_x()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_confirm_store_pos_x()
 {
-	if (!gps_valid || joy_pulses > 3)
+	if (!gps_valid || joy_pulses > NUM_WAYPOINTS)
 		next_state = msCmdErrorMan;
 	else if (ledctrl.done_blinking()) {
 		b_printf(PSTR("Store waypoint # %d\r\n"), joy_pulses);
