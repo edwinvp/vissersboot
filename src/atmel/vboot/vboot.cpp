@@ -529,10 +529,10 @@ void handle_parameterization(char c)
 		tune_Config(steering.pid_normal.TUNE_I, c);
 		break;
 	case mmPActionAggr:
-		tune_Config(steering.pid_normal.TUNE_P, c);
+		tune_Config(steering.pid_aggressive.TUNE_P, c);
 		break;
 	case mmIActionAggr:
-		tune_Config(steering.pid_normal.TUNE_I, c);
+		tune_Config(steering.pid_aggressive.TUNE_I, c);
 		break;		
 	case mmPVSubst:
 		tune_Config(steering.SUBST_PV, c);
