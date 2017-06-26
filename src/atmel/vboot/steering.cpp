@@ -3,6 +3,7 @@
 #ifndef _WIN32
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 #else
 #include "fakeio.h"
 #endif
