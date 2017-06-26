@@ -91,6 +91,9 @@ public:
 	float get_motor_L_perc();
 	float get_motor_R_perc();
 	void set_output_enable(bool output_enable);
+
+	void load_calibration();
+	void save_calibration();
 };
 
 #endif

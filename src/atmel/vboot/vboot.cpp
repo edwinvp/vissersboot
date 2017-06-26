@@ -502,6 +502,8 @@ void tune_Config(double & dblParam, char c)
                 break;
 			};
 
+			steering.save_calibration();
+
 		} else {
             b_printf(PSTR("(err,bad)\r\n"));
 		}
@@ -1036,6 +1038,7 @@ int main (void)
 	cc.reset_compass_calibration();
 
 	cc.load_calibration();
+	steering.load_calibration();
     waypoints.load_waypoints();
 
 	// Setup other peripherals

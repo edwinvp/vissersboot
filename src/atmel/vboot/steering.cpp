@@ -10,8 +10,11 @@
 #include "steering.h"
 #include "state_machine.h"
 #include "joystick.h"
+#include "crc.h"
 
 extern CStateMachine stm;
+
+#define NUM_EEPROM_WORDS 15
 
 CSteering::CSteering() :
     motor_l(0),
@@ -286,4 +289,85 @@ void CSteering::set_output_enable(bool output_enable)
 {
 	m_output_enable = output_enable;
 }
+// ----------------------------------------------------------------------------
+void CSteering::load_calibration()
+{
+	b_printf(PSTR("Loading PID settings from EEPROM..."));
+
+	// Array to receive 'raw' words from EEPROM
+	// Layout:
+	// WORD   DESC
+	// 0      normal pid flags
+	// 1      agressive pid flags
+	// 2      normal pid P parameter
+	// 4      normal pid I parameter
+	// 6      normal pid D parameter
+	// 8      agressive pid P parameter
+	// 10     agressive pid I parameter
+	// 12     agressive pid D parameter
+	// 14     CRC-16 checksum
+
+	uint16_t rec[NUM_EEPROM_WORDS];
+
+	// Read data as words from EEPROM
+	unsigned int addr=PID_EEPROM_OFFSET;
+	for (int i(0); i<NUM_EEPROM_WORDS; i++) {
+		eeprom_busy_wait();
+		rec[i]=eeprom_read_word((uint16_t*)addr);
+		addr+=2;
+	}
+
+	// Calculate checksum over what has just been read
+	uint16_t chk = crc16((unsigned char*)rec,(NUM_EEPROM_WORDS-1)*2);
+
+	// Compare checksum with the one that was stored
+	if (chk == rec[NUM_EEPROM_WORDS-1]) {
+		// They were the same, data is okay.
+		// Now apply that calibration stored earlier:
+
+		float * fp = reinterpret_cast<float*>(&rec[2]);
+		pid_normal.TUNE_P = fp[0];
+		pid_normal.TUNE_I = fp[1];
+		pid_normal.TUNE_D = fp[2];
+		pid_agressive.TUNE_P = fp[3];
+		pid_agressive.TUNE_I = fp[4];
+		pid_agressive.TUNE_D = fp[5];
+
+		b_printf(PSTR("OK\r\n"));
+
+	} else {
+		// Data is corrupted somehow (or was never stored before).
+		b_printf(PSTR("FAILED (checksum)\r\n"));
+	}
+}
+// ----------------------------------------------------------------------------
+void CSteering::save_calibration()
+{
+	b_printf(PSTR("Storing PID config to EEPROM.\r\n"));
+
+	// Put data in array of `raw` words
+	uint16_t rec[NUM_EEPROM_WORDS];
+	rec[0]=0;
+	rec[1]=0;
+
+	float * fp = reinterpret_cast<float*>(&rec[2]);
+	fp[0] = pid_normal.TUNE_P;
+	fp[1] = pid_normal.TUNE_I;
+	fp[2] = pid_normal.TUNE_D;
+	fp[3] = pid_agressive.TUNE_P;
+	fp[4] = pid_agressive.TUNE_I;
+	fp[5] = pid_agressive.TUNE_D;
+
+	// Calculate checksum over those 13 words
+    rec[NUM_EEPROM_WORDS-1]=crc16((unsigned char*)rec,(NUM_EEPROM_WORDS-1)*2);
+
+    // Write data as words to EEPROM
+    unsigned int addr=PID_EEPROM_OFFSET;
+	for (int i(0); i<NUM_EEPROM_WORDS; i++) {
+        eeprom_busy_wait();
+        eeprom_write_word((uint16_t*)addr,rec[i]);
+        addr+=2;
+    }
+}
+// ----------------------------------------------------------------------------
 

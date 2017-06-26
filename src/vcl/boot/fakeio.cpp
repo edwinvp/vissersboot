@@ -7,6 +7,9 @@
 
 #pragma hdrstop
 
+#define EEPROM_WORDS 512
+uint16_t eeprom_data[EEPROM_WORDS];
+
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
@@ -14,8 +17,24 @@ void sei() {};
 void cli() {};
 //---------------------------------------------------------------------------
 void eeprom_busy_wait() {};
-uint16_t eeprom_read_word(uint16_t* addr) { return 0; };
-void eeprom_write_word(uint16_t* addr, uint16_t data) {};
+//---------------------------------------------------------------------------
+uint16_t eeprom_read_word(uint16_t* addr)
+{
+	unsigned int dwOffs = reinterpret_cast<unsigned int>(addr);
+
+	if (dwOffs >= 0 && dwOffs < EEPROM_WORDS)
+		return eeprom_data[dwOffs];
+	return 0;
+};
+//---------------------------------------------------------------------------
+void eeprom_write_word(uint16_t* addr, uint16_t data)
+{
+	unsigned int dwOffs = reinterpret_cast<unsigned int>(addr);
+
+	if (dwOffs >= 0 && dwOffs < EEPROM_WORDS)
+		eeprom_data[dwOffs] = data;
+};
+
 //---------------------------------------------------------------------------
 uint16_t OCR1A;
 uint16_t OCR1B;

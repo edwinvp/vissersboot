@@ -62,12 +62,14 @@ __published:	// IDE-managed Components
 	TTrackBar *TbMotorL;
 	TTrackBar *TbMotorR;
 	TCheckBox *CbFreezeCompass;
+	TButton *BtnRebootAtmel;
 	void __fastcall Timer1Timer(TObject *Sender);
 	void __fastcall OnZoomFactKeyDown(TObject *Sender, WORD &Key, TShiftState Shift);
 	void __fastcall BtnZeroClick(TObject *Sender);
 	void __fastcall BtnAutoModeClick(TObject *Sender);
 	void __fastcall Timer2Timer(TObject *Sender);
 	void __fastcall OnInputKeyPress(TObject *Sender, System::WideChar &Key);
+	void __fastcall BtnRebootAtmelClick(TObject *Sender);
 
 private:	// User declarations
 	TDrawingArea da;

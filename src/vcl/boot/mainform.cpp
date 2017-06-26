@@ -562,3 +562,9 @@ float __fastcall TMainFrm::CompassFollowsVessel()
 //---------------------------------------------------------------------------
 
 
+void __fastcall TMainFrm::BtnRebootAtmelClick(TObject *Sender)
+{
+	main_init();
+}
+//---------------------------------------------------------------------------
+

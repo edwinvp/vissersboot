@@ -319,6 +319,15 @@ object MainFrm: TMainFrm
       Caption = 'Freeze compass'
       TabOrder = 16
     end
+    object BtnRebootAtmel: TButton
+      Left = 224
+      Top = 312
+      Width = 73
+      Height = 25
+      Caption = 'Reboot AVR'
+      TabOrder = 17
+      OnClick = BtnRebootAtmelClick
+    end
   end
   object ListBox1: TListBox
     Left = 0
@@ -354,10 +363,6 @@ object MainFrm: TMainFrm
     object TsMagneto: TTabSheet
       Caption = 'TsMagneto'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object PaintBox2: TPaintBox
         Left = 0
         Top = 0

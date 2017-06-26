@@ -33,6 +33,7 @@
 // EEPROM offsets
 #define COMPASS_EEPROM_OFFSET 0
 #define WAYPOINT_EEPROM_OFFSET 64
+#define PID_EEPROM_OFFSET 128
 
 // Periodic message type (which message to log periodically to console)
 enum TMessageMode {
