@@ -64,8 +64,11 @@
 	s: view steering screen
 	e: servo capture screen
 	(settings)
-	p: (PID 'P'-action configuration)
-	i: (PID 'I'-action configuration)
+	p: (normal PID 'P'-action configuration)
+	i: (normal PID 'I'-action configuration)
+	u: (aggressive PID 'P'-action configuration)
+	y: (aggressive PID 'I'-action configuration)
+
 	(auto steer test screen)
 	a: go straight to auto steer mode
 	x: don't stop steering (even after arriving)
@@ -443,8 +446,10 @@ void tune_PrintValue(double dblParam)
 	case mmServoCapture:
 	case mmSteering:
 		break;		
-	case mmPAction:
-	case mmIAction:
+	case mmPActionNorm:
+	case mmIActionNorm:
+	case mmPActionAggr:
+	case mmIActionAggr:
 		l = dblParam*1000.0;
 		b_printf(PSTR("(set): %ld (x1000)\r\n"),l);
 		break;
@@ -487,8 +492,10 @@ void tune_Config(double & dblParam, char c)
 			case mmServoCapture:
 			case mmSteering:
 				break;										
-			case mmPAction:
-			case mmIAction:
+			case mmPActionNorm:
+			case mmIActionNorm:
+			case mmPActionAggr:
+			case mmIActionAggr:
 				dblParam = ld / 1000.0;
 				break;
 			case mmPVSubst:
@@ -515,12 +522,18 @@ void tune_Config(double & dblParam, char c)
 void handle_parameterization(char c)
 {
 	switch (msg_mode) {
-	case mmPAction:
+	case mmPActionNorm:
 		tune_Config(steering.pid_normal.TUNE_P, c);
 		break;
-	case mmIAction:
+	case mmIActionNorm:
 		tune_Config(steering.pid_normal.TUNE_I, c);
 		break;
+	case mmPActionAggr:
+		tune_Config(steering.pid_normal.TUNE_P, c);
+		break;
+	case mmIActionAggr:
+		tune_Config(steering.pid_normal.TUNE_I, c);
+		break;		
 	case mmPVSubst:
 		tune_Config(steering.SUBST_PV, c);
 		break;
@@ -568,14 +581,20 @@ void read_uart()
 			toggle_msg_mode(mmGps);
 			break;
 		case 'p':
-			toggle_msg_mode(mmPAction);
+			toggle_msg_mode(mmPActionNorm);
 			break;
 		case 'i':
-			toggle_msg_mode(mmIAction);
+			toggle_msg_mode(mmIActionNorm);
 			break;
 		case 's':
 			toggle_msg_mode(mmSteering);
 			break;
+		case 'u':
+			toggle_msg_mode(mmPActionAggr);
+			break;
+		case 'y':
+			toggle_msg_mode(mmIActionAggr);
+			break;			
 		case 'e':
 			toggle_msg_mode(mmServoCapture);
 			break;
@@ -655,14 +674,24 @@ void periodic_msg()
         print_servo_msg(true);
 		break;
 
-	case mmPAction:
-		b_printf(PSTR("(set P-action): "));
+	case mmPActionNorm:
+		b_printf(PSTR("(set normal P-action): "));
 		tune_PrintValue(steering.pid_normal.TUNE_P);
 		break;
 
-	case mmIAction:
-		b_printf(PSTR("(set I-action): "));
+	case mmIActionNorm:
+		b_printf(PSTR("(set normal I-action): "));
 		tune_PrintValue(steering.pid_normal.TUNE_I);
+		break;
+
+	case mmPActionAggr:
+		b_printf(PSTR("(set aggressive P-action): "));
+		tune_PrintValue(steering.pid_aggressive.TUNE_P);
+		break;
+
+	case mmIActionAggr:
+		b_printf(PSTR("(set aggressive I-action): "));
+		tune_PrintValue(steering.pid_aggressive.TUNE_I);
 		break;
 
 	case mmPVSubst:

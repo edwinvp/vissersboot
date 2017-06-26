@@ -57,7 +57,7 @@ public:
     // Auto steer PID-tune parameters
 	// ----------------------------------------------------------------------------
 	// For initially pointing the vessel in the right direction
-	CPidParams pid_agressive;
+	CPidParams pid_aggressive;
 	// For normal sailing
 	CPidParams pid_normal;
 

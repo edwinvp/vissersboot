@@ -44,8 +44,11 @@ enum TMessageMode {
 	mmCompass, // Compass values
 	mmDebug, // Combination
 
-	mmPAction, // Configure P-action
-	mmIAction, // Configure I-action
+	mmPActionNorm, // Configure (normal) P-action
+	mmIActionNorm, // Configure (normal) I-action
+	mmPActionAggr, // Configure (aggressive) P-action
+	mmIActionAggr, // Configure (aggressive) I-action
+	
 	mmPVSubst, // Set PV substitution
 	mmSPSubst, // Set SP substitution
     mmButton, // Button input status

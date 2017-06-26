@@ -39,11 +39,11 @@ CSteering::CSteering() :
 	// Auto steer PID-tune parameters
 
 	// PID settings for initial vessel pointing (more agressive)
-	pid_agressive.TUNE_P=10.0; // P-action
-	pid_agressive.TUNE_I=1.5; // I-action
-	pid_agressive.TUNE_D=0.0;  // D-action
+	pid_aggressive.TUNE_P=10.0; // P-action
+	pid_aggressive.TUNE_I=1.5; // I-action
+	pid_aggressive.TUNE_D=0.0;  // D-action
 	// Max steering action done by controller
-	pid_agressive.max_steering = 0.9*global_max_speed;
+	pid_aggressive.max_steering = 0.9*global_max_speed;
 
 	// PID settings for 'normal' sailing (calmer)
 	pid_normal.TUNE_P=0.6;
@@ -121,7 +121,7 @@ void CSteering::auto_steer()
 	bool bPointingTheVessel = (stm.Step() == msAutoModeCourse);
 
 	if (bPointingTheVessel)
-		max_correct = pid_agressive.max_steering;
+		max_correct = pid_aggressive.max_steering;
 	else
 		max_correct = pid_normal.max_steering;
 
@@ -140,7 +140,7 @@ void CSteering::auto_steer()
     // Only enable I-action when in normal auto mode (not course mode)
 	CPidParams * params(0);
 	if (bPointingTheVessel)
-		params = &pid_agressive; // use agressive settings when pointing vessel
+		params = &pid_aggressive; // use agressive settings when pointing vessel
 	else
 		params = &pid_normal; // when sailing use less agressive settings
 
@@ -330,9 +330,9 @@ void CSteering::load_calibration()
 		pid_normal.TUNE_P = fp[0];
 		pid_normal.TUNE_I = fp[1];
 		pid_normal.TUNE_D = fp[2];
-		pid_agressive.TUNE_P = fp[3];
-		pid_agressive.TUNE_I = fp[4];
-		pid_agressive.TUNE_D = fp[5];
+		pid_aggressive.TUNE_P = fp[3];
+		pid_aggressive.TUNE_I = fp[4];
+		pid_aggressive.TUNE_D = fp[5];
 
 		b_printf(PSTR("OK\r\n"));
 
@@ -355,9 +355,9 @@ void CSteering::save_calibration()
 	fp[0] = pid_normal.TUNE_P;
 	fp[1] = pid_normal.TUNE_I;
 	fp[2] = pid_normal.TUNE_D;
-	fp[3] = pid_agressive.TUNE_P;
-	fp[4] = pid_agressive.TUNE_I;
-	fp[5] = pid_agressive.TUNE_D;
+	fp[3] = pid_aggressive.TUNE_P;
+	fp[4] = pid_aggressive.TUNE_I;
+	fp[5] = pid_aggressive.TUNE_D;
 
 	// Calculate checksum over those 13 words
     rec[NUM_EEPROM_WORDS-1]=crc16((unsigned char*)rec,(NUM_EEPROM_WORDS-1)*2);
