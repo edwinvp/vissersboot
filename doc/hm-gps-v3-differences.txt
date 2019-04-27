@@ -1,0 +1,24 @@
+
+The original boat works with a round GPS/compass board called "HM GPS v2.0".
+This is the circuit board that the original boat was tested with.
+
+But meanwhile the owner has bought a new GPS-receiver.
+The PCB now says "HM GPS V3.0" instead of the original "HM GPS V2.0".
+With this new PCB the boat doesn't work.
+
+After a bit of debugging, turns out the GPS still works,
+but the e-compass chip gives zero readings.
+
+Also it appears they have changed the compass chip on the board.
+
+Because the chip on V2 board says:
+A983
+2435
+
+While the chip on V3 board reads:
+7280
+010
+
+As you can see this is clearly another chip!
+
+Since I don't know which chip the new one is, I can't tell if it ought to be compatible.
