@@ -22,3 +22,17 @@ While the chip on V3 board reads:
 As you can see this is clearly another chip!
 
 Since I don't know which chip the new one is, I can't tell if it ought to be compatible.
+
+2019-05-15 UPDATE:
+
+Made a scan of the I2C bus
+
+The following addresses answered:
+addr 29       0x1d (the new type of compass?)
+addr 133      0x85 (m8n gps)
+addr 161      0xa1 (eeprom)
+
+All these addresses are x2.
+So the real address is 0x0E.
+Search on the internet reveals this could be the:
+NXP Xtrinsic MAG3110 Three-Axis, Digital Magnetometer
