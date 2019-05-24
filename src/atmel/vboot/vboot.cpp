@@ -27,6 +27,7 @@
 #include "i2c.h"
 #include "m8n.h"
 #include "hmc5843.h"
+#include "ist8310.h"
 
 #endif
 
@@ -576,6 +577,9 @@ void read_uart()
 			break;
 		case 'c':
             toggle_msg_mode(mmCompass);
+			break;
+		case 'z':
+			ist8310_test();
 			break;
 		case 'g':
 			toggle_msg_mode(mmGps);

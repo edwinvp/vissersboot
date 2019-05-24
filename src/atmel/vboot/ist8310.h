@@ -1,0 +1,28 @@
+#ifndef IST8310H
+#define IST8310H
+
+#define IST8310_W 0x1C
+#define IST8310_R 0x1D
+
+enum EIST8310_REGISTER {
+	EI_WAI = 0x0,
+	EI_STAT1 = 0x2,
+	EI_DATAXL = 0x3,
+	EI_DATAXH = 0x4,
+	EI_DATAYL = 0x5,
+	EI_DATAYH = 0x6,
+	EI_DATAZL = 0x7,
+	EI_DATAZH = 0x8,
+	EI_STAT2 = 0x9,
+	EI_CNTL1 = 0xa,
+	EI_CNTL2 = 0xb,
+	EI_STR = 0xc,
+	EI_TEMPL = 0x1c,
+	EI_TEMPH = 0x1d,
+	EI_AVGCNTL = 0x41,
+	EI_PDCNTL = 0x42	
+};
+
+void ist8310_test();
+
+#endif
