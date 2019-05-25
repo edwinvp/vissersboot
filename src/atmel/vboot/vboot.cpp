@@ -95,6 +95,8 @@ CWayPoints waypoints;
 CLedControl ledctrl;
 
 CIST8310 mag_ist8310;
+CHMC5843 mag_hmc5843;
+CBaseMag * mag = 0;
 
 // Tests
 bool subst_pv = false;
@@ -117,7 +119,6 @@ bool btn_state(false);
 bool btn_pressed(false);
 
 // Compass input
-TCompassTriple compass_raw;
 int16_t good_compass_smp;
 int16_t bad_compass_smp;
 int16_t compass_smp;
@@ -397,7 +398,7 @@ void print_steering_msg()
 void print_compass_msg()
 {
     b_printf(PSTR("x=%04d, y=%04d, z=%04d course=%04d sp=%04d "),
-		compass_raw.x, compass_raw.y, compass_raw.z,
+		mag->compass_raw.x, mag->compass_raw.y, mag->compass_raw.z,
 		int(steering.compass_course),
 		int(steering.bearing_sp));
 
@@ -931,34 +932,30 @@ void process_500ms()
 // ----------------------------------------------------------------------------
 void read_compass_and_gps()
 {
-	compass_raw.x.clear();
-	compass_raw.y.clear();
-	compass_raw.z.clear();
+	mag->compass_raw.x.clear();
+	mag->compass_raw.y.clear();
+	mag->compass_raw.z.clear();
 
 	bool expect_working_compass(bad_compass_smp < 4);
 	bool periodic_attempt((compass_smp%500)==0);
 
 	if (expect_working_compass || periodic_attempt) {
 		// Read compass X,Y,Z reading registers.
-		compass_raw.x = read_hmc5843(0x03);
-		if (compass_raw.x.valid)
-			compass_raw.y = read_hmc5843(0x05);
-		if (compass_raw.y.valid)
-			compass_raw.z = read_hmc5843(0x07);
+		mag->sample();
 	}
 	
 	compass_smp++;
 	if (compass_smp>9999)
 	compass_smp=0;
 
-	bool sample_valid(compass_raw.x.valid && compass_raw.y.valid && compass_raw.z.valid);
+	bool sample_valid(mag->compass_raw.x.valid && mag->compass_raw.y.valid && mag->compass_raw.z.valid);
 	
 	// Only process compass values if they were read successfully via I2C
 	if (sample_valid) {
 		if (cc.calibration_mode)
-			cc.calibrate(compass_raw);
+			cc.calibrate(mag->compass_raw);
 		
-		steering.compass_course = cc.calc_course(compass_raw);
+		steering.compass_course = cc.calc_course(mag->compass_raw);
 		
 		bad_compass_smp=0;
 		good_compass_smp++;
@@ -1092,13 +1089,32 @@ int main (void)
 
 	i2cInit();
 	i2cSetBitrate(15);
+	
+	int retries(250);
+	do {
+		b_printf(PSTR("Probing for magnetometer...\r\n"));
+		delay_ms(100);
 
-	delay_ms(100);
+		if (mag_ist8310.detect()) {
+			b_printf(PSTR("Found IST8310 mag.\r\n"));
+			mag = &mag_ist8310;
+			break;
+		} else if (mag_hmc5843.detect()) {
+			b_printf(PSTR("Found HMC5843 mag.\r\n"));
+			mag = &mag_hmc5843;
+			break;
+		}
+	} while (--retries > 0);
+	
+	if (mag == 0) {
+		b_printf(PSTR("Fatal error: magnetometer not found.\r\n"));
+		while (1) ;
+	}
 
-	init_hmc5843();
+	mag_hmc5843.init();
 
 	delay_ms(25);
-	init_hmc5843();
+	mag_hmc5843.init();
 	delay_ms(25);
 
 #endif

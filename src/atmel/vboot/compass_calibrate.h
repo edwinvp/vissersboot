@@ -13,16 +13,6 @@ enum ECalibrationState {
     csNotCalibrated, csCenterDetect, csTurn1, csTurn2, csFinish, csCalibrated
 };
 //---------------------------------------------------------------------------
-class TCompassTriple
-{
-	public:
-	TCompassRawValue x,y,z;
-	TCompassTriple() {};
-	bool equals(const TCompassTriple & rhs) const {
-		return (x==rhs.x) && (y==rhs.y) && (z==rhs.z);
-	};
-};
-//---------------------------------------------------------------------------
 struct comp_extreme {
 	int16_t avg[4];
 	int16_t fin_min;

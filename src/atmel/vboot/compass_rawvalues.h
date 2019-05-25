@@ -17,4 +17,15 @@ class TCompassRawValue
 	};
 };
 
+//---------------------------------------------------------------------------
+class TCompassTriple
+{
+	public:
+	TCompassRawValue x,y,z;
+	TCompassTriple() {};
+	bool equals(const TCompassTriple & rhs) const {
+		return (x==rhs.x) && (y==rhs.y) && (z==rhs.z);
+	};
+};
+
 #endif

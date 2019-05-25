@@ -29,7 +29,10 @@ class CIST8310 : public CBaseMag
 	
 public:	
 	void test();
-	
+
+	virtual bool detect();
+	virtual bool init();
+	virtual void sample();
 };
 
 

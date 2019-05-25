@@ -3,14 +3,23 @@
 
 #include "settings.h"
 #include "compass_rawvalues.h"
+#include "mag_base.h"
 #ifndef WIN32
 #include <avr/common.h>
 #endif
 
-#define HMC5843_W	0x3C
-#define HMC5843_R	0x3D
+#define HMC5843     0x1e
 
-bool init_hmc5843(void);
-TCompassRawValue read_hmc5843(char reg_adr);
+class CHMC5843 : public CBaseMag
+{
+protected:
+	TCompassRawValue read_hmc5843(char reg_adr);
+
+public:
+	
+	virtual bool detect();
+	virtual bool init();
+	virtual void sample();
+};
 
 #endif
