@@ -187,6 +187,9 @@
     <Compile Include="ist8310.cpp">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="mag_base.cpp">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="state_machine.cpp">
       <SubType>compile</SubType>
     </Compile>

@@ -1,8 +1,9 @@
 #ifndef IST8310H
 #define IST8310H
 
-#define IST8310_W 0x1C
-#define IST8310_R 0x1D
+#include "mag_base.h"
+
+#define IST8310_ADDR 0xE
 
 enum EIST8310_REGISTER {
 	EI_WAI = 0x0,
@@ -23,6 +24,13 @@ enum EIST8310_REGISTER {
 	EI_PDCNTL = 0x42	
 };
 
-void ist8310_test();
+class CIST8310 : public CBaseMag
+{
+	
+public:	
+	void test();
+	
+};
+
 
 #endif

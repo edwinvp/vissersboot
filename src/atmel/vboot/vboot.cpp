@@ -94,6 +94,8 @@ CJoystick joystick;
 CWayPoints waypoints;
 CLedControl ledctrl;
 
+CIST8310 mag_ist8310;
+
 // Tests
 bool subst_pv = false;
 bool subst_sp = false;
@@ -579,7 +581,7 @@ void read_uart()
             toggle_msg_mode(mmCompass);
 			break;
 		case 'z':
-			ist8310_test();
+			mag_ist8310.test();
 			break;
 		case 'g':
 			toggle_msg_mode(mmGps);
