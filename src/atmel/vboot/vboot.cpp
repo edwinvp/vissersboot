@@ -397,12 +397,14 @@ void print_steering_msg()
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
-    b_printf(PSTR("x=%04d, y=%04d, z=%04d course=%04d sp=%04d "),
-		mag->compass_raw.x, mag->compass_raw.y, mag->compass_raw.z,
+	b_printf(PSTR("\x1b[1;1H"));
+	
+    b_printf(PSTR(" x=%04d  \r\n y=%04d  \r\n z=%04d  \r\n course=%04d   \r\n sp=%04d   \r\n"),
+		mag->compass_raw.x.value, mag->compass_raw.y.value, mag->compass_raw.z.value,
 		int(steering.compass_course),
 		int(steering.bearing_sp));
 
-    b_printf(PSTR("smp#(good/bad)=%04d(%04d/%04d) \r\n"), compass_smp, good_compass_smp, bad_compass_smp);
+    b_printf(PSTR("\r\nsmp#(good/bad)=%04d(%04d/%04d)        \r\n"), compass_smp, good_compass_smp, bad_compass_smp);
 	
 	cc.print_cal();
 }
@@ -946,7 +948,7 @@ void read_compass_and_gps()
 	
 	compass_smp++;
 	if (compass_smp>9999)
-	compass_smp=0;
+		compass_smp=0;
 
 	bool sample_valid(mag->compass_raw.x.valid && mag->compass_raw.y.valid && mag->compass_raw.z.valid);
 	
@@ -1111,11 +1113,17 @@ int main (void)
 		while (1) ;
 	}
 
-	mag_hmc5843.init();
+	b_printf(PSTR("init 1\r\n"));
+	mag->init();
 
 	delay_ms(25);
-	mag_hmc5843.init();
+	b_printf(PSTR("init 2\r\n"));
+	mag->init();
 	delay_ms(25);
+	b_printf(PSTR("init 3\r\n"));
+	mag->init();
+	delay_ms(25);
+	b_printf(PSTR("mag init done\r\n"));
 
 #endif
 

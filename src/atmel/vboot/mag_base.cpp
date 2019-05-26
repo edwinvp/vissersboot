@@ -5,8 +5,10 @@ bool CBaseMag::write_i2c_reg(unsigned char addr7, unsigned char regno, unsigned 
 	// Init
 	i2cSendStart();
 	i2cWaitForComplete();
+	
+	unsigned char addr8 = addr7<<1;
 
-	i2cSendByte(addr7<<1); //write to the MAG3310
+	i2cSendByte(addr8); //write to the MAG3310
 	i2cWaitForComplete();
 
 	i2cSendByte(regno);
@@ -20,9 +22,9 @@ bool CBaseMag::write_i2c_reg(unsigned char addr7, unsigned char regno, unsigned 
 	return true;
 }
 
-CResult CBaseMag::read_i2c_reg16_le(unsigned char addr7, char reg_adr)
+TCompassRawValue CBaseMag::read_i2c_reg16_le(unsigned char addr7, char reg_adr)
 {
-	CResult r;
+	TCompassRawValue r;
 	
 	unsigned char addr8 = addr7<<1;
 
@@ -49,7 +51,7 @@ CResult CBaseMag::read_i2c_reg16_le(unsigned char addr7, char reg_adr)
 		i2cSendStop();
 		i2cWaitForComplete();
 		i2creset();
-		r.okay=false;
+		r.valid=false;
 		return r;
 	}
 
@@ -72,21 +74,21 @@ CResult CBaseMag::read_i2c_reg16_le(unsigned char addr7, char reg_adr)
 
 	if (!fi) {
 		// Something went wrong when receiving the values from the I2C-slave.
-		r.okay=false;
+		r.valid=false;
 		return r;
 	}
 
 	// We read the bytes okay. Make integer from those bytes
 	// and set status valid.
-	r.data = (msb<<8) | lsb;
-	r.okay = true;
+	r.value = (msb<<8) | lsb;
+	r.valid = true;
 	
 	return r;
 }
 
-CResult CBaseMag::read_i2c_reg16_be(unsigned char addr7, char reg_adr)
+TCompassRawValue CBaseMag::read_i2c_reg16_be(unsigned char addr7, char reg_adr)
 {
-	CResult r;
+	TCompassRawValue r;
 	
 	unsigned char addr8 = addr7<<1;
 
@@ -113,7 +115,7 @@ CResult CBaseMag::read_i2c_reg16_be(unsigned char addr7, char reg_adr)
 		i2cSendStop();
 		i2cWaitForComplete();
 		i2creset();
-		r.okay=false;
+		r.valid=false;
 		return r;
 	}
 
@@ -136,15 +138,15 @@ CResult CBaseMag::read_i2c_reg16_be(unsigned char addr7, char reg_adr)
 
 	if (!fi) {
 		// Something went wrong when receiving the values from the I2C-slave.
-		r.okay=false;
+		r.valid=false;
 		return r;
 	}
 
 	// We read the bytes okay. Make integer from those bytes
 	// and set status valid.
-	r.data = (msb<<8) | lsb;
-	r.okay = true;
-	
+	r.value = (msb<<8) | lsb;
+	r.valid = true;
+
 	return r;
 }
 
@@ -181,7 +183,7 @@ CResult CBaseMag::read_i2c_reg8(unsigned char addr7, char reg_adr)
 	}
 
 	// Read compass registers
-	i2cReceiveByte(TRUE);
+	i2cReceiveByte(FALSE);
 	bool f = i2cWaitForComplete();
 	char msb = i2cGetReceivedByte(); //Read the LSB data
 	bool g = i2cWaitForComplete();

@@ -44,6 +44,10 @@ private:
 public:
     bool calibration_mode;
 
+	int raw_x;
+	int raw_y;
+	int raw_z;
+
     float m_ix;
     float m_iz;
 

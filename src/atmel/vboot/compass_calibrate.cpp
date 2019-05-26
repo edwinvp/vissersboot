@@ -15,6 +15,9 @@
 
 CCompassCalibration::CCompassCalibration()
 {
+	raw_x = 0;
+	raw_y = 0;
+	raw_z = 0;
     m_cal_state = csNotCalibrated;
     prev_quadrant=0;
     quadrant_counter=0;
@@ -72,6 +75,10 @@ void CCompassCalibration::update_min_max(comp_extreme & x, int16_t newval)
 
 void CCompassCalibration::calibrate(const TCompassTriple & compass_raw)
 {
+	raw_x = compass_raw.x.value;
+	raw_y = compass_raw.y.value;
+	raw_z = compass_raw.z.value;
+	
 	update_min_max(mm_x,compass_raw.x.value);
 	update_min_max(mm_y,compass_raw.y.value);
     update_min_max(mm_z,compass_raw.z.value);	
@@ -111,6 +118,10 @@ float CCompassCalibration::coords_to_angle(float ix, float iz)
 
 float CCompassCalibration::calc_course(const TCompassTriple & compass_raw)
 {
+	raw_x = compass_raw.x.value;
+	raw_y = compass_raw.y.value;
+	raw_z = compass_raw.z.value;
+
 	compass_course_no_offset = 0.0f;
 	
 	TCompassTriple centered;
@@ -248,12 +259,12 @@ void CCompassCalibration::print_cal()
     int iix = m_ix * 100.0;
     int iiz = m_iz * 100.0;
 
-    b_printf(PSTR(" no offset=%d px=%d%% pz=%d%% "), iNoOffset, iix, iiz);
-	b_printf(PSTR(" xr=%04d ... %04d "), mm_x.fin_min, mm_x.fin_max);
-	b_printf(PSTR(" zr=%04d ... %04d "), mm_z.fin_min, mm_z.fin_max);
+    b_printf(PSTR(" no offset=%d px=%d%% pz=%d%%          \r\n"), iNoOffset, iix, iiz);
+	b_printf(PSTR(" xr=%04d ... %04d [%04d]   \r\n"), mm_x.fin_min, mm_x.fin_max, raw_x);
+	b_printf(PSTR(" zr=%04d ... %04d [%04d]   \r\n"), mm_z.fin_min, mm_z.fin_max, raw_y);
     b_printf(PSTR(" q=%d cs="), get_quadrant());
     PrintCalState();
-    b_printf(PSTR("\r\n"));
+    b_printf(PSTR("            \r\n"));
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::PrintCalState()
