@@ -40,6 +40,7 @@ private:
     int get_quadrant();
     void PrintCalState();
     void DetectCwTurn();
+	void print_bar(const comp_extreme & mm, int raw);
 		
 public:
     bool calibration_mode;

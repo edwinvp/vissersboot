@@ -253,6 +253,40 @@ void CCompassCalibration::toggle_calibration_mode()
         b_printf(PSTR("OFF\r\n"));
 }   
 // ----------------------------------------------------------------------------
+void CCompassCalibration::print_bar(const comp_extreme & mm, int raw)
+{
+	if (raw<mm.fin_min)
+		b_printf(PSTR("<"));
+	else
+		b_printf(PSTR("["));
+		
+	int clip = raw;
+	clip = raw<mm.fin_min ? mm.fin_min : clip;
+	clip = raw>mm.fin_max ? mm.fin_max : clip;
+	
+	double r = (mm.fin_max-mm.fin_min);
+	
+	int pp = 0;
+	
+	if (r > 5.0 && r < 65536.0) {
+		double r = ((double)clip - mm.fin_min) / (mm.fin_max-mm.fin_min) * 50.0;
+		pp = (int)r;
+	}
+	
+	for (int p = 0; p<=50; p++) {
+		if (p == pp)
+			b_printf(PSTR("#"));
+		else
+			b_printf(PSTR("."));
+	}
+
+	if (raw>mm.fin_max)
+		b_printf(PSTR(">"));
+	else
+		b_printf(PSTR("]"));
+	
+}
+// ----------------------------------------------------------------------------
 void CCompassCalibration::print_cal()
 {
     int iNoOffset = compass_course_no_offset;
@@ -260,8 +294,18 @@ void CCompassCalibration::print_cal()
     int iiz = m_iz * 100.0;
 
     b_printf(PSTR(" no offset=%d px=%d%% pz=%d%%          \r\n"), iNoOffset, iix, iiz);
-	b_printf(PSTR(" xr=%04d ... %04d [%04d]   \r\n"), mm_x.fin_min, mm_x.fin_max, raw_x);
-	b_printf(PSTR(" zr=%04d ... %04d [%04d]   \r\n"), mm_z.fin_min, mm_z.fin_max, raw_y);
+	b_printf(PSTR(" xr=%04d ... %04d [%04d] "), mm_x.fin_min, mm_x.fin_max, raw_x);
+	print_bar(mm_x,raw_x);
+	b_printf(PSTR("     \r\n"));
+	
+	b_printf(PSTR(" yr=%04d ... %04d [%04d] "), mm_y.fin_min, mm_y.fin_max, raw_y);
+	print_bar(mm_y,raw_y);
+	b_printf(PSTR("     \r\n"));
+
+	b_printf(PSTR(" zr=%04d ... %04d [%04d] "), mm_z.fin_min, mm_z.fin_max, raw_z);
+	print_bar(mm_z,raw_z);
+	b_printf(PSTR("     \r\n"));
+
     b_printf(PSTR(" q=%d cs="), get_quadrant());
     PrintCalState();
     b_printf(PSTR("            \r\n"));
