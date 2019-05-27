@@ -1,7 +1,11 @@
 #ifndef IST8310H
 #define IST8310H
 
+#include "settings.h"
 #include "mag_base.h"
+#ifndef WIN32
+#include <avr/common.h>
+#endif
 
 #define IST8310_ADDR 0xE
 
@@ -26,10 +30,7 @@ enum EIST8310_REGISTER {
 
 class CIST8310 : public CBaseMag
 {
-	
 public:	
-	void test();
-
 	virtual bool detect();
 	virtual bool init();
 	virtual void sample();

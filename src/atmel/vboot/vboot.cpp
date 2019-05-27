@@ -583,9 +583,6 @@ void read_uart()
 		case 'c':
             toggle_msg_mode(mmCompass);
 			break;
-		case 'z':
-			mag_ist8310.test();
-			break;
 		case 'g':
 			toggle_msg_mode(mmGps);
 			break;
