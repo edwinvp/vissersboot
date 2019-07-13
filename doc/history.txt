@@ -48,3 +48,6 @@ juli/augustus
 apri/mei 2016
 - software omgeschreven om magnetische sensor te gebruiken t.b.v. kompasgeleiding
 - 1 motor kan niet in achteruit om de een of andere reden
+
+2019
+- toevoegen ondersteuning IST3810 magnetometer (compass)
