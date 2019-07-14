@@ -1087,7 +1087,7 @@ int main (void)
 	PORTC = 0b00110001; //pull-ups on the I2C bus
 
 	i2cInit();
-	i2cSetBitrate(15);
+	i2cSetBitrate(30);
 	
 	int retries(250);
 	do {
