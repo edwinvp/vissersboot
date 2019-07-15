@@ -14,7 +14,7 @@
  *  GpsTwoWire gpsWire;
  *  void setup() {
  *    Wire.begin();
- *    if (!gpsWire.detect(&amp;Wire))
+ *    if (!gpsWire.detect(&Wire))
  *      gpsNotDetectedError();
  *  }
  *  void loop() {
@@ -55,7 +55,7 @@ class GpsTwoWire : public Stream
       int sz = _wire->available();
       if (0 == sz) {
         int now = millis();
-        if (force || (0 &lt;= (now - _nextRead))) {
+        if (force || (0 <= (now - _nextRead))) {
           _wire->beginTransmission(I2C_ADDR);
           _wire->write(I2C_REG_LENGTH);
           if (0/*success*/ == _wire->endTransmission(false)) {
@@ -65,7 +65,7 @@ class GpsTwoWire : public Stream
               highbyte = _wire->read();
               lowbyte = _wire->read();
               int len = 256 * (int)highbyte + (int)lowbyte;
-              if (0 &lt; len) {
+              if (0 < len) {
                 // limit the data to be read to the TwoWire internal buffer
                 len = min(len, MAX_SZ);
                 // read the data of the stream
@@ -90,7 +90,7 @@ class GpsTwoWire : public Stream
      */
     bool writeStream(const uint8_t *data, size_t quantity)
     { 
-      if ((NULL != data) &amp;&amp; (0 &lt; quantity)) {
+      if ((NULL != data) && (0 < quantity)) {
         do {
           _wire->beginTransmission(I2C_ADDR);
           _wire->write(I2C_REG_STREAM);
@@ -100,7 +100,7 @@ class GpsTwoWire : public Stream
             return false;
           data += len;
           quantity -= len;
-        } while (0 &lt; quantity);
+        } while (0 < quantity);
       }
       return true;
     }
@@ -115,12 +115,12 @@ class GpsTwoWire : public Stream
     /*virtual*/ size_t write(uint8_t data) // write should not be used, use writeStream
       { return _wire->write(data); } 
   private: 
-    static const int     MAX_SZ   = 32;   //!&lt; max number of bytes to read to local buffer 
-    static const int     DELAY_MS = 50;   //!&lt; limit reading the Wire/I2C by this time if no data received
-    static const uint8_t I2C_ADDR = 0x42; //!&lt; 7 bit Wire/I2C address for u-blox
-    typedef enum { I2C_REG_LENGTH = 0xFD, //!&lt; register offset for a 16 bit length field [HILO]
-                   I2C_REG_STREAM = 0xFF  //!&lt; stream of GNSS/NMEA, does not increment registe offset
-                 } I2C_REG; //!&lt; Wire/I2C register offsets 
-    TwoWire* _wire;         //!&lt; Wire/I2C hardware interface
-    int      _nextRead;     //!&lt; time of next possible read 
+    static const int     MAX_SZ   = 32;   //!< max number of bytes to read to local buffer 
+    static const int     DELAY_MS = 50;   //!< limit reading the Wire/I2C by this time if no data received
+    static const uint8_t I2C_ADDR = 0x42; //!< 7 bit Wire/I2C address for u-blox
+    typedef enum { I2C_REG_LENGTH = 0xFD, //!< register offset for a 16 bit length field [HILO]
+                   I2C_REG_STREAM = 0xFF  //!< stream of GNSS/NMEA, does not increment registe offset
+                 } I2C_REG; //!< Wire/I2C register offsets 
+    TwoWire* _wire;         //!< Wire/I2C hardware interface
+    int      _nextRead;     //!< time of next possible read 
 };
