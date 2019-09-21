@@ -31,7 +31,6 @@ ISR(USART1_RX_vect)
 
 ISR(USB_GEN_vect)
 {
-
 	num_gen_int++;
 	
 	if(UDINT&(1<<EORSTI)){//if the end of reset interrupt flag is set
@@ -50,6 +49,9 @@ ISR(USB_GEN_vect)
 		}
 		
 		UENUM = (UENUM & 0xF8) | 0;   // select endpoint 0 and you are ready to go
+		
+		// Clear USB reset int flag
+		UDINT &= ~(1<<EORSTI);
 	}
 }
 
@@ -164,7 +166,7 @@ bInterval:            0x00
 }
 
 
-enum ustate{usDisconnected, usConnected, usWaitSetup, usSetup};
+enum ustate{usDisconnected, usConnected, usWaitSetup, usSetup, usDone};
 
 int main(void)
 {
@@ -224,13 +226,28 @@ int main(void)
 
 					printf_P(PSTR("setup\r\n"));
 					
+					// Clear RXSTPI
+					UEINTX &= ~(1 << RXSTPI);
 					us = usSetup;
 				}								
 				break;
 			
 			case usSetup:
+			
+				if ((UEINTX & (1 << RXOUTI))) {
+					printf_P(PSTR("out\r\n"));
+
+					// Clear RXOUTI
+					UEINTX &= ~(1 << RXOUTI);
+					
+					us = usDone;
+				}
 		
 				break;
+				
+			case usDone:
+				break;
+				
 		}
 
 			
