@@ -8,3 +8,5 @@ src/vcl/boot/boot.res
 src/atmel/vboot.atsuo
 
 src/atmel/.vs/vboot/v14/.atsuo
+src/blink/blink/Debug
+src/blink/.vs
