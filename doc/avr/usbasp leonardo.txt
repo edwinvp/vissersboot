@@ -1,0 +1,18 @@
+
+Download Zadig driver installation tool and install it.
+
+Select the USBasp device from the top drop down list.
+
+BE CAREFUL to select the libusb-win32 driver in the spin edit control,
+do NOT select any other driver than libusbK.
+
+Now press the big button to install the driver.
+
+Download latest AVRDude programming software
+I got for instance "avrdude-win32-6.3-r3.zip"
+
+
+-C"C:\avrdude\avrdude.conf" 
+-C"C:\avrdude\avrdude.conf" -p atmega32u4 -c usbasp-clone -P usb -U flash:w:"$(ProjectDir)Debug\$(TargetName).hex":i
+
+
