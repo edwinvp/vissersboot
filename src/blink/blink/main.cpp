@@ -5,8 +5,14 @@
  * Author : Z
  */ 
 
+#define USB_REQ_TYPE_IN 0x80
+#define USB_REQ_TYPE_INTERFACE 0x01
+#define USB_REQ_TYPE_ENDPOINT 0x02
+#define USB_REQ_TYPE_OUT 0x00
+#define USB_REQ_TYPE_VENDOR 0x40
+
+#define FTDI_SIO_SET_LATENCY_TIMER	9 
 #define FTDI_SIO_GET_LATENCY_TIMER	10 
-#define  FTDI_SIO_GET_LATENCY_TIMER_REQUEST FTDI_SIO_GET_LATENCY_TIMER
 
 #define F_CPU 16000000
 
@@ -350,32 +356,9 @@ void USB_set_address(void)
 static
 uint8_t USB_config;
 
-static
-void handle_CONTROL(void)
-{
+static void usb_control_in(void)
+{	
     uint8_t ok = 0;
-    /* SETUP message */
-    head.bmReqType = EP_read8();
-    head.bReq = EP_read8();
-    head.wValue = EP_read16_le();
-    head.wIndex = EP_read16_le();
-    head.wLength = EP_read16_le();
-	
-	int irt(head.bmReqType);
-	int ir(head.bReq);
-	printf_P(PSTR("ctrl: rt=%04x r=%04x\r\n"),irt,ir);
-
-    /* ack. first stage of CONTROL.
-     * Clears buffer for IN/OUT data
-     */
-    clear_bit(UEINTX, RXSTPI);
-
-    /* despite what the figure in
-     * 21.12.2 (Control Read) would suggest,
-     * SW should not clear TXINI here
-     * as doing so will send a zero length
-     * response.
-     */
 
     switch(head.bReq)
     {
@@ -389,10 +372,10 @@ void handle_CONTROL(void)
         break;
     case usb_req_get_status:
         switch(head.bmReqType) {
-        case 0b10000000:
-        case 0b10000001:
-        case 0b10000010:
-            /* alway status 0 */
+        case USB_REQ_TYPE_IN:
+        case USB_REQ_TYPE_IN | USB_REQ_TYPE_INTERFACE:
+        case USB_REQ_TYPE_IN | USB_REQ_TYPE_ENDPOINT:
+            // always status 0
             loop_until_bit_is_set(UEINTX, TXINI);
             EP_write16_le(0);
             clear_bit(UEINTX, TXINI);
@@ -400,12 +383,7 @@ void handle_CONTROL(void)
         }
         break;
     case usb_req_set_address:
-        if(head.bmReqType==0) {
-            USB_set_address();
-
-            putchar('A');
-            return;
-        }
+		// This is an 'out' command, so should be handled by 'usb_control_out' instead
         break;
     case usb_req_get_desc:
         if(head.bmReqType==0x80) {
@@ -419,7 +397,7 @@ void handle_CONTROL(void)
         }
         break;
     case usb_req_get_config:
-        if(head.bmReqType==0x80) {
+        if(head.bmReqType==USB_REQ_TYPE_IN) {
             loop_until_bit_is_set(UEINTX, TXINI);
             EP_write8(USB_config);
             clear_bit(UEINTX, TXINI);
@@ -428,9 +406,7 @@ void handle_CONTROL(void)
         break;
     case usb_req_set_iface:
 		break;
-    case usb_req_get_iface: // FTDI_SIO_GET_LATENCY_TIMER_REQUEST
-		printf_P(PSTR("getlat\r\n"));
-
+    case usb_req_get_iface:
 		break;
     case usb_req_set_desc:
 		break;
@@ -464,6 +440,143 @@ void handle_CONTROL(void)
         put_hex(head.wLength>>8);
         put_hex(head.wLength);
     }
+	
+	if (head.bmReqType == (USB_REQ_TYPE_IN|USB_REQ_TYPE_VENDOR)) {
+		printf_P(PSTR("VenIn "));
+		
+		switch (head.bReq) {
+		case FTDI_SIO_GET_LATENCY_TIMER:
+			// 16 ms is the default value
+			printf_P(PSTR("getlat\r\n"));			 
+			loop_until_bit_is_set(UEINTX, TXINI);
+			EP_write8(0x10); // 16 [ms] is the default value
+			clear_bit(UEINTX, TXINI);
+			ok=1;
+			break;
+		};
+	}
+	
+    if(ok) {
+        if(head.bmReqType&ReqType_DirD2H) {
+            /* Control read.
+             * Wait for, and complete, status
+             */
+            uint8_t sts;
+            while(!((sts=UEINTX)&(_BV(RXSTPI)|_BV(RXOUTI)))) {}
+            //loop_until_bit_is_set(UEINTX, RXOUTI);
+            ok = (sts & _BV(RXOUTI));
+            if(!ok) {
+                set_bit(UECONX, STALLRQ);
+                putchar('S');
+            } else {
+                clear_bit(UEINTX, RXOUTI);
+                clear_bit(UEINTX, TXINI);
+            }
+        } else {
+            /* Control write.
+             * indicate completion
+             */
+            clear_bit(UEINTX, TXINI);
+        }
+        putchar('C');
+
+    } else {
+        /* fail un-handled SETUP */
+        set_bit(UECONX, STALLRQ);
+        putchar('F');
+    }
+}
+
+static void usb_control_out(void)
+{
+	uint8_t ok = 0;
+
+    switch(head.bReq)
+    {
+    case usb_req_set_feature:
+    case usb_req_clear_feature:
+        /* No features to handle.
+         * We ignore Remote wakeup,
+         * and EP0 will never be Halted
+         */
+        ok = 1;
+        break;
+    case usb_req_get_status:
+		// This is an 'in' command, so should be handled by `usb_control_in` instead
+        break;
+    case usb_req_set_address:
+        if(head.bmReqType==USB_REQ_TYPE_OUT) {
+			// Host sets USB address
+            USB_set_address();
+            putchar('A');
+            return;
+        }
+        break;
+    case usb_req_get_desc:
+		// This is an 'in' command, so should be handled by 'usb_control_in' instead
+        break;
+    case usb_req_set_config:
+        if(head.bmReqType==0) {
+            USB_config = head.wValue;
+            ok = 1;
+        }
+        break;
+    case usb_req_get_config:
+        break;
+    case usb_req_set_iface:
+		break;
+    case usb_req_get_iface:
+		break;
+    case usb_req_set_desc:
+		break;
+    case usb_req_synch_frame:
+        break;
+
+
+    /* our (vendor specific) operations */
+	/*
+    case 0x7f:
+        if(head.bmReqType==0b01000010 && head.wLength>=2) {
+            // Control Write H2D
+            loop_until_bit_is_set(UEINTX, RXOUTI);
+            userval = EP_read16_le();
+            clear_bit(UEINTX, RXOUTI);
+            ok = 1;
+        } else if(head.bmReqType==0b11000010 && head.wLength>=2) {
+            // Control Read D2H
+            loop_until_bit_is_set(UEINTX, TXINI);
+            EP_write16_le(userval);
+            clear_bit(UEINTX, TXINI);
+            ok = 1;
+        }
+        break;
+	*/
+	
+    default:
+        putchar('?');
+        put_hex(head.bmReqType);
+        put_hex(head.bReq);
+        put_hex(head.wLength>>8);
+        put_hex(head.wLength);
+    }
+	
+	if (head.bmReqType == (USB_REQ_TYPE_OUT|USB_REQ_TYPE_VENDOR)) {
+		printf_P(PSTR("VenOut "));
+		
+		switch (head.bReq) {
+		case FTDI_SIO_SET_LATENCY_TIMER:
+			printf_P(PSTR("setlat\r\n"));
+			
+			loop_until_bit_is_set(UEINTX, RXOUTI);
+			EP_read8(); // read but ignore new latency setting
+			clear_bit(UEINTX, RXOUTI);
+			
+			printf_P(PSTR("/setlat\r\n"));
+
+			ok=1;
+			break;
+		};
+	}
 
     if(ok) {
         if(head.bmReqType&ReqType_DirD2H) {
@@ -494,6 +607,39 @@ void handle_CONTROL(void)
         set_bit(UECONX, STALLRQ);
         putchar('F');
     }
+}
+
+static
+void handle_CONTROL(void)
+{
+    uint8_t ok = 0;
+    /* SETUP message */
+    head.bmReqType = EP_read8();
+    head.bReq = EP_read8();
+    head.wValue = EP_read16_le();
+    head.wIndex = EP_read16_le();
+    head.wLength = EP_read16_le();
+	
+	int irt(head.bmReqType);
+	int ir(head.bReq);
+	printf_P(PSTR("ctrl: rt=%04x r=%04x\r\n"),irt,ir);
+
+    /* ack. first stage of CONTROL.
+     * Clears buffer for IN/OUT data
+     */
+    clear_bit(UEINTX, RXSTPI);
+
+    /* despite what the figure in
+     * 21.12.2 (Control Read) would suggest,
+     * SW should not clear TXINI here
+     * as doing so will send a zero length
+     * response.
+     */
+	
+	if (head.bmReqType & USB_REQ_TYPE_IN)
+		usb_control_in();
+	else
+		usb_control_out();
 }
 
 ISR(USB_COM_vect)
@@ -618,7 +764,7 @@ int main(void)
 			
 			_delay_ms(50);
 			
-			if ((i%10)==0)
+			if ((i%30)==0)
 				printf_P(PSTR("gi=%04d ci=%04d\r\n"),num_gen_int,num_com_int);
 			
 			PORTC = 0x00;
