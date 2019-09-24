@@ -5,6 +5,9 @@
  * Author : Z
  */ 
 
+#define FTDI_SIO_GET_LATENCY_TIMER	10 
+#define  FTDI_SIO_GET_LATENCY_TIMER_REQUEST FTDI_SIO_GET_LATENCY_TIMER
+
 #define F_CPU 16000000
 
 #include <avr/io.h>
@@ -357,6 +360,10 @@ void handle_CONTROL(void)
     head.wValue = EP_read16_le();
     head.wIndex = EP_read16_le();
     head.wLength = EP_read16_le();
+	
+	int irt(head.bmReqType);
+	int ir(head.bReq);
+	printf_P(PSTR("ctrl: rt=%04x r=%04x\r\n"),irt,ir);
 
     /* ack. first stage of CONTROL.
      * Clears buffer for IN/OUT data
@@ -420,27 +427,36 @@ void handle_CONTROL(void)
         }
         break;
     case usb_req_set_iface:
-    case usb_req_get_iface:
+		break;
+    case usb_req_get_iface: // FTDI_SIO_GET_LATENCY_TIMER_REQUEST
+		printf_P(PSTR("getlat\r\n"));
+
+		break;
     case usb_req_set_desc:
+		break;
     case usb_req_synch_frame:
         break;
 
+
     /* our (vendor specific) operations */
+	/*
     case 0x7f:
         if(head.bmReqType==0b01000010 && head.wLength>=2) {
-            /* Control Write H2D */
+            // Control Write H2D
             loop_until_bit_is_set(UEINTX, RXOUTI);
             userval = EP_read16_le();
             clear_bit(UEINTX, RXOUTI);
             ok = 1;
         } else if(head.bmReqType==0b11000010 && head.wLength>=2) {
-            /* Control Read D2H */
+            // Control Read D2H
             loop_until_bit_is_set(UEINTX, TXINI);
             EP_write16_le(userval);
             clear_bit(UEINTX, TXINI);
             ok = 1;
         }
         break;
+	*/
+	
     default:
         putchar('?');
         put_hex(head.bmReqType);
@@ -479,34 +495,6 @@ void handle_CONTROL(void)
         putchar('F');
     }
 }
-
-/*
-ISR(USB_GEN_vect)
-{
-	num_gen_int++;
-	
-	if(UDINT&(1<<EORSTI)){//if the end of reset interrupt flag is set
-		putchar('$');
-
-		//configure endpoint 0 to recieve the initial setup packets
-		UENUM = (UENUM & 0xF8) | 0;   // select endpoint 0
-		UECONX |= (1 << EPEN);    // enable endpoint 0
-		UECFG0X = 0;   // endpoint 0 is a control endpoint
-		UECFG1X = (1 << EPSIZE1) | (1 << EPSIZE0) | (1 << ALLOC);    // endpoint 0: 64 bytes, one bank, allocate mem
-		
-		UEINTX = 0;
-		// check configuration
-		if (!(UESTA0X & (1 << CFGOK))) {
-			//error
-		}
-		
-		UENUM = (UENUM & 0xF8) | 0;   // select endpoint 0 and you are ready to go
-		
-		// Clear USB reset int flag
-		UDINT &= ~(1<<EORSTI);
-	}
-}
-*/
 
 ISR(USB_COM_vect)
 {
@@ -554,32 +542,11 @@ void setup_usb()
 	// configure USB interface (speed, endpoints, etc.)
 	UDCON &= ~(1 << LSM);     // full speed 12 Mbit/s
 	
-	/*
-	// configure endpoint 0
-	UENUM = (UENUM & 0xF8) | 0;   // select endpoint 0
-	UECONX |= (1 << EPEN);    // enable endpoint 0
-	UECFG0X = 0;   // endpoint 0 is a control endpoint
-	UECFG1X = (1 << EPSIZE1) | (1 << EPSIZE0) | (1 << ALLOC);    // endpoint 0: 64 bytes, one bank, allocate mem
-	UEINTX = 0;
-	// check configuration
-	if (!(UESTA0X & (1 << CFGOK))) {
-		//status = STATUS_INVALID_CONFIGURATION_1;
-		putchar('?');
-		return;
-	}
 	// disable rest of endpoints
 	for (uint8_t i = 1; i <= 6; i++) {
 		UENUM = (UENUM & 0xF8) | i;   // select endpoint i
 		UECONX &= ~(1 << EPEN);
 	}
-	*/
-	
-	// disable rest of endpoints
-	for (uint8_t i = 1; i <= 6; i++) {
-		UENUM = (UENUM & 0xF8) | i;   // select endpoint i
-		UECONX &= ~(1 << EPEN);
-	}
-
 
 /*	
 Device Descriptor:
@@ -619,7 +586,7 @@ bInterval:            0x00
 }
 
 
-enum ustate{usDisconnected, usConnected, usWaitSetup, usSetup, usDone};
+enum ustate{usDisconnected, usDone};
 
 int main(void)
 {
@@ -667,46 +634,12 @@ int main(void)
 					//end of reset interrupts
 					UDIEN |= (1<<EORSTE);//enable the end of reset interrupt
 						
-					us = usWaitSetup;
+					us = usDone;
 				}
 				break;
 					
-			case usWaitSetup:
-/*
-				// wait setup packet
-				UENUM = (UENUM & 0xF8) | 0;   // select endpoint 0
-
-				EP_select(0);
-				if(bit_is_set(UEINTX, RXSTPI))
-					handle_CONTROL();
-       
-				if ((UEINTX & (1 << RXSTPI))) {
-
-					printf_P(PSTR("setup\r\n"));
-					
-					// Clear RXSTPI
-					UEINTX &= ~(1 << RXSTPI);
-					us = usSetup;
-				}								
-*/
-				break;
-			case usSetup:
-/*		
-
-				if ((UEINTX & (1 << RXOUTI))) {
-					printf_P(PSTR("out\r\n"));
-
-					// Clear RXOUTI
-					UEINTX &= ~(1 << RXOUTI);
-					
-					us = usDone;
-				}		
-				break;
-*/
-				
 			case usDone:
-				break;
-				
+				break;				
 		}
 
 		if ((UEINTX & (1 << RXSTPI)))
