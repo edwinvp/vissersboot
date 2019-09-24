@@ -11,6 +11,10 @@
 #define USB_REQ_TYPE_OUT 0x00
 #define USB_REQ_TYPE_VENDOR 0x40
 
+#define FTDI_SIO_SET_FLOW_CTRL		2 
+#define FTDI_SIO_SET_BAUD_RATE		3
+#define FTDI_SIO_SET_DATA		   4
+#define FTDI_SIO_GET_MODEM_STATUS	5 
 #define FTDI_SIO_SET_LATENCY_TIMER	9 
 #define FTDI_SIO_GET_LATENCY_TIMER	10 
 
@@ -345,7 +349,6 @@ void USB_set_address(void)
     UDADDR = head.wValue&0x7f;
 
     clear_bit(UEINTX, TXINI); /* send 0 length reply */
-
     loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
 
     UDADDR = _BV(ADDEN) | (head.wValue&0x7f);
@@ -355,6 +358,12 @@ void USB_set_address(void)
 
 static
 uint8_t USB_config;
+
+static
+void USB_set_config(void)
+{
+	USB_config = head.wValue;
+}
 
 static void usb_control_in(void)
 {	
@@ -453,7 +462,18 @@ static void usb_control_in(void)
 			clear_bit(UEINTX, TXINI);
 			ok=1;
 			break;
+		case FTDI_SIO_GET_MODEM_STATUS:
+			// 16 ms is the default value
+			printf_P(PSTR("getmodem\r\n"));
+			loop_until_bit_is_set(UEINTX, TXINI);
+			EP_write8(0x00); // 16 [ms] is the default value
+			clear_bit(UEINTX, TXINI);
+			ok=1;
+			break;
+
 		};
+	
+		
 	}
 	
     if(ok) {
@@ -507,8 +527,10 @@ static void usb_control_out(void)
     case usb_req_set_address:
         if(head.bmReqType==USB_REQ_TYPE_OUT) {
 			// Host sets USB address
-            USB_set_address();
             putchar('A');
+            USB_set_address();		
+            putchar('a');
+			
             return;
         }
         break;
@@ -517,8 +539,10 @@ static void usb_control_out(void)
         break;
     case usb_req_set_config:
         if(head.bmReqType==0) {
-            USB_config = head.wValue;
-            ok = 1;
+			putchar('S');
+			USB_set_config();
+			putchar('s');			
+            ok = 1;					
         }
         break;
     case usb_req_get_config:
@@ -561,18 +585,46 @@ static void usb_control_out(void)
     }
 	
 	if (head.bmReqType == (USB_REQ_TYPE_OUT|USB_REQ_TYPE_VENDOR)) {
-		printf_P(PSTR("VenOut "));
+		//printf_P(PSTR("VenOut "));
 		
 		switch (head.bReq) {
-		case FTDI_SIO_SET_LATENCY_TIMER:
-			printf_P(PSTR("setlat\r\n"));
+		case FTDI_SIO_SET_BAUD_RATE:
+			printf_P(PSTR("setbaud\r\n"));
 			
-			loop_until_bit_is_set(UEINTX, RXOUTI);
-			EP_read8(); // read but ignore new latency setting
-			clear_bit(UEINTX, RXOUTI);
+			clear_bit(UEINTX, TXINI); /* send 0 length reply */
+			loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
+			clear_bit(UEINTX, TXINI); /* magic packet? */
 			
-			printf_P(PSTR("/setlat\r\n"));
+			ok=1;
+			break;
 
+		case FTDI_SIO_SET_DATA:
+		printf_P(PSTR("setdata\r\n"));
+		
+		clear_bit(UEINTX, TXINI); /* send 0 length reply */
+		loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
+		clear_bit(UEINTX, TXINI); /* magic packet? */
+		
+		ok=1;
+		break;
+			
+		case FTDI_SIO_SET_FLOW_CTRL:
+			printf_P(PSTR("sfc\r\n"));	
+			
+			clear_bit(UEINTX, TXINI); /* send 0 length reply */
+			loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
+			clear_bit(UEINTX, TXINI); /* magic packet? */
+	
+			ok=1;
+			break;
+			
+		case FTDI_SIO_SET_LATENCY_TIMER:
+			printf_P(PSTR("sl\r\n"));
+		
+			clear_bit(UEINTX, TXINI); /* send 0 length reply */
+			loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
+			clear_bit(UEINTX, TXINI); /* magic packet? */	
+	
 			ok=1;
 			break;
 		};
@@ -761,14 +813,10 @@ int main(void)
     {
 			++i;
 			PORTC = 0x80;
-			
-			_delay_ms(50);
-			
-			if ((i%30)==0)
-				printf_P(PSTR("gi=%04d ci=%04d\r\n"),num_gen_int,num_com_int);
-			
+			_delay_ms(10);			
+		
 			PORTC = 0x00;
-			_delay_ms(50);
+			_delay_ms(10);
 
 			switch (us) {
 			case usDisconnected:				
