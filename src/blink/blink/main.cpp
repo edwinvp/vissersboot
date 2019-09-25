@@ -11,12 +11,15 @@
 #define USB_REQ_TYPE_OUT 0x00
 #define USB_REQ_TYPE_VENDOR 0x40
 
+#define FTDI_SIO_RESET 0
+#define FTDI_SIO_MODEM_CTRL 1
 #define FTDI_SIO_SET_FLOW_CTRL		2 
 #define FTDI_SIO_SET_BAUD_RATE		3
 #define FTDI_SIO_SET_DATA		   4
 #define FTDI_SIO_GET_MODEM_STATUS	5 
 #define FTDI_SIO_SET_LATENCY_TIMER	9 
 #define FTDI_SIO_GET_LATENCY_TIMER	10 
+#define FTDI_SIO_READ_EEPROM		0x90 /* Read EEPROM */
 
 #define F_CPU 16000000
 
@@ -88,7 +91,7 @@ static const usb_std_device_desc PROGMEM devdesc = {
     0x00, /* vendor specific */
     0x00, /* vendor specific */
     0x00, /* vendor specific */
-    EP0_SIZE, /* EP 0 size 64 bytes */
+    EP0_SIZE, /* EP 0 size 64 bytes, real FTID reports 8 */
     0x0403, // Future Technology Devices International Limited
     0x6001, // FT232
     0x0400,
@@ -102,6 +105,8 @@ struct tdevconf
 {
 usb_std_config_desc conf;
 usb_std_iface_desc iface;
+usb_std_EP_desc ep1;
+usb_std_EP_desc ep2;
 };
 
 static const PROGMEM tdevconf devconf {
@@ -121,28 +126,54 @@ static const PROGMEM tdevconf devconf {
         usb_desc_iface,
         0,
         0,
-        0,
+        2, // # of endpoints
         0xff, // vender specific
         0xff, // vender specific
         0xff, // vender specific
 		0
+	},
+	// End point 1
+	{
+		7, // size
+		usb_desc_EP,
+		0x81, // address
+		0x02, // bulk
+		0x0040, // max packet size (64 bytes)
+		0, // interval		
+	},
+	// End point 2
+	{
+		7, // size
+		usb_desc_EP,
+		0x02, // address
+		0x02, // bulk
+		0x0040, // max packet size (64 bytes)
+		0, // interval
 	}
 };
 
 static const usb_std_string_desc iLang PROGMEM = {
-	sizeof(usb_std_string_desc) + 2,
+	4, //sizeof(usb_std_string_desc) + 2,
 	usb_desc_string,
     L"\x0409"
 };
 
+/*
 #define DESCSTR(STR) { \
- sizeof(usb_std_string_desc) + sizeof(STR)-2, \
+	usb_desc_string, \
+	STR \
+}
+*/
+
+#define DESCSTR(STR) { \
+	2 + sizeof(STR) - 2, \
 	usb_desc_string, \
 	STR \
 }
 
-static const usb_std_string_desc iProd PROGMEM = DESCSTR(L"simpleusb");
-static const usb_std_string_desc iSerial PROGMEM = DESCSTR(L"42");
+
+static const usb_std_string_desc iProd PROGMEM = DESCSTR(L"simpleusb\0\0");
+static const usb_std_string_desc iSerial PROGMEM = DESCSTR(L"FTP1W65N\0\0");
 
 #undef DESCSTR
 
@@ -152,6 +183,8 @@ static const usb_std_string_desc iSerial PROGMEM = DESCSTR(L"42");
 static
 uint8_t USB_get_desc(void)
 {
+	printf_P(PSTR(" gd=%04x"), head.wValue);
+	
     const void *addr;
     uint8_t len, idx = head.wValue;
     switch(head.wValue>>8)
@@ -172,7 +205,7 @@ uint8_t USB_get_desc(void)
         case 2: addr = &iSerial; break;
         default: return 0;
         }
-        /* the first byte of any descriptor is it's length in bytes */
+        /* the first byte of any descriptor is its length in bytes */
         len = pgm_read_byte(addr);
         break;
     default:
@@ -247,7 +280,7 @@ static void setupEP0(void)
     /* configure EP 0 */
     set_bit(UECONX, EPEN);
     UECFG0X = 0; /* CONTROL */
-    UECFG1X = 0b00110010; /* EPSIZE=64B, 1 bank, ALLOC */
+    UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC 
 #if EP0_SIZE!=64
 #  error EP0 size mismatch
 #endif
@@ -256,6 +289,58 @@ static void setupEP0(void)
         putchar('!');
         while(1) {} /* oops */
     }
+}
+
+/*
+Endpoint Descriptor:
+bEndpointAddress:     0x81
+Transfer Type:        Bulk
+wMaxPacketSize:     0x0040 (64)
+bInterval:            0x00
+
+Endpoint Descriptor:
+bEndpointAddress:     0x02
+Transfer Type:        Bulk
+wMaxPacketSize:     0x0040 (64)
+bInterval:            0x00
+*/
+
+static void setup_other_ep()
+{
+    EP_select(1);
+
+    /* un-configure EP 1 */
+    clear_bit(UECONX, EPEN);
+    clear_bit(UECFG1X, ALLOC);
+
+    /* configure EP 1 */
+    set_bit(UECONX, EPEN);
+    UECFG0X = 0x81; /* BULK, IN */
+    UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC
+
+	if(bit_is_clear(UESTA0X, CFGOK)) {
+		putchar('1!');
+		while(1) {} /* oops */
+	}
+
+    EP_select(2);
+
+    /* un-configure EP 2 */
+    clear_bit(UECONX, EPEN);
+    clear_bit(UECFG1X, ALLOC);
+
+    /* configure EP 2 */
+    set_bit(UECONX, EPEN);
+    UECFG0X = 0x80; /* BULK, OUT */
+    UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC
+
+    if(bit_is_clear(UESTA0X, CFGOK)) {
+	    putchar('1!');
+	    while(1) {} /* oops */
+    }
+
+    EP_select(0);	
+	
 }
 
 ISR(USB_GEN_vect, ISR_BLOCK)
@@ -307,6 +392,8 @@ ISR(USB_GEN_vect, ISR_BLOCK)
 static
 uint8_t ctrl_write_PM(const void *addr, uint16_t len)
 {
+	printf_P(PSTR(" wpm=%d"),len);
+	
     while(len) {
         uint8_t ntx = EP0_SIZE,
                 bsize = UEBCLX,
@@ -363,6 +450,8 @@ static
 void USB_set_config(void)
 {
 	USB_config = head.wValue;
+	
+	setup_other_ep();
 }
 
 static void usb_control_in(void)
@@ -443,20 +532,31 @@ static void usb_control_in(void)
 	*/
 	
     default:
-        putchar('?');
-        put_hex(head.bmReqType);
-        put_hex(head.bReq);
-        put_hex(head.wLength>>8);
-        put_hex(head.wLength);
+		if ((head.bmReqType & USB_REQ_TYPE_VENDOR)==0) {
+			putchar('?');
+			put_hex(head.bmReqType);
+	        put_hex(head.bReq);
+			put_hex(head.wLength>>8);
+			put_hex(head.wLength);
+		}
     }
 	
 	if (head.bmReqType == (USB_REQ_TYPE_IN|USB_REQ_TYPE_VENDOR)) {
-		printf_P(PSTR("VenIn "));
-		
 		switch (head.bReq) {
+		case FTDI_SIO_READ_EEPROM:
+			printf_P(PSTR(" rd_eeprom"));
+
+			loop_until_bit_is_set(UEINTX, TXINI);
+			EP_write8(0xff);
+			EP_write8(0xff);
+			clear_bit(UEINTX, TXINI);
+			ok=1;
+		
+			break;
+
 		case FTDI_SIO_GET_LATENCY_TIMER:
 			// 16 ms is the default value
-			printf_P(PSTR("getlat\r\n"));			 
+			printf_P(PSTR(" getlat"));			 
 			loop_until_bit_is_set(UEINTX, TXINI);
 			EP_write8(0x10); // 16 [ms] is the default value
 			clear_bit(UEINTX, TXINI);
@@ -464,15 +564,13 @@ static void usb_control_in(void)
 			break;
 		case FTDI_SIO_GET_MODEM_STATUS:
 			// 16 ms is the default value
-			printf_P(PSTR("getmodem\r\n"));
+			printf_P(PSTR(" getmodem"));
 			loop_until_bit_is_set(UEINTX, TXINI);
 			EP_write8(0x00); // 16 [ms] is the default value
 			clear_bit(UEINTX, TXINI);
 			ok=1;
 			break;
-
-		};
-	
+		};	
 		
 	}
 	
@@ -577,57 +675,46 @@ static void usb_control_out(void)
 	*/
 	
     default:
-        putchar('?');
-        put_hex(head.bmReqType);
-        put_hex(head.bReq);
-        put_hex(head.wLength>>8);
-        put_hex(head.wLength);
+		if ((head.bmReqType & USB_REQ_TYPE_VENDOR)==0) {
+	        putchar('?');
+			put_hex(head.bmReqType);
+			put_hex(head.bReq);
+			put_hex(head.wLength>>8);
+			put_hex(head.wLength);
+		}
     }
 	
 	if (head.bmReqType == (USB_REQ_TYPE_OUT|USB_REQ_TYPE_VENDOR)) {
-		//printf_P(PSTR("VenOut "));
-		
 		switch (head.bReq) {
-		case FTDI_SIO_SET_BAUD_RATE:
-			printf_P(PSTR("setbaud\r\n"));
-			
-			clear_bit(UEINTX, TXINI); /* send 0 length reply */
-			loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
-			clear_bit(UEINTX, TXINI); /* magic packet? */
-			
+		case FTDI_SIO_RESET:
+			ok=1;
+			break;
+		case FTDI_SIO_MODEM_CTRL:
+			printf_P(PSTR(" setmodem"));
 			ok=1;
 			break;
 
+		case FTDI_SIO_SET_BAUD_RATE:
+			printf_P(PSTR(" setbaud"));			
+			ok=1;
+			break;
 		case FTDI_SIO_SET_DATA:
-		printf_P(PSTR("setdata\r\n"));
-		
-		clear_bit(UEINTX, TXINI); /* send 0 length reply */
-		loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
-		clear_bit(UEINTX, TXINI); /* magic packet? */
-		
-		ok=1;
-		break;
-			
+			printf_P(PSTR(" setdata"));
+			ok=1;
+			break;
 		case FTDI_SIO_SET_FLOW_CTRL:
-			printf_P(PSTR("sfc\r\n"));	
-			
-			clear_bit(UEINTX, TXINI); /* send 0 length reply */
-			loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
-			clear_bit(UEINTX, TXINI); /* magic packet? */
-	
+			printf_P(PSTR(" sfc"));				
 			ok=1;
 			break;
 			
 		case FTDI_SIO_SET_LATENCY_TIMER:
-			printf_P(PSTR("sl\r\n"));
-		
-			clear_bit(UEINTX, TXINI); /* send 0 length reply */
-			loop_until_bit_is_set(UEINTX, TXINI); /* wait until sent */
-			clear_bit(UEINTX, TXINI); /* magic packet? */	
-	
+			printf_P(PSTR(" sl"));		
 			ok=1;
 			break;
-		};
+
+		default:
+			printf_P(PSTR("??"));		
+		};		
 	}
 
     if(ok) {
@@ -674,7 +761,7 @@ void handle_CONTROL(void)
 	
 	int irt(head.bmReqType);
 	int ir(head.bReq);
-	printf_P(PSTR("ctrl: rt=%04x r=%04x\r\n"),irt,ir);
+	printf_P(PSTR("ctrl: rt=%04x r=%04x "),irt,ir);
 
     /* ack. first stage of CONTROL.
      * Clears buffer for IN/OUT data
@@ -692,6 +779,8 @@ void handle_CONTROL(void)
 		usb_control_in();
 	else
 		usb_control_out();
+		
+	printf_P(PSTR("\r\n"));
 }
 
 ISR(USB_COM_vect)
