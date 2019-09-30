@@ -1,28 +1,37 @@
-/*
- * blink.cpp
- *
- * Created: 20-9-2019 21:30:13
- * Author : Z
- */ 
+// fake_ftdi.cpp
+// Created: 20-9-2019 21:30:13
+// Author : E. van Putten (edwinvp@xs4all.nl)
+//
+// Description:
+//  This EXPERIMENTAL program allows emulating a specific
+//  FTDI USB to serial converter from your Atmel ATMega 32u4 controller.
+//
+//  It sets up the Atmel USB peripheral to match a style FT232BM device.
+//  Any characters you press in your favorite terminal program will be
+//  sent to the regular USART port. Receiving the 'a' character will write
+//  back a very famous message to the pc/laptop.
+//
+//  It might be useful to someone like me who...
+//  ... needs to have two serial ports (one regular USART and a USB
+//    to serial link for talking to the pc/laptop
+//  ... is intimidated by either Atmel's ASF or LUFA
+//  ... wants to tinker with USB
+//  ... just wants to see a minimal program instead of tons of source files
+//
+// If that's you then please read on.
+//
+// IMPORTANT NOTES:
+// 1. This work is derived from Michael Davidsaver's `simpleusb.c` program (with his
+//  permission). His original program can be found here:
+//  https://github.com/mdavidsaver/avr/blob/master/simpleusb.c
+// 2. Use this softare at your own risk! Playing around with low level USB stuff
+// is a notorious way for crashing your computer, possibly corrupting some files
+// you have open in the process. Don't say I didn't warn you!
+// 3. This code is meant for demonstration/hobby purposes only.
+// It is most probably not a good idea to emulate nor impersonate FTDI's products 
+// in any serious product you might have.
 
-#define USB_REQ_TYPE_IN 0x80
-#define USB_REQ_TYPE_INTERFACE 0x01
-#define USB_REQ_TYPE_ENDPOINT 0x02
-#define USB_REQ_TYPE_OUT 0x00
-#define USB_REQ_TYPE_VENDOR 0x40
-
-#define FTDI_SIO_RESET 0
-#define FTDI_SIO_MODEM_CTRL 1
-#define FTDI_SIO_SET_FLOW_CTRL		2 
-#define FTDI_SIO_SET_BAUD_RATE		3
-#define FTDI_SIO_SET_DATA		   4
-#define FTDI_SIO_GET_MODEM_STATUS	5 
-#define FTDI_SIO_SET_LATENCY_TIMER	9 
-#define FTDI_SIO_GET_LATENCY_TIMER	10 
-#define FTDI_SIO_READ_EEPROM		0x90 /* Read EEPROM */
-
-#define F_CPU 16000000
-
+#include "settings.h"
 #include <avr/io.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,9 +41,8 @@
 #include "uart.h"
 #include "usb.h"
 
-static unsigned int num_gen_int = 0;
-static unsigned int num_com_int = 0;
-static unsigned char d = 0;
+// Variable to store incoming byte received from the regular USART
+static unsigned char uart_byte = 0;
 
 static
 uint8_t ctrl_write_PM(const void *addr, uint16_t len);
@@ -63,7 +71,7 @@ ISR(WDT_vect)
 
 ISR(USART1_RX_vect)
 {
-	d=UDR1;
+	uart_byte=UDR1;
 }
 
 void oops(int a, char * v)
@@ -105,10 +113,10 @@ static const usb_std_device_desc PROGMEM devdesc = {
 
 struct tdevconf
 {
-usb_std_config_desc conf;
-usb_std_iface_desc iface;
-usb_std_EP_desc ep1;
-usb_std_EP_desc ep2;
+	usb_std_config_desc conf;
+	usb_std_iface_desc iface;
+	usb_std_EP_desc ep1;
+	usb_std_EP_desc ep2;
 };
 
 static const PROGMEM tdevconf devconf {
@@ -174,7 +182,10 @@ static const usb_std_string_desc iLang PROGMEM = {
 }
 
 
-static const usb_std_string_desc iProd PROGMEM = DESCSTR(L"simpleusb\0\0");
+// USB product name ("friendly name") that shows up when the host is quizzing the device
+static const usb_std_string_desc iProd PROGMEM = DESCSTR(L"QuartelRCBB\0\0");
+
+// FTDI style alphanumeric serial number
 static const usb_std_string_desc iSerial PROGMEM = DESCSTR(L"FTP1W65N\0\0");
 
 #undef DESCSTR
@@ -185,8 +196,6 @@ static const usb_std_string_desc iSerial PROGMEM = DESCSTR(L"FTP1W65N\0\0");
 static
 uint8_t USB_get_desc(void)
 {
-	printf_P(PSTR(" gd=%04x"), head.wValue);
-	
     const void *addr;
     uint8_t len, idx = head.wValue;
     switch(head.wValue>>8)
@@ -295,31 +304,29 @@ static void setupEP0(void)
 
 static void setup_other_ep()
 {
-/*
-	The FTDI has two endpoints for serial data, they are:
-	
-	Endpoint 1 (IN):
-	 bEndpointAddress:     0x81
-	 Transfer Type:        Bulk
-	 wMaxPacketSize:     0x0040 (64)
- 	 bInterval:            0x00
-
-	Endpoint 2 (OUT):
-	 bEndpointAddress:     0x02
-  	 Transfer Type:        Bulk
-	 wMaxPacketSize:     0x0040 (64)
-  	 bInterval:            0x00
-*/
+	// The FTDI has two endpoints for serial data, they are:
+	//
+	// Endpoint 1 (IN):
+	//   bEndpointAddress:     0x81
+	//   Transfer Type:        Bulk
+	//   wMaxPacketSize:     0x0040 (64)
+	//   bInterval:            0x00
+	//
+	// Endpoint 2 (OUT):
+	//   bEndpointAddress:     0x02
+	//   Transfer Type:        Bulk
+	//   wMaxPacketSize:     0x0040 (64)
+	//   bInterval:            0x00
 
     EP_select(1);
 
-    /* un-configure EP 1 */
+    // un-configure EP 1
     clear_bit(UECONX, EPEN);
     clear_bit(UECFG1X, ALLOC);
 
-    /* configure EP 1 */
+    // configure EP 1
     set_bit(UECONX, EPEN);
-    UECFG0X = 0x81; /* BULK, IN */
+    UECFG0X = 0x81; // BULK, IN
     UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC
 
 	if(bit_is_clear(UESTA0X, CFGOK)) {
@@ -329,11 +336,11 @@ static void setup_other_ep()
 
     EP_select(2);
 
-    /* un-configure EP 2 */
+    // un-configure EP 2
     clear_bit(UECONX, EPEN);
     clear_bit(UECFG1X, ALLOC);
 
-    /* configure EP 2 */
+    // configure EP 2
     set_bit(UECONX, EPEN);
     UECFG0X = 0x80; /* BULK, OUT */
     UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC
@@ -392,12 +399,25 @@ ISR(USB_GEN_vect, ISR_BLOCK)
     UDINT = ~ack;
 }
 
+/* function to write bytes of program memory to a bulk endpoint 
+BUG/LIMITATION: this function does not allow writing big chunks, because
+the bulk endpoints in this program have a max size of 64 bytes */
+static
+void bulk_write_PM(const void *addr, uint16_t len)
+{
+    while(len--) {
+	    uint8_t val = pgm_read_byte(addr);
+		UEDATX = val;
+		addr++;
+    }	
+}
+
+
 /* write value from flash to EP0 */
 static
 uint8_t ctrl_write_PM(const void *addr, uint16_t len)
 {
-	printf_P(PSTR(" wpm=%d"),len);
-	
+
     while(len) {
         uint8_t ntx = EP0_SIZE,
                 bsize = UEBCLX,
@@ -458,9 +478,23 @@ void USB_set_config(void)
 	setup_other_ep();
 }
 
+// Called when we encounter an 'alien' USB request/message so we can work out what 
+// is needed to support it
+static void dump_unsupported_request(void)
+{
+	putchar('?');
+	put_hex(head.bmReqType);
+	put_hex(head.bReq);
+	put_hex(head.wLength>>8);
+	put_hex(head.wLength);	
+}
+
+// Handles CONTROL reads (Atmel to pc)
 static void usb_control_in(void)
 {	
-    uint8_t ok = 0;
+	// Flag that indicates whether the request was supported and should be ack'ed.
+	// If at the end of the function it is false, then a the endpoint is STALLed
+    uint8_t ok = 0; 
 
     switch(head.bReq)
     {
@@ -517,11 +551,7 @@ static void usb_control_in(void)
 
     default:
 		if ((head.bmReqType & USB_REQ_TYPE_VENDOR)==0) {
-			putchar('?');
-			put_hex(head.bmReqType);
-	        put_hex(head.bReq);
-			put_hex(head.wLength>>8);
-			put_hex(head.wLength);
+			dump_unsupported_request();
 		}
     }
 
@@ -529,8 +559,6 @@ static void usb_control_in(void)
 	if (head.bmReqType == (USB_REQ_TYPE_IN|USB_REQ_TYPE_VENDOR)) {
 		switch (head.bReq) {
 		case FTDI_SIO_READ_EEPROM:
-			printf_P(PSTR(" rd_eeprom"));
-
 			loop_until_bit_is_set(UEINTX, TXINI);
 			EP_write8(0xff);
 			EP_write8(0xff);
@@ -541,7 +569,6 @@ static void usb_control_in(void)
 
 		case FTDI_SIO_GET_LATENCY_TIMER:
 			// 16 ms is the default value
-			printf_P(PSTR(" getlat"));			 
 			loop_until_bit_is_set(UEINTX, TXINI);
 			EP_write8(0x10); // 16 [ms] is the default value
 			clear_bit(UEINTX, TXINI);
@@ -549,12 +576,13 @@ static void usb_control_in(void)
 			break;
 		case FTDI_SIO_GET_MODEM_STATUS:
 			// 16 ms is the default value
-			printf_P(PSTR(" getmodem"));
 			loop_until_bit_is_set(UEINTX, TXINI);
 			EP_write8(0x00); // 16 [ms] is the default value
 			clear_bit(UEINTX, TXINI);
 			ok=1;
 			break;
+		default:
+			dump_unsupported_request();			
 		};	
 		
 	}
@@ -590,6 +618,7 @@ static void usb_control_in(void)
     }
 }
 
+// Handles CONTROL writes (pc to Atmel)
 static void usb_control_out(void)
 {
 	uint8_t ok = 0;
@@ -641,11 +670,7 @@ static void usb_control_out(void)
 
     default:
 		if ((head.bmReqType & USB_REQ_TYPE_VENDOR)==0) {
-	        putchar('?');
-			put_hex(head.bmReqType);
-			put_hex(head.bReq);
-			put_hex(head.wLength>>8);
-			put_hex(head.wLength);
+			dump_unsupported_request();
 		}
     }
 	
@@ -654,32 +679,16 @@ static void usb_control_out(void)
 		switch (head.bReq) {
 		case FTDI_SIO_RESET:
 			ok=1;
-			break;
+			break;			
 		case FTDI_SIO_MODEM_CTRL:
-			printf_P(PSTR(" setmodem"));
-			ok=1;
-			break;
-
 		case FTDI_SIO_SET_BAUD_RATE:
-			printf_P(PSTR(" setbaud"));			
-			ok=1;
-			break;
 		case FTDI_SIO_SET_DATA:
-			printf_P(PSTR(" setdata"));
-			ok=1;
-			break;
 		case FTDI_SIO_SET_FLOW_CTRL:
-			printf_P(PSTR(" sfc"));				
-			ok=1;
-			break;
-			
 		case FTDI_SIO_SET_LATENCY_TIMER:
-			printf_P(PSTR(" sl"));		
 			ok=1;
 			break;
-
 		default:
-			printf_P(PSTR("??"));		
+			dump_unsupported_request();
 		};		
 	}
 
@@ -714,67 +723,83 @@ static void usb_control_out(void)
     }
 }
 
-static bool do_send = false;
+// Whether we need to send Hello World message to the pc
+static bool do_send_famous_message = false;
+// Whether we need to echo a character to the pc
+static bool do_send_char = false;
+// Last usb "serial" character received as sent by pc/laptop
+static char usb_char = '\0';
 
+// Every FTDI serial read starts with two reserved bytes
+void send_reserved_bytes()
+{
+	// The original device reserves the first two bytes for the modem and line status
+	UEDATX = 0x80; // Modem status.
+	UEDATX = 0x00; // Line status.	
+}
+
+// Possibly send bytes to the pc/laptop
 void handle_outgoing_bytes(void)
 {
+	// Turn attention to the bulk IN endpoint, because that's were bytes
+	// destined for the pc/laptop should go to first
 	EP_select(1);
 	
-	if (do_send) {
-		do_send=false;
+	if (do_send_famous_message) {
+		do_send_famous_message=false;
 		
 		if (bit_is_set(UEINTX,TXINI)) {
 			clear_bit(UEINTX,TXINI);
-			
-			// The original device reserves the first two bytes for the modem and line status
-			UEDATX = 0x80; // Modem status.
-			UEDATX = 0x00; // Line status.
-			// Now the actual serial data starts.
-			UEDATX = 'H';
-			UEDATX = 'e';
-			UEDATX = 'l';
-			UEDATX = 'l';
-			UEDATX = 'o';
-			UEDATX = '!';
-			UEDATX = '\r';
-			UEDATX = '\n';
-			
+			send_reserved_bytes();
+			// Write the famous message to the pc/laptop
+			bulk_write_PM(PSTR("Hello world!\r\n"),14);			
 			clear_bit(UEINTX,FIFOCON);
+		}		
+	} else if (do_send_char) {
+		do_send_char=false;
+
+		if (bit_is_set(UEINTX,TXINI)) {
+			clear_bit(UEINTX,TXINI);			
+			send_reserved_bytes();
+			// Send one char
+			UEDATX = usb_char;			
+			clear_bit(UEINTX,FIFOCON);		
 		}
-		
 	}
 	
 }
 
+// Possibly receive bytes from the pc/laptop
 void handle_incoming_bytes(void)
 {
+	// Turn attention to the bulk OUT endpoint, because that's were bytes
+	// sent from the pc/laptop end up in.
 	EP_select(2);
 	
 	if (bit_is_set(UEINTX, RXOUTI)) {
+		// Acknowledge receive int
 		clear_bit(UEINTX, RXOUTI);
-		
-		printf_P(PSTR("<<"));
-		
+			
+		// See how much bytes we got
 		unsigned int N = ((unsigned int)UEBCHX << 8) | UEBCLX;
 		
 		if (N>0) {
-			printf_P(PSTR("N=%d:"),N);
-			
+			// Read chars sent by the pc/laptop
 			for (int i(0);i<N;i++) {
-				char c = UEDATX;
-				putchar(c);
+				usb_char = UEDATX;
 				
-				if (c=='a')
-					do_send=true;
+				if (usb_char=='a')
+					do_send_famous_message=true;
+				else
+					do_send_char=true;					
 			}
 		}
-		printf_P(PSTR("<<"));
 		
 		clear_bit(UEINTX,FIFOCON);
-	}
-	
+	}	
 }
 
+// Called when the pc/laptop is quizzing/configuring the Atmel
 static
 void handle_CONTROL(void)
 {
@@ -785,10 +810,6 @@ void handle_CONTROL(void)
     head.wValue = EP_read16_le();
     head.wIndex = EP_read16_le();
     head.wLength = EP_read16_le();
-	
-	int irt(head.bmReqType);
-	int ir(head.bReq);
-	printf_P(PSTR("ctrl: rt=%04x r=%04x "),irt,ir);
 
     /* ack. first stage of CONTROL.
      * Clears buffer for IN/OUT data
@@ -805,18 +826,15 @@ void handle_CONTROL(void)
 	if (head.bmReqType & USB_REQ_TYPE_IN)
 		usb_control_in();
 	else
-		usb_control_out();
-		
-	printf_P(PSTR("\r\n"));
+		usb_control_out();	
 }
 
 ISR(USB_COM_vect)
 {
-	putchar('%');
-
-	num_com_int++;
+	// This USB interrupt isn't used.
 }
 
+// Performs initial USB and PLL configuration
 void setup_usb()
 {
 	// Start with interrupts disabled
@@ -835,7 +853,7 @@ void setup_usb()
 	// Enable USB pad regulator
 	UHWCON |= (1<<UVREGE);
 
-	// Configure PLL
+	// Configure PLL (setup 48 MHz USB clock)
 	PLLCSR = 0;
 	// Set PINDIV because we are using 16 MHz crystal
 	PLLCSR |= (1<<PINDIV);
@@ -860,11 +878,8 @@ void setup_usb()
 	for (uint8_t i = 1; i <= 6; i++) {
 		UENUM = (UENUM & 0xF8) | i;   // select endpoint i
 		UECONX &= ~(1 << EPEN);
-	}
-
-	
+	}	
 }
-
 
 enum ustate{usDisconnected, usDone};
 
@@ -879,31 +894,34 @@ int main(void)
 	
 	USART_Init();
 
-	printf_P(PSTR("reboot!\r\n"));
+	// Print startup message
+	printf_P(PSTR("Reboot!\r\n"));
 
+	// Configure PLL, USB
 	setup_usb();
-	
-	printf_P(PSTR("mloop\r\n"));
-	
-	
-	int i=0;
 
-	ustate us(usDisconnected);
-	
-    /* Replace with your application code */
+	unsigned int loop_ctr(0);
+
+    ustate us(usDisconnected);
+
+    // Main loop
     while (1) 
     {
-			++i;
-			PORTC = 0x80;
-			_delay_ms(10);			
-		
-			PORTC = 0x00;
-			_delay_ms(10);
+			++loop_ctr;
+
+			// Blink the yellow LED on the Leonardo board,
+			// so we can tell the main loop is running or not.
+			if (loop_ctr&0x80)
+				set_bit(PORTC,PORTC7);
+			else		
+				clear_bit(PORTC,PORTC7);
+				
+			_delay_ms(5);
 
 			switch (us) {
 			case usDisconnected:				
 				if ((USBSTA & (1 << VBUS))) {
-					printf_P(PSTR("Vbus\r\n"));
+					printf_P(PSTR("Plugged in!\r\n"));
 					// connected
 					UDCON &= ~(1 << DETACH);
 				
@@ -915,6 +933,12 @@ int main(void)
 				break;
 					
 			case usDone:
+				// TODO / BUG: This condition never seems to be met, at least with my Arduino Leonardo board
+				if (!((USBSTA & (1 << VBUS)))) {
+					// we got disconnected from the pc/laptop
+					printf_P(PSTR("Disconnected!\r\n"));
+					us = usDisconnected;
+				}
 				break;				
 		}
 
@@ -924,11 +948,9 @@ int main(void)
 			handle_CONTROL();
 
 		// Receive bytes from USB host (laptop/pc)
-		EP_select(2);
 		handle_incoming_bytes();
 		
 		// Send bytes to USB host (laptop/pc)
-		EP_select(1);
 		handle_outgoing_bytes();
     }
 }

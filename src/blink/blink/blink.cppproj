@@ -151,7 +151,7 @@
     </ToolchainSettings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="main.cpp">
+    <Compile Include="fake_ftdi.cpp">
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="uart.c">

@@ -94,4 +94,22 @@ typedef struct
     uint16_t wValue, wIndex, wLength;
 } __attribute__((packed)) usb_header;
 
+// USB Request type masks
+#define USB_REQ_TYPE_IN 0x80
+#define USB_REQ_TYPE_INTERFACE 0x01
+#define USB_REQ_TYPE_ENDPOINT 0x02
+#define USB_REQ_TYPE_OUT 0x00
+#define USB_REQ_TYPE_VENDOR 0x40
+
+// FTDI defines, taken from the Linux ftdi_sio driver
+#define FTDI_SIO_RESET 0
+#define FTDI_SIO_MODEM_CTRL 1
+#define FTDI_SIO_SET_FLOW_CTRL		2
+#define FTDI_SIO_SET_BAUD_RATE		3
+#define FTDI_SIO_SET_DATA		   4
+#define FTDI_SIO_GET_MODEM_STATUS	5
+#define FTDI_SIO_SET_LATENCY_TIMER	9
+#define FTDI_SIO_GET_LATENCY_TIMER	10
+#define FTDI_SIO_READ_EEPROM		0x90 /* Read EEPROM */
+
 #endif // USB_H
