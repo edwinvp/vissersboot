@@ -1,35 +1,65 @@
 // fake_ftdi.cpp
 // Created: 20-9-2019 21:30:13
 // Author : E. van Putten (edwinvp@xs4all.nl)
+// Derived from program by Michael Davidsaver (see notes).
 //
-// Description:
-//  This EXPERIMENTAL program allows emulating a specific
-//  FTDI USB to serial converter from your Atmel ATMega 32u4 controller.
+// Title: 
+//  Atmel based FTDI USB serial converter emulation.
 //
-//  It sets up the Atmel USB peripheral to match a style FT232BM device.
-//  Any characters you press in your favorite terminal program will be
-//  sent to the regular USART port. Receiving the 'a' character will write
-//  back a very famous message to the pc/laptop.
+// Description / what it is:
+//  This program of EXPERIMENTAL nature allows emulating a specific
+//  FTDI USB to serial converter from your Atmel ATMega 32u4 (or compatible)
+//  controller.
 //
-//  It might be useful to someone like me who...
-//  ... needs to have two serial ports (one regular USART and a USB
-//    to serial link for talking to the pc/laptop
-//  ... is intimidated by either Atmel's ASF or LUFA
-//  ... wants to tinker with USB
+//  It sets up the Atmel USB peripheral to match a FT232BM style device.
+//  When running and connected to a pc/laptop running your favorite terminal
+//  software, some of the chars typed on the pc/laptop will be echoed back.
+//  Typing the 'a' character will print a rather famous message.
+//
+// What it is NOT:
+//  This will not give you a fully working USB to serial converter like the real 
+//  FT232BM chip does.
+//  No attempt has been made to ensure correct forwarding of bytes across interfaces
+//  etc. In fact, there are even characters mixed into the regular USART stream
+//  to aid debugging the USB enumeration process!
+//  Also note that only a minimal/limited set of the official vendor specific commands are
+//  responded to.
+// 
+// Audience:
+//  This all might be useful for someone (like me) who...
+//  ... needs to have two independent serial ports from their Atmel controller
+//  ... is intimidated by (or doesn't want to use) either Atmel's ASF or LUFA
+//  ... wants to tinker with USB and use this as a starting point
 //  ... just wants to see a minimal program instead of tons of source files
 //
-// If that's you then please read on.
-//
 // IMPORTANT NOTES:
-// 1. This work is derived from Michael Davidsaver's `simpleusb.c` program (with his
-//  permission). His original program can be found here:
-//  https://github.com/mdavidsaver/avr/blob/master/simpleusb.c
-// 2. Use this softare at your own risk! Playing around with low level USB stuff
-// is a notorious way for crashing your computer, possibly corrupting some files
-// you have open in the process. Don't say I didn't warn you!
+// 1. This work is derived, with permission, from Michael Davidsaver's `simpleusb.c` program.
+//    His original software can be found here:
+//    https://github.com/mdavidsaver/avr/blob/master/simpleusb.c
+// 2. Use this software at your own risk! Playing around with low level USB stuff
+//    is a notorious way to crash your computer, possibly corrupting some files
+//    you have open in the process. Don't say I didn't warn you!
 // 3. This code is meant for demonstration/hobby purposes only.
-// It is most probably not a good idea to emulate nor impersonate FTDI's products 
-// in any serious product you might have.
+//    It is most probably not a good idea to emulate nor impersonate FTDI's products 
+//    in any serious commercial product you might have.
+//
+// BUGS / LIMITATIONS:
+// 1. Only tested on Arduino Leonardo board with 16 MHz crystal/oscillator
+// 2. The real FTDI has a EP0 size of 8 bytes, this program uses 64.
+//    Makes it easier to program the Atmel that way.
+// 3. The character echoed back is only the last character when a bunch of characters
+//    is actually received in one transaction. This is to keep the example simple.
+//    A more useful program will need some kind of line buffer, FIFO etc.
+//    Your turn to experiment!
+// 4. Any USB power management / suspend related events/interrupts have not been
+//    taken into consideration. Things might break if you surprise remove the device!
+// 5. A number of vendor (FTDI) specific commands are acknowledged to keep the 
+//    original drivers happy, but are simply ignored.
+//    For instance setting the baud rate has no effect at all.
+//    Don't expect the regular USART peripheral to change settings based on these.
+// 6. FTDI EEPROM reads always give an output of all FF FF hex for the same reason.
+// 7. Unlike the original simple usb program, the file has turned half into C++, not C,
+//    which might annoy or offend some programmers. Sorry!
 
 #include "settings.h"
 #include <avr/io.h>
@@ -246,7 +276,7 @@ static inline void setupusb(void)
     set_bit(USBCON, USBE);
 
     /* No required.
-     * Gives some time to start reprograming
+     * Gives some time to start reprogramming
      * if previous program gets stuck right away
      */
     _delay_ms(1000);
