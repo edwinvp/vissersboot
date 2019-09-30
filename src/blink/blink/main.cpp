@@ -44,7 +44,10 @@ uint8_t ctrl_write_PM(const void *addr, uint16_t len);
 #define toggle_bit(REG, BIT) REG ^= _BV(BIT)
 #define assign_bit(REG, BIT, VAL) do{if(VAL) set_bit(REG,BIT) else clear_bit(REG,BIT);}while(0)
 
-#define EP0_SIZE 64
+// Endpoint 0 size
+// NOTE: FTDI defines this as 8 bytes instead, but 64 is much easier to program as we don't have
+// split up the bigger transfers.
+#define EP0_SIZE 64 
 
 #define EP_select(N) do{UENUM = (N)&0x07;}while(0)
 #define EP_read8() (UEDATX)
@@ -83,22 +86,21 @@ void put_hex(unsigned int i)
 static usb_header head;
 
 /* USB descriptors, stored in flash */
-
 static const usb_std_device_desc PROGMEM devdesc = {
     sizeof(devdesc),
     usb_desc_device,
     0x0110, // 0x0110 for USB v1.1, 0x0200 for USB v2.0
-    0x00, /* vendor specific */
-    0x00, /* vendor specific */
-    0x00, /* vendor specific */
+    0x00, /* vendor specific / device class */
+    0x00, /* vendor specific / device sub class */
+    0x00, /* vendor specific / device protocol */
     EP0_SIZE, /* EP 0 size 64 bytes, real FTID reports 8 */
-    0x0403, // Future Technology Devices International Limited
-    0x6001, // FT232
-    0x0400,
-	1, // iManu
-    2,
-    0,
-    1
+    0x0403, // Vendor ID (VID): Future Technology Devices International Limited
+    0x6001, // Product ID (PID): FT232
+    0x0400, // bcdDevice
+	1, // iManufacturer
+    2, // iProduct
+    0, // iSerialNumber (has nothing to do with that alfanumeric FTDI serial number)
+    1 // Number of configurations
 };
 
 struct tdevconf
@@ -291,22 +293,24 @@ static void setupEP0(void)
     }
 }
 
-/*
-Endpoint Descriptor:
-bEndpointAddress:     0x81
-Transfer Type:        Bulk
-wMaxPacketSize:     0x0040 (64)
-bInterval:            0x00
-
-Endpoint Descriptor:
-bEndpointAddress:     0x02
-Transfer Type:        Bulk
-wMaxPacketSize:     0x0040 (64)
-bInterval:            0x00
-*/
-
 static void setup_other_ep()
 {
+/*
+	The FTDI has two endpoints for serial data, they are:
+	
+	Endpoint 1 (IN):
+	 bEndpointAddress:     0x81
+	 Transfer Type:        Bulk
+	 wMaxPacketSize:     0x0040 (64)
+ 	 bInterval:            0x00
+
+	Endpoint 2 (OUT):
+	 bEndpointAddress:     0x02
+  	 Transfer Type:        Bulk
+	 wMaxPacketSize:     0x0040 (64)
+  	 bInterval:            0x00
+*/
+
     EP_select(1);
 
     /* un-configure EP 1 */
@@ -511,26 +515,6 @@ static void usb_control_in(void)
     case usb_req_synch_frame:
         break;
 
-
-    /* our (vendor specific) operations */
-	/*
-    case 0x7f:
-        if(head.bmReqType==0b01000010 && head.wLength>=2) {
-            // Control Write H2D
-            loop_until_bit_is_set(UEINTX, RXOUTI);
-            userval = EP_read16_le();
-            clear_bit(UEINTX, RXOUTI);
-            ok = 1;
-        } else if(head.bmReqType==0b11000010 && head.wLength>=2) {
-            // Control Read D2H
-            loop_until_bit_is_set(UEINTX, TXINI);
-            EP_write16_le(userval);
-            clear_bit(UEINTX, TXINI);
-            ok = 1;
-        }
-        break;
-	*/
-	
     default:
 		if ((head.bmReqType & USB_REQ_TYPE_VENDOR)==0) {
 			putchar('?');
@@ -540,7 +524,8 @@ static void usb_control_in(void)
 			put_hex(head.wLength);
 		}
     }
-	
+
+	// Vendor specific	
 	if (head.bmReqType == (USB_REQ_TYPE_IN|USB_REQ_TYPE_VENDOR)) {
 		switch (head.bReq) {
 		case FTDI_SIO_READ_EEPROM:
@@ -654,26 +639,6 @@ static void usb_control_out(void)
     case usb_req_synch_frame:
         break;
 
-
-    /* our (vendor specific) operations */
-	/*
-    case 0x7f:
-        if(head.bmReqType==0b01000010 && head.wLength>=2) {
-            // Control Write H2D
-            loop_until_bit_is_set(UEINTX, RXOUTI);
-            userval = EP_read16_le();
-            clear_bit(UEINTX, RXOUTI);
-            ok = 1;
-        } else if(head.bmReqType==0b11000010 && head.wLength>=2) {
-            // Control Read D2H
-            loop_until_bit_is_set(UEINTX, TXINI);
-            EP_write16_le(userval);
-            clear_bit(UEINTX, TXINI);
-            ok = 1;
-        }
-        break;
-	*/
-	
     default:
 		if ((head.bmReqType & USB_REQ_TYPE_VENDOR)==0) {
 	        putchar('?');
@@ -684,6 +649,7 @@ static void usb_control_out(void)
 		}
     }
 	
+	// Vendor specific
 	if (head.bmReqType == (USB_REQ_TYPE_OUT|USB_REQ_TYPE_VENDOR)) {
 		switch (head.bReq) {
 		case FTDI_SIO_RESET:
@@ -746,6 +712,67 @@ static void usb_control_out(void)
         set_bit(UECONX, STALLRQ);
         putchar('F');
     }
+}
+
+static bool do_send = false;
+
+void handle_outgoing_bytes(void)
+{
+	EP_select(1);
+	
+	if (do_send) {
+		do_send=false;
+		
+		if (bit_is_set(UEINTX,TXINI)) {
+			clear_bit(UEINTX,TXINI);
+			
+			// The original device reserves the first two bytes for the modem and line status
+			UEDATX = 0x80; // Modem status.
+			UEDATX = 0x00; // Line status.
+			// Now the actual serial data starts.
+			UEDATX = 'H';
+			UEDATX = 'e';
+			UEDATX = 'l';
+			UEDATX = 'l';
+			UEDATX = 'o';
+			UEDATX = '!';
+			UEDATX = '\r';
+			UEDATX = '\n';
+			
+			clear_bit(UEINTX,FIFOCON);
+		}
+		
+	}
+	
+}
+
+void handle_incoming_bytes(void)
+{
+	EP_select(2);
+	
+	if (bit_is_set(UEINTX, RXOUTI)) {
+		clear_bit(UEINTX, RXOUTI);
+		
+		printf_P(PSTR("<<"));
+		
+		unsigned int N = ((unsigned int)UEBCHX << 8) | UEBCLX;
+		
+		if (N>0) {
+			printf_P(PSTR("N=%d:"),N);
+			
+			for (int i(0);i<N;i++) {
+				char c = UEDATX;
+				putchar(c);
+				
+				if (c=='a')
+					do_send=true;
+			}
+		}
+		printf_P(PSTR("<<"));
+		
+		clear_bit(UEINTX,FIFOCON);
+	}
+	
 }
 
 static
@@ -835,40 +862,6 @@ void setup_usb()
 		UECONX &= ~(1 << EPEN);
 	}
 
-/*	
-Device Descriptor:
-bcdUSB:             0x0110
-bDeviceClass:         0x00
-bDeviceSubClass:      0x00
-bDeviceProtocol:      0x00
-bMaxPacketSize0:      0x08 (8)
-idVendor:           0x0403 (Future Technology Devices International Limited)
-idProduct:          0x6001
-bcdDevice:          0x0400
-iManufacturer:        0x01
-iProduct:             0x02
-iSerialNumber:        0x00
-bNumConfigurations:   0x01
-
-ConnectionStatus: DeviceConnected
-Current Config Value: 0x01
-Device Bus Speed:     Full
-Device Address:       0x01
-Open Pipes:              2
-
-Endpoint Descriptor:
-bEndpointAddress:     0x81
-Transfer Type:        Bulk
-wMaxPacketSize:     0x0040 (64)
-bInterval:            0x00
-
-Endpoint Descriptor:
-bEndpointAddress:     0x02
-Transfer Type:        Bulk
-wMaxPacketSize:     0x0040 (64)
-bInterval:            0x00
-*/
-	
 	
 }
 
@@ -925,10 +918,17 @@ int main(void)
 				break;				
 		}
 
+		// Handle USB control messages
+		EP_select(0);
 		if ((UEINTX & (1 << RXSTPI)))
 			handle_CONTROL();
 
-			
+		// Receive bytes from USB host (laptop/pc)
+		EP_select(2);
+		handle_incoming_bytes();
+		
+		// Send bytes to USB host (laptop/pc)
+		EP_select(1);
+		handle_outgoing_bytes();
     }
 }
-
