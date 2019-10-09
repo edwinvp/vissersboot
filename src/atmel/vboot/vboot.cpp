@@ -732,7 +732,7 @@ void periodic_msg()
 
     case mmButton:
         b_printf(PSTR("button: "));
-        if (PINC & (1<<PINC0))
+        if (PINF & (1<<PINF7))
             b_printf(PSTR("up\r\n"));
         else
             b_printf(PSTR("down\r\n"));
@@ -820,8 +820,8 @@ void check_rc()
 // ----------------------------------------------------------------------------
 void process_100ms()
 {
-	// Detect calibration button presses (when PORTC0 is low)
-	btn_state = (PINC & (1<<PINC0))==0;
+	// Detect calibration button presses (when PORTF7 is low)
+	btn_state = (PINF & (1<<PINF7))==0;
 	// Detect rising edge (button pressed)
 	if (btn_state && (!btn_prev_state))
 		btn_pressed = true;
@@ -1083,8 +1083,11 @@ int main (void)
 
 	// Initialize I2C-bus I/O (and button input on RC0)
 #ifndef _WIN32
-	DDRC = 0b00110000; // SDA/SCL pins as output (see Atmel manual) and RC0 as input
-	PORTC = 0b00110001; //pull-ups on the I2C bus
+	DDRC = 0b00110000; // SDA/SCL pins as output (see Atmel manual)
+	PORTC = 0b00110000; //pull-ups on the I2C bus
+	
+	DDRF = 0b00000000; // PORTF7 as input
+	PORTF = 0b10000000; // pull-up on cal. button (bit 7)
 
 	i2cInit();
 	i2cSetBitrate(30);
