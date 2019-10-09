@@ -269,7 +269,7 @@ Help - AVR-Libc reference - Library Reference - <avr/interrupt.h>: Interrupts
 for vector names other than USART_RXC_vect for ATmega32 */
 
 #ifndef _WIN32
-ISR(USART_RX_vect) {
+ISR(USART1_RX_vect) {
 #else
 void Fake_UART_ISR(unsigned UDR0) {
 #endif
