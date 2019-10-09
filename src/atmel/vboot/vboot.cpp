@@ -1083,8 +1083,8 @@ int main (void)
 
 	// Initialize I2C-bus I/O (and button input on RC0)
 #ifndef _WIN32
-	DDRC = 0b00110000; // SDA/SCL pins as output (see Atmel manual)
-	PORTC = 0b00110000; //pull-ups on the I2C bus
+	DDRD = 0b00000011; // SDA/SCL pins as output (see Atmel manual)
+	PORTD = 0b00000011; //pull-ups on the I2C bus
 	
 	DDRF = 0b00000000; // PORTF7 as input
 	PORTF = 0b10000000; // pull-up on cal. button (bit 7)
