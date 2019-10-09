@@ -276,7 +276,7 @@ void Fake_UART_ISR(unsigned UDR0) {
 
     // Read UART register (the received byte)
 	// into `value`
-	comms_char = UDR0;
+	comms_char = UDR1;
 
     fifo_write(comms_char);
 }
