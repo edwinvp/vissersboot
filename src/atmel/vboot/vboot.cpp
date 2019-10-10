@@ -36,6 +36,9 @@
 #include "uart.h"
 #include "vboot.h"
 
+#define set_bit(REG, BIT) REG |= _BV(BIT)
+#define clear_bit(REG, BIT) REG &= ~_BV(BIT)
+
 // ----------------------------------------------------------------------------
 // Control (of motors)
 // ----------------------------------------------------------------------------
@@ -184,6 +187,35 @@ ISR(TIMER1_OVF_vect)
 	global_ms_timer += 20;	// timer was set to overflow each 20 [ms]
 }
 // ----------------------------------------------------------------------------
+ISR(TIMER3_OVF_vect)
+{
+	// Reset timer 4
+	TC4H = 0;
+	TCNT4 = 0x00;	
+	
+	// Force waveform generator to '1'
+	// Set on compare match
+	TCCR4C |= _BV(COM4D1);
+	TCCR4C |= _BV(COM4D0);
+	TCCR4C |= _BV(FOC4D);
+
+	// Force waveform generator to '1'
+	// Clear on compare match
+	TCCR4C |= _BV(COM4D1);
+	TCCR4C &= ~_BV(COM4D0);
+
+}
+// ----------------------------------------------------------------------------
+ISR(TIMER4_COMPD_vect)
+{
+	//TCCR4B = 0b00000000;
+}
+// ----------------------------------------------------------------------------
+ISR(TIMER4_OVF_vect)
+{
+}
+
+// ----------------------------------------------------------------------------
 #ifndef _WIN32
 ISR(PCINT0_vect)
 {
@@ -283,27 +315,32 @@ void Fake_UART_ISR(unsigned UDR0) {
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
 {
+#if 0
 #ifndef _WIN32
-	// Configure PD6 as input
-	DDRD &= ~_BV(DDD6);
-	PORTD &= ~_BV(PORTD6);
-    // Configure PD2 as output (head lights / tail lights)
-    PORTD |= _BV(PORTD1);
-	// Configure PD5 as input
-	DDRD &= ~_BV(DDD5);
-	PORTD &= ~_BV(PORTD5);
-	// Configure PD3 as input
+	// Configure PD7 (RC CH1/K1) as input
+	DDRD &= ~_BV(DDD7);
+	PORTD &= ~_BV(PORTD7);
+    // Configure PB4 as output (head lights / tail lights; L)
+    PORTB |= _BV(PORTB4);
+	// Configure PC6 as input (CH2/K2-MR)
+	DDRC &= ~_BV(DDC6);
+	PORTC &= ~_BV(PORTC6);
+	// Configure PD4 as input (CH3/K3-MOT POS)
 	DDRD &= ~_BV(DDD4);
 	PORTD &= ~_BV(PORTD4);
-	// Configure PB4 as input
-	DDRB &= ~_BV(DDB4);
-	PORTB &= ~_BV(PORTB4);
+	// Configure PD6 as input (CH4/K4 man/erase)
+	DDRD &= ~_BV(DDD6);
+	PORTD &= ~_BV(PORTD6);
 
 	// Enable on-pin-change for pins
-	PCMSK2 |= _BV(PCINT22); // PD6
-	PCMSK2 |= _BV(PCINT21); // PD5
-	PCMSK2 |= _BV(PCINT19); // PD3
-	PCMSK0 |= _BV(PCINT4); // PB4
+	//PCMSK2 |= _BV(PCINT22); // PD6
+	//PCMSK2 |= _BV(PCINT21); // PD5
+	//PCMSK2 |= _BV(PCINT19); // PD3
+	//PCMSK0 |= _BV(PCINT4); // PB4
+	PD7
+	PC6
+	PD4
+	PD6
 
 	// Configure interrupt on logical state state on PB4 (so PCIE0)
 	PCICR |= _BV(PCIE0);
@@ -321,34 +358,85 @@ void setup_capture_inputs()
 	// Enable timer 1 overflow interrupt
 	TIMSK1 |= _BV(TOIE1);
 #endif
+#endif
+}
+// ----------------------------------------------------------------------------
+void setup_timer_3()
+{
+#ifndef _WIN32
+	// Configure timer 3 clock source
+	// Set to use a clock source of clkio / 8.
+	// So 20 [ms] servo period will be 40000 timer ticks.
+	TCCR3B &= ~_BV(CS32);
+	TCCR3B |= _BV(CS31);
+	TCCR3B &= ~_BV(CS30);	
+	
+	ICR3 = 40000; // gives a 20 [ms] period
+#endif
+}
+// ----------------------------------------------------------------------------
+void setup_timer_4()
+{
+	TCCR4B = 0b00000111;
 }
 // ----------------------------------------------------------------------------
 void setup_pwm()
 {
 #ifndef _WIN32
-	// Configure PB1 & PB2 as outputs
-	DDRB |= _BV(DDB1);
-	DDRB |= _BV(DDB2);
+	setup_timer_3();
+	setup_timer_4();
 
+	// Configure PC6 (MR) & PD7 (ML) as outputs
+	DDRC |= _BV(DDC6);
+	DDRD |= _BV(DDD7);
+
+	// Setup timer 3 for PWM
 	// Set compare output mode to non-inverting (PWM) mode
-	TCCR1A |= _BV(COM1A1);
-	TCCR1A &= ~_BV(COM1A0);
-	TCCR1A |= _BV(COM1B1);
-	TCCR1A &= ~_BV(COM1B0);
+	TCCR3A |= _BV(COM3A1);
+	TCCR3A &= ~_BV(COM3A0);
+	TCCR3A |= _BV(COM3B1);
+	TCCR3A &= ~_BV(COM3B0);
 
-	// Set mode 14 (Fast PWM, TOP=ICR1)
+	// Set mode 14 (Fast PWM, TOP=ICR3)
 	// WGM13 WGM12 WGM11 WGM10
 	// 1	 1	   1	 0
 
-	TCCR1B |= _BV(WGM13);
-	TCCR1B |= _BV(WGM12);
-	TCCR1A |= _BV(WGM11);
-	TCCR1A &= ~(_BV(WGM10));
+	TCCR3B |= _BV(WGM33);
+	TCCR3B |= _BV(WGM32);
+	TCCR3A |= _BV(WGM31);
+	TCCR3A &= ~(_BV(WGM30));
 
-	OCR1A = JOY_CENTER;
-	OCR1B = JOY_CENTER;
+	// Setup timer 4 for PWM
+	// Clear on compare match
+	TCCR4C |= _BV(COM4D1);
+	// Toggle on compare match
+	//TCCR4C |= _BV(COM4D0);
+	
+	//TCCR4C |= _BV(PWM4D);
 
-	ICR1 = 40000; // gives a 20 [ms] period
+	
+	//OCR3A =  JOY_CENTER; // MR in center
+	OCR3A =  JOY_MAX;
+
+	set_bit(TIMSK3,TOIE3); // timer 3 overflow interrupt
+	
+	set_bit(TIMSK4,OCIE4D); // timer 4 oc int
+	set_bit(TIMSK4,TOIE4); // timer 4 overflow int
+
+	//OCR4D = JOY_CENTER; // ML in center
+	
+	cli();
+	// 1 [ms] = 0x100 (-100%)
+	// 1.5 [ms]=0x180
+	// 2 [ms] = 0x200 (+100%)
+	TC4H = 1;
+	OCR4D = 0x80;
+	
+	TC4H = 3;
+	OCR4C = 0xff;
+	sei();
+	
+	
 #endif
 }
 // ----------------------------------------------------------------------------
@@ -1066,6 +1154,19 @@ int main (void)
 
 	b_printf(PSTR("Boot!\r\n"));
 
+	// test pwm
+	setup_pwm();
+
+	while (1) {
+		
+		b_printf(PSTR("1\r\n"));
+		_delay_ms(500);
+
+		b_printf(PSTR("0\r\n"));			
+		_delay_ms(500);
+	}
+
+#if 0
 	cc.reset_compass_calibration();
 
 	cc.load_calibration();
@@ -1131,6 +1232,7 @@ int main (void)
 
 #ifndef _WIN32
 	main_loop();
+#endif
 #endif
 
 	return 0;
