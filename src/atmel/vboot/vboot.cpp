@@ -208,15 +208,17 @@ ISR(TIMER3_OVF_vect)
 #ifndef _WIN32
 ISR(PCINT0_vect)
 {
-	unsigned int tmr_reg;
-	tmr_reg = TCNT3;
-
-	unsigned char PBPINS = PINB;
+	// Capture timer value
+	const unsigned int tmr_reg(TCNT3);
+	// Capture state of PORT B pins 
+	const unsigned char PBPINS(PINB);
+	// Set bits that have changed since last check
+	const unsigned char DIFFPINS = PBPINS ^ old_pinb;
 
 	// PB7 servo pulse measurements
-	if ((PBPINS & _BV(PINB7)) ^ (old_pinb & _BV(PINB7))) {
+	if (DIFFPINS & _BV(PINB7)) {
 		if (PBPINS & _BV(PINB7))
-		k1_rising = tmr_reg;
+			k1_rising = tmr_reg;
 		else {
 			k1_pulse_duration = tmr_reg - k1_rising;
 			if (k1_pulse_duration > 10000)
@@ -226,9 +228,9 @@ ISR(PCINT0_vect)
 	}
 
 	// PB6 servo pulse measurements
-	if ((PBPINS & _BV(PINB6)) ^ (old_pinb & _BV(PINB6))) {
+	if (DIFFPINS & _BV(PINB6)) {
 		if (PBPINS & _BV(PINB6))
-		k2_rising = tmr_reg;
+			k2_rising = tmr_reg;
 		else {
 			k2_pulse_duration = tmr_reg - k2_rising;
 			if (k2_pulse_duration > 10000)
@@ -238,9 +240,9 @@ ISR(PCINT0_vect)
 	}
 
 	// PB5 servo pulse measurements
-	if ((PBPINS & _BV(PINB5)) ^ (old_pinb & _BV(PINB5))) {
+	if (DIFFPINS & _BV(PINB5)) {
 		if (PBPINS & _BV(PINB5))
-		k3_rising = tmr_reg;
+			k3_rising = tmr_reg;
 		else {
 			k3_pulse_duration = tmr_reg - k3_rising;
 			if (k3_pulse_duration > 10000)
@@ -250,7 +252,7 @@ ISR(PCINT0_vect)
 	}
 
 	// PB4 servo pulse measurements
-	if ((PBPINS & _BV(PINB4)) ^ (old_pinb & _BV(PINB4))) {
+	if (DIFFPINS & _BV(PINB4)) {
 		if (PBPINS & _BV(PINB4))
 			k4_rising = tmr_reg;
 		else {
