@@ -143,30 +143,28 @@ unsigned long t_500ms_start_ms(0);
 // PWM/JOYSTICK/MOTOR vars
 // ----------------------------------------------------------------------------
 
-// ML - Motor Left (in)
-volatile unsigned int pd6_rising;
-volatile unsigned int pd6_pulse_duration;
-volatile unsigned char pd6_alive = 0;
-// MR - Motor Right (in)
-volatile unsigned int pd5_rising;
-volatile unsigned int pd5_pulse_duration;
-volatile unsigned char pd5_alive = 0;
+// ML - Motor Left (in) (RX channel 1)
+volatile unsigned int k1_rising;
+volatile unsigned int k1_pulse_duration;
+volatile unsigned char k1_alive = 0;
+// MR - Motor Right (in) (RX channel 2)
+volatile unsigned int k2_rising;
+volatile unsigned int k2_pulse_duration;
+volatile unsigned char k2_alive = 0;
 // Pos (RX channel 3)
-volatile unsigned int pd3_rising;
-volatile unsigned int pd3_pulse_duration;
-volatile unsigned char pd3_alive = 0;
+volatile unsigned int k3_rising;
+volatile unsigned int k3_pulse_duration;
+volatile unsigned char k3_alive = 0;
 // Man/auto (RX channel 4)
-volatile unsigned int pb4_rising;
-volatile unsigned int pb4_pulse_duration;
-volatile unsigned char pb4_alive = 0;
+volatile unsigned int k4_rising;
+volatile unsigned int k4_pulse_duration;
+volatile unsigned char k4_alive = 0;
 
 // Remote control channel live signal detection
-bool pd6_ok(false), pd5_ok(false), pd3_ok(false), pb4_ok(false);
+bool k1_ok(false), k2_ok(false), k3_ok(false), k4_ok(false);
 bool rc_okay(false);
 bool rc_okay_prev(false);
 
-// Old PORTD values for PORTD servo signal detection
-volatile unsigned char old_pind = 0;
 // Old PORTB values for PORTD servo signal detection
 volatile unsigned char old_pinb = 0;
 // ----------------------------------------------------------------------------
@@ -184,11 +182,12 @@ unsigned long millis()
 ISR(TIMER1_OVF_vect)
 {
 	// Timer 1 overflow
-	global_ms_timer += 20;	// timer was set to overflow each 20 [ms]
 }
 // ----------------------------------------------------------------------------
 ISR(TIMER3_OVF_vect)
 {
+	global_ms_timer += 20;	// timer was set to overflow each 20 [ms]
+
 	// Reset timer 4
 	TC4H = 0;
 	TCNT4 = 0x00;	
@@ -206,33 +205,59 @@ ISR(TIMER3_OVF_vect)
 
 }
 // ----------------------------------------------------------------------------
-ISR(TIMER4_COMPD_vect)
-{
-	//TCCR4B = 0b00000000;
-}
-// ----------------------------------------------------------------------------
-ISR(TIMER4_OVF_vect)
-{
-}
-
-// ----------------------------------------------------------------------------
 #ifndef _WIN32
 ISR(PCINT0_vect)
 {
 	unsigned int tmr_reg;
-	tmr_reg = TCNT1;
+	tmr_reg = TCNT3;
 
 	unsigned char PBPINS = PINB;
+
+	// PB7 servo pulse measurements
+	if ((PBPINS & _BV(PINB7)) ^ (old_pinb & _BV(PINB7))) {
+		if (PBPINS & _BV(PINB7))
+		k1_rising = tmr_reg;
+		else {
+			k1_pulse_duration = tmr_reg - k1_rising;
+			if (k1_pulse_duration > 10000)
+				k1_pulse_duration -= 25536;
+			++k1_alive;
+		}
+	}
+
+	// PB6 servo pulse measurements
+	if ((PBPINS & _BV(PINB6)) ^ (old_pinb & _BV(PINB6))) {
+		if (PBPINS & _BV(PINB6))
+		k2_rising = tmr_reg;
+		else {
+			k2_pulse_duration = tmr_reg - k2_rising;
+			if (k2_pulse_duration > 10000)
+				k2_pulse_duration -= 25536;
+			++k2_alive;
+		}
+	}
+
+	// PB5 servo pulse measurements
+	if ((PBPINS & _BV(PINB5)) ^ (old_pinb & _BV(PINB5))) {
+		if (PBPINS & _BV(PINB5))
+		k3_rising = tmr_reg;
+		else {
+			k3_pulse_duration = tmr_reg - k3_rising;
+			if (k3_pulse_duration > 10000)
+				k3_pulse_duration -= 25536;
+			++k3_alive;
+		}
+	}
 
 	// PB4 servo pulse measurements
 	if ((PBPINS & _BV(PINB4)) ^ (old_pinb & _BV(PINB4))) {
 		if (PBPINS & _BV(PINB4))
-			pb4_rising = tmr_reg;
+			k4_rising = tmr_reg;
 		else {
-			pb4_pulse_duration = tmr_reg - pb4_rising;
-			if (pb4_pulse_duration > 10000)
-				pb4_pulse_duration -= 25536;
-			++pb4_alive;
+			k4_pulse_duration = tmr_reg - k4_rising;
+			if (k4_pulse_duration > 10000)
+				k4_pulse_duration -= 25536;
+			++k4_alive;
 		}
 	}
 
@@ -246,48 +271,6 @@ ISR(PCINT1_vect)
 // ----------------------------------------------------------------------------
 ISR(PCINT2_vect)
 {
-	unsigned int tmr_reg;
-	tmr_reg = TCNT1;
-
-	unsigned char PDPINS = PIND;
-
-	// PD6 servo pulse measurements
-	if ((PDPINS & _BV(PIND6)) ^ (old_pind & _BV(PIND6))) {
-		if (PDPINS & _BV(PIND6))
-			pd6_rising = tmr_reg;
-		else {
-			pd6_pulse_duration = tmr_reg - pd6_rising;
-			if (pd6_pulse_duration > 10000)
-				pd6_pulse_duration -= 25536;
-			++pd6_alive;				
-		}
-	}
-
-	// PD5 servo pulse measurements
-	if ((PDPINS & _BV(PIND5)) ^ (old_pind & _BV(PIND5))) {
-		if (PDPINS & _BV(PIND5))
-			pd5_rising = tmr_reg;
-		else {
-			pd5_pulse_duration = tmr_reg - pd5_rising;
-			if (pd5_pulse_duration > 10000)
-				pd5_pulse_duration -= 25536;
-			++pd5_alive;				
-		}
-	}
-
-	// PD3 servo pulse measurements
-	if ((PDPINS & _BV(PIND3)) ^ (old_pind & _BV(PIND3))) {
-		if (PDPINS & _BV(PIND3))
-			pd3_rising = tmr_reg;
-		else {
-			pd3_pulse_duration = tmr_reg - pd3_rising;
-			if (pd3_pulse_duration > 10000)
-				pd3_pulse_duration -= 25536;
-			++pd3_alive;				
-		}
-	}
-
-	old_pind = PDPINS;
 }
 #endif
 // ----------------------------------------------------------------------------
@@ -315,49 +298,31 @@ void Fake_UART_ISR(unsigned UDR0) {
 // ----------------------------------------------------------------------------
 void setup_capture_inputs()
 {
-#if 0
 #ifndef _WIN32
-	// Configure PD7 (RC CH1/K1) as input
-	DDRD &= ~_BV(DDD7);
-	PORTD &= ~_BV(PORTD7);
     // Configure PB4 as output (head lights / tail lights; L)
-    PORTB |= _BV(PORTB4);
-	// Configure PC6 as input (CH2/K2-MR)
-	DDRC &= ~_BV(DDC6);
-	PORTC &= ~_BV(PORTC6);
-	// Configure PD4 as input (CH3/K3-MOT POS)
-	DDRD &= ~_BV(DDD4);
-	PORTD &= ~_BV(PORTD4);
-	// Configure PD6 as input (CH4/K4 man/erase)
-	DDRD &= ~_BV(DDD6);
-	PORTD &= ~_BV(PORTD6);
+    // PORTB |= _BV(PORTB4);
+
+	// Configure PB7 (RC CH1/K1) as input
+	DDRB &= ~_BV(DDB7);
+	PORTB &= ~_BV(PORTB7);
+	// Configure PB6 as input (CH2/K2-MR)
+	DDRB &= ~_BV(DDB6);
+	PORTB &= ~_BV(PORTB6);
+	// Configure PB5 as input (CH3/K3-MOT POS)
+	DDRB &= ~_BV(DDB5);
+	PORTB &= ~_BV(PORTB5);
+	// Configure PB4 as input (CH4/K4 man/erase)
+	DDRB &= ~_BV(DDB4);
+	PORTB &= ~_BV(PORTB4);
 
 	// Enable on-pin-change for pins
-	//PCMSK2 |= _BV(PCINT22); // PD6
-	//PCMSK2 |= _BV(PCINT21); // PD5
-	//PCMSK2 |= _BV(PCINT19); // PD3
-	//PCMSK0 |= _BV(PCINT4); // PB4
-	PD7
-	PC6
-	PD4
-	PD6
+	PCMSK0 |= _BV(PCINT7); // PB7
+	PCMSK0 |= _BV(PCINT6); // PB6
+	PCMSK0 |= _BV(PCINT5); // PB5
+	PCMSK0 |= _BV(PCINT4); // PB4
 
 	// Configure interrupt on logical state state on PB4 (so PCIE0)
 	PCICR |= _BV(PCIE0);
-
-	// Configure interrupt on logical state state on PD3/PD5/PD6 (so PCIE2)
-	PCICR |= _BV(PCIE2);
-
-	// Configure timer 1 clock source
-	// Set to use a clock source of clkio / 8.
-	// So 20 [ms] servo period will be 40000 timer ticks.
-	TCCR1B &= ~_BV(CS12);
-	TCCR1B |= _BV(CS11);
-	TCCR1B &= ~_BV(CS10);
-
-	// Enable timer 1 overflow interrupt
-	TIMSK1 |= _BV(TOIE1);
-#endif
 #endif
 }
 // ----------------------------------------------------------------------------
@@ -377,6 +342,7 @@ void setup_timer_3()
 // ----------------------------------------------------------------------------
 void setup_timer_4()
 {
+	// Set CK/64 --> f=250 [kHz]
 	TCCR4B = 0b00000111;
 }
 // ----------------------------------------------------------------------------
@@ -414,23 +380,23 @@ void setup_pwm()
 	
 	//TCCR4C |= _BV(PWM4D);
 
-	
 	//OCR3A =  JOY_CENTER; // MR in center
 	OCR3A =  JOY_MAX;
 
 	set_bit(TIMSK3,TOIE3); // timer 3 overflow interrupt
-	
-	set_bit(TIMSK4,OCIE4D); // timer 4 oc int
-	set_bit(TIMSK4,TOIE4); // timer 4 overflow int
+
 
 	//OCR4D = JOY_CENTER; // ML in center
 	
 	cli();
-	// 1 [ms] = 0x100 (-100%)
-	// 1.5 [ms]=0x180
-	// 2 [ms] = 0x200 (+100%)
+	// 1,024 [ms] = 0x100 (-100%)
+	// 1.536 [ms] = 0x180 (neutral)
+	// 2,048 [ms] = 0x200 (+100%)
 	TC4H = 1;
-	OCR4D = 0x80;
+	OCR4D = 0x00;
+
+	TC4H = 1;
+	OCR4A = 0x00;
 	
 	TC4H = 3;
 	OCR4C = 0xff;
@@ -739,25 +705,25 @@ void print_servo_msg(bool full)
 	
 	// Print the values of the incoming and outgoing servo channels
 	if (full) {
-		int pd6_perc, pd5_perc, pd3_perc, pb4_perc, a1, b1;
+		int k1_perc, k2_perc, k3_perc, k4_perc, a1, b1;
 
 		// Display incoming servo signals as received (2000 ... 4000, 0 = no signal)
-		pd6_perc = joystick.to_perc(pd6_pulse_duration);
-		pd5_perc = joystick.to_perc(pd5_pulse_duration);
-		pd3_perc = joystick.to_perc(pd3_pulse_duration);
-		pb4_perc = joystick.to_perc(pb4_pulse_duration);
+		k1_perc = joystick.to_perc(k1_pulse_duration);
+		k2_perc = joystick.to_perc(k2_pulse_duration);
+		k3_perc = joystick.to_perc(k3_pulse_duration);
+		k4_perc = joystick.to_perc(k4_pulse_duration);
 		// Same for outgoing signals (to motors)
 		a1 = joystick.to_perc(OCR1A);
 		b1 = joystick.to_perc(OCR1B);
 
-		b_printf(PSTR(" pd6=%05d pd5=%05d pd3=%05d pb4=%05d A=%05d B=%05d\r\n"),
-    		pd6_perc, pd5_perc,
-    		pd3_perc, pb4_perc,
+		b_printf(PSTR(" k1=%05d k2=%05d k3=%05d k4=%05d A=%05d B=%05d\r\n"),
+    		k1_perc, k2_perc,
+    		k3_perc, k4_perc,
     		a1, b1);
 			
 		// Show how many pulses the capture interrupts have seen
 		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
-			pd6_alive,pd5_alive,pd3_alive,pb4_alive);
+			k1_alive,k2_alive,k3_alive,k4_alive);
 	}
 }
 
@@ -870,22 +836,22 @@ void check_rc()
 {
 	// Check for remote control servo message activity
 	
-	pd6_ok = pd6_alive > 5;
-	pd5_ok = pd5_alive > 5;
-	pd3_ok = pd3_alive > 5;
-	pb4_ok = pb4_alive > 5;
+	k1_ok = k1_alive > 5;
+	k2_ok = k2_alive > 5;
+	k3_ok = k3_alive > 5;
+	k4_ok = k4_alive > 5;
 
-	rc_okay = pd6_ok && pd5_ok && pd3_ok && pb4_ok;
+	rc_okay = k1_ok && k2_ok && k3_ok && k4_ok;
 	
 	// Set signals in 0% position (=3000)
-	if (!pd6_ok)
-		pd6_pulse_duration = JOY_CENTER;
-	if (!pd5_ok)
-		pd5_pulse_duration = JOY_CENTER;
-	if (!pd3_ok)
-		pd3_pulse_duration = JOY_CENTER;
-	if (!pb4_ok)
-		pb4_pulse_duration = JOY_CENTER;
+	if (!k1_ok)
+		k1_pulse_duration = JOY_CENTER;
+	if (!k2_ok)
+		k2_pulse_duration = JOY_CENTER;
+	if (!k3_ok)
+		k3_pulse_duration = JOY_CENTER;
+	if (!k4_ok)
+		k4_pulse_duration = JOY_CENTER;
 	
 	if (rc_okay != rc_okay_prev) {		
 		print_servo_msg(false);
@@ -897,10 +863,10 @@ void check_rc()
 	
 	rc_okay_prev = rc_okay;		
 	
-	pd6_alive=0;
-	pd5_alive=0;
-	pd3_alive=0;
-	pb4_alive=0;	
+	k1_alive=0;
+	k2_alive=0;
+	k3_alive=0;
+	k4_alive=0;	
 }
 
 // ----------------------------------------------------------------------------
@@ -944,7 +910,7 @@ void process_100ms()
 	else if (step == msAutoModeCourse || step == msAutoModeNormal)
 		steering.auto_steer();
 	else {	
-		steering.manual_steering(pd5_pulse_duration,pd6_pulse_duration);
+		steering.manual_steering(k1_pulse_duration,k2_pulse_duration);
 	}
 
 	TLedMode lm = Step2LedMode(stm.Step());
@@ -1156,14 +1122,14 @@ int main (void)
 
 	// test pwm
 	setup_pwm();
+	setup_capture_inputs();
 
 	while (1) {
 		
-		b_printf(PSTR("1\r\n"));
+		print_servo_msg(true);
+		
 		_delay_ms(500);
 
-		b_printf(PSTR("0\r\n"));			
-		_delay_ms(500);
 	}
 
 #if 0
