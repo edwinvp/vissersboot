@@ -38,6 +38,10 @@
 static
 uint8_t ctrl_write_PM(const void *addr, uint16_t len);
 
+static void handle_outgoing_bytes(void);
+static void handle_incoming_bytes(void);
+static void handle_CONTROL(void);
+
 #define set_bit(REG, BIT) REG |= _BV(BIT)
 #define clear_bit(REG, BIT) REG &= ~_BV(BIT)
 #define toggle_bit(REG, BIT) REG ^= _BV(BIT)
@@ -1048,6 +1052,11 @@ void read_compass_and_gps()
 // ----------------------------------------------------------------------------
 // MAIN PROCESS
 // ----------------------------------------------------------------------------
+
+enum ustate{usDisconnected, usDone};
+ustate us(usDisconnected);
+
+
 void process()
 {
 	unsigned long delta(0);
@@ -1080,6 +1089,43 @@ void process()
 		t_500ms_start_ms = global_ms_timer;
 		process_500ms();
 	}
+
+	switch (us) {
+	case usDisconnected:
+		if ((USBSTA & (1 << VBUS))) {
+			printf_P(PSTR("Plugged in!\r\n"));
+			// connected
+			UDCON &= ~(1 << DETACH);
+					
+			//end of reset interrupts
+			UDIEN |= (1<<EORSTE);//enable the end of reset interrupt
+					
+			us = usDone;
+		}
+		break;
+				
+	case usDone:
+		// TODO / BUG: This condition never seems to be met, at least with my Arduino Leonardo board
+		if (!((USBSTA & (1 << VBUS)))) {
+			// we got disconnected from the pc/laptop
+			printf_P(PSTR("Disconnected!\r\n"));
+			us = usDisconnected;
+		}
+		break;
+	}
+
+	// Handle USB control messages
+	EP_select(0);
+	if ((UEINTX & (1 << RXSTPI))) {
+		handle_CONTROL();
+	}
+
+	// Receive bytes from USB host (laptop/pc)
+	handle_incoming_bytes();
+			
+	// Send bytes to USB host (laptop/pc)
+	handle_outgoing_bytes();	
+	
 }
 
 void delay_ms(uint16_t x)
@@ -1921,8 +1967,6 @@ void main_loop()
 // MAIN/STARTUP
 // ----------------------------------------------------------------------------
 
-enum ustate{usDisconnected, usDone};
-
 #ifdef _WIN32
 int main_init (void)
 #else
@@ -1944,8 +1988,6 @@ int main (void)
 	b_printf(PSTR("Boot!\r\n"));
 	
 	setup_usb();
-
-    ustate us(usDisconnected);
 
 	cc.reset_compass_calibration();
 
@@ -2005,7 +2047,6 @@ int main (void)
 	mag->init();
 	delay_ms(25);
 	b_printf(PSTR("mag init done\r\n"));
-
 #endif
 
     b_printf(PSTR("main_loop\r\n"));
