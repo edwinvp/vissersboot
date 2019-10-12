@@ -1882,7 +1882,7 @@ void setup_usb()
 	// Set PINDIV because we are using 16 MHz crystal
 	PLLCSR |= (1<<PINDIV);
 	// Configure 96MHz PLL output (is then divided by 2 to get 48 MHz USB clock)
-	PLLFRQ = (1<<PDIV3) /*| (1<<PDIV1)*/ | (1<<PLLUSB) | (1 << PLLTM0);
+	PLLFRQ = (1<<PDIV3) | (1<<PDIV1) | (1<<PLLUSB) | (1 << PLLTM0);
 	// Enable PLL
 	PLLCSR |= (1<<PLLE);
 	
