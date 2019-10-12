@@ -182,9 +182,6 @@
     <Compile Include="led_control.cpp">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="m8n.cpp">
-      <SubType>compile</SubType>
-    </Compile>
     <Compile Include="ist8310.cpp">
       <SubType>compile</SubType>
     </Compile>
