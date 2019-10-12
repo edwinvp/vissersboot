@@ -19,13 +19,11 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 
-// Target: ATmega328
-//#include <avr/iom328.h>
+// Target: ATmega32u4
 #include <avr/common.h>
 #include <stdio.h>
 
 #include "i2c.h"
-#include "m8n.h"
 #include "hmc5843.h"
 #include "ist8310.h"
 
@@ -279,7 +277,7 @@ for vector names other than USART_RXC_vect for ATmega32 */
 #ifndef _WIN32
 ISR(USART1_RX_vect) {
 #else
-void Fake_UART_ISR(unsigned UDR0) {
+void Fake_UART_ISR(unsigned UDR1) {
 #endif
 
     // Read UART register (the received byte)
@@ -612,7 +610,14 @@ void toggle_msg_mode(TMessageMode mm)
 // ----------------------------------------------------------------------------
 void read_uart()
 {
+	// If the GPS module has something to say over the serial
+	// link then attempt to decode a NMEA message...
+	while (fifo_avail()) {
+		char c = fifo_read();
+		gps.encode(c);
+	}
 
+/*
 	while (fifo_avail()) {
 		char c = fifo_read();
 
@@ -680,8 +685,9 @@ void read_uart()
 		case 10:
 			handle_parameterization(c);
 			break;
-		}
+		}	
 	}
+	*/
 }
 
 // ----------------------------------------------------------------------------
@@ -1024,12 +1030,6 @@ void read_compass_and_gps()
 		b_printf(PSTR("COMPASS down\r\n"));
 	
 	compass_working_prev = compass_working;
-	
-	// Read GPS-bytes, but only if compass was reachable
-	if (compass_working) {
-		m8n_set_reg_addr(0xff);
-		multi_read_m8n(gps);
-	}	
 }
 
 // ----------------------------------------------------------------------------
@@ -1113,19 +1113,6 @@ int main (void)
 
 	b_printf(PSTR("Boot!\r\n"));
 
-	// test pwm
-	setup_pwm();
-	setup_capture_inputs();
-
-	while (1) {
-		
-		print_servo_msg(true);
-		
-		_delay_ms(500);
-
-	}
-
-#if 0
 	cc.reset_compass_calibration();
 
 	cc.load_calibration();
@@ -1191,7 +1178,6 @@ int main (void)
 
 #ifndef _WIN32
 	main_loop();
-#endif
 #endif
 
 	return 0;
