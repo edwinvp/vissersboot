@@ -351,6 +351,7 @@ void setup_timer_3()
 void setup_timer_4()
 {
 	// Set CK/64 --> f=250 [kHz]
+	// Note: high speed timer must be disconnected from USB PLL!
 	TCCR4B = 0b00000111;
 }
 // ----------------------------------------------------------------------------
@@ -383,10 +384,6 @@ void setup_pwm()
 	// Setup timer 4 for PWM
 	// Clear on compare match
 	TCCR4C |= _BV(COM4D1);
-	// Toggle on compare match
-	//TCCR4C |= _BV(COM4D0);
-	
-	//TCCR4C |= _BV(PWM4D);
 
 	//OCR3A =  JOY_CENTER; // MR in center
 	OCR3A =  JOY_MAX;
@@ -394,16 +391,14 @@ void setup_pwm()
 	set_bit(TIMSK3,TOIE3); // timer 3 overflow interrupt
 
 
-	//OCR4D = JOY_CENTER; // ML in center
-	
 	cli();
+	// Based on 16 MHz crystal timing:
+	// Timer freq: 250.00 [kHz]
 	// 1,024 [ms] = 0x100 (-100%)
 	// 1.536 [ms] = 0x180 (neutral)
 	// 2,048 [ms] = 0x200 (+100%)
-	TC4H = 1;
-	OCR4D = 0x00;
-
-	TC4H = 1;
+	
+	TC4H = 0x1;
 	OCR4A = 0x00;
 	
 	TC4H = 3;
@@ -1886,7 +1881,7 @@ void setup_usb()
 	// Set PINDIV because we are using 16 MHz crystal
 	PLLCSR |= (1<<PINDIV);
 	// Configure 96MHz PLL output (is then divided by 2 to get 48 MHz USB clock)
-	PLLFRQ = (1<<PDIV3) | (1<<PDIV1) | (1<<PLLUSB) | (1 << PLLTM0);
+	PLLFRQ = (1<<PDIV3) /*| (1<<PDIV1)*/ | (1<<PLLUSB) | (1 << PLLTM0);
 	// Enable PLL
 	PLLCSR |= (1<<PLLE);
 	
@@ -1947,7 +1942,7 @@ int main (void)
 
 	b_printf(PSTR("Boot!\r\n"));
 	
-	//setup_usb();
+	setup_usb();
 
     ustate us(usDisconnected);
 
