@@ -350,8 +350,11 @@ void setup_timer_3()
 // ----------------------------------------------------------------------------
 void setup_timer_4()
 {
-	// Set CK/64 --> f=250 [kHz]
 	// Note: high speed timer must be disconnected from USB PLL!
+	clear_bit(PLLFRQ,PLLTM1);
+	clear_bit(PLLFRQ,PLLTM0);
+
+	// Set CK/64 --> f=250 [kHz]
 	TCCR4B = 0b00000111;
 }
 // ----------------------------------------------------------------------------
@@ -385,21 +388,19 @@ void setup_pwm()
 	// Clear on compare match
 	TCCR4C |= _BV(COM4D1);
 
-	//OCR3A =  JOY_CENTER; // MR in center
-	OCR3A =  JOY_MAX;
+	OCR3A =  JOY_CENTER; // MR in center
 
 	set_bit(TIMSK3,TOIE3); // timer 3 overflow interrupt
 
-
 	cli();
+
 	// Based on 16 MHz crystal timing:
 	// Timer freq: 250.00 [kHz]
 	// 1,024 [ms] = 0x100 (-100%)
 	// 1.536 [ms] = 0x180 (neutral)
-	// 2,048 [ms] = 0x200 (+100%)
-	
+	// 2,048 [ms] = 0x200 (+100%)	
 	TC4H = 0x1;
-	OCR4A = 0x00;
+	OCR4D = 0x00;
 	
 	TC4H = 3;
 	OCR4C = 0xff;
