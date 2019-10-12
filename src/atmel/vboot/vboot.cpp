@@ -10,6 +10,7 @@
 #include "led_control.h"
 #include "fifo.h"
 #include "usb.h"
+#include "redirector.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
@@ -633,8 +634,10 @@ void read_uart()
 		char c = fifo_read();
 		gps.encode(c);
 	}
+}
 
-/*
+void read_user_input()
+{
 	while (fifo_avail()) {
 		char c = fifo_read();
 
@@ -704,7 +707,6 @@ void read_uart()
 			break;
 		}	
 	}
-	*/
 }
 
 // ----------------------------------------------------------------------------
@@ -1063,6 +1065,8 @@ void process()
 
 	// Handle UART (GPS) input
 	read_uart(); // also happens with this disabled
+	// Handle user input (typing in commands etc.)
+	read_user_input();
 
 	// Calculate initial bearing with Haversine function
 	steering.bearing_sp = waypoints.gp_current.bearingTo(waypoints.gp_finish);
@@ -1793,8 +1797,6 @@ static void usb_control_out(void)
     }
 }
 
-// Whether we need to send Hello World message to the pc
-static bool do_send_famous_message = false;
 // Whether we need to echo a character to the pc
 static bool do_send_char = false;
 // Last usb "serial" character received as sent by pc/laptop
@@ -1815,17 +1817,7 @@ void handle_outgoing_bytes(void)
 	// destined for the pc/laptop should go to first
 	EP_select(1);
 	
-	if (do_send_famous_message) {
-		do_send_famous_message=false;
-		
-		if (bit_is_set(UEINTX,TXINI)) {
-			clear_bit(UEINTX,TXINI);
-			send_reserved_bytes();
-			// Write the famous message to the pc/laptop
-			bulk_write_PM(PSTR("Hello world!\r\n"),14);			
-			clear_bit(UEINTX,FIFOCON);
-		}		
-	} else if (do_send_char) {
+	if (do_send_char) {
 		do_send_char=false;
 
 		if (bit_is_set(UEINTX,TXINI)) {
@@ -1857,11 +1849,9 @@ void handle_incoming_bytes(void)
 			// Read chars sent by the pc/laptop
 			for (int i(0);i<N;i++) {
 				usb_char = UEDATX;
-				
-				if (usb_char=='a')
-					do_send_famous_message=true;
-				else
-					do_send_char=true;					
+
+				// Act if byte was received by UART				
+				fifo_write(usb_char);
 			}
 		}
 		
@@ -1984,6 +1974,8 @@ int main (void)
 	USART_Init();  // Initialize USART
 #endif
 	sei();         // enable all interrupts
+
+	redirect_std_out();
 
 	b_printf(PSTR("Boot!\r\n"));
 	

@@ -21,16 +21,6 @@ uint8_t USART_ReceiveByte(){
 	return UDR1;
 }
 
-
-int printCHAR(char character, FILE *stream)
-{
-	USART_SendByte(character);
-	return 0;
-}
-
-// "FILE" descriptor for use with regular USART
-FILE uart_str = FDEV_SETUP_STREAM(printCHAR, NULL, _FDEV_SETUP_RW);
-
 void USART_Init(void){
    // Set baud rate
    UBRR1L = BAUD_PRESCALE;// Load lower 8-bits into the low byte of the UBRR register
@@ -41,9 +31,5 @@ void USART_Init(void){
 
   // Enable receiver and transmitter and receive complete interrupt 
   UCSR1B = ((1<<TXEN1)|(1<<RXEN1) | (1<<RXCIE1));
-
-  // Use our "FILE" descriptor for stdout, so `printCHAR" will be called whenever
-  // putchar or printf have something to say.
-  stdout = &uart_str; 
 }
 
