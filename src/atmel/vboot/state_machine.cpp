@@ -134,24 +134,28 @@ void CStateMachine::Run()
 // ----------------------------------------------------------------------------
 void CStateMachine::print_step_name(TMainState st)
 {
+	const char * pMsg = PSTR("?");
+	
 	switch (st) {
-		case msAutoModeCourse: b_printf(PSTR("msAutoModeCourse")); break;
-		case msAutoModeNormal: b_printf(PSTR("msAutoModeNormal")); break;
-		case msReverseThrust: b_printf(PSTR("msReverseThrust")); break;
-		case msManualMode: b_printf(PSTR("msManualMode")); break;
-		case msCountJoyGoto: b_printf(PSTR("msCountJoyGoto")); break;
-		case msCountJoyGotoRetn: b_printf(PSTR("msCountJoyGotoRetn")); break;
-		case msConfirmGotoPosX: b_printf(PSTR("msConfirmGotoPosX")); break;
-		case msCountJoyStore: b_printf(PSTR("msCountJoyStore")); break;
-		case msCountJoyStoreRetn: b_printf(PSTR("msCountJoyStoreRetn")); break;
-		case msConfirmStorePosX: b_printf(PSTR("msConfirmStorePosX")); break;
-		case msClear1: b_printf(PSTR("msClear1")); break;
-		case msClear2: b_printf(PSTR("msClear2")); break;
-		case msConfirmClear: b_printf(PSTR("msConfirmClear")); break;
-		case msCmdErrorMan: b_printf(PSTR("msCmdErrorMan")); break;
-		case msCmdErrorAuto: b_printf(PSTR("msCmdErrorAuto")); break;
-		case msLast: b_printf(PSTR("msLast")); break;
+		case msAutoModeCourse: pMsg=PSTR("msAutoModeCourse"); break;
+		case msAutoModeNormal: pMsg=PSTR("msAutoModeNormal"); break;
+		case msReverseThrust: pMsg=PSTR("msReverseThrust"); break;
+		case msManualMode: pMsg=PSTR("msManualMode"); break;
+		case msCountJoyGoto: pMsg=PSTR("msCountJoyGoto"); break;
+		case msCountJoyGotoRetn: pMsg=PSTR("msCountJoyGotoRetn"); break;
+		case msConfirmGotoPosX: pMsg=PSTR("msConfirmGotoPosX"); break;
+		case msCountJoyStore: pMsg=PSTR("msCountJoyStore"); break;
+		case msCountJoyStoreRetn: pMsg=PSTR("msCountJoyStoreRetn"); break;
+		case msConfirmStorePosX: pMsg=PSTR("msConfirmStorePosX"); break;
+		case msClear1: pMsg=PSTR("msClear1"); break;
+		case msClear2: pMsg=PSTR("msClear2"); break;
+		case msConfirmClear: pMsg=PSTR("msConfirmClear"); break;
+		case msCmdErrorMan: pMsg=PSTR("msCmdErrorMan"); break;
+		case msCmdErrorAuto: pMsg=PSTR("msCmdErrorAuto"); break;
+		case msLast: pMsg=PSTR("msLast"); break;
 	}
+	
+	b_printf(pMsg);
 }
 
 // ----------------------------------------------------------------------------

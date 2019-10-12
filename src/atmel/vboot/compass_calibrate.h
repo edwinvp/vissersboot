@@ -41,6 +41,8 @@ private:
     void PrintCalState();
     void DetectCwTurn();
 	void print_bar(const comp_extreme & mm, int raw);
+	void print_m_and_r(char w,const comp_extreme & e, int raw);
+	void print_spaces_newline();
 		
 public:
     bool calibration_mode;

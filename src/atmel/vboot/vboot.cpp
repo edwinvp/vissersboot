@@ -2007,38 +2007,39 @@ int main (void)
 	i2cInit();
 	i2cSetBitrate(30);
 	
+	// Search for magnetometer
 	int retries(250);
-	do {
-		b_printf(PSTR("Probing for magnetometer...\r\n"));
-		delay_ms(100);
+	const char * msgMagStatus = PSTR("(not found)\r\n");
 
+	do {
+		b_printf(PSTR("Probing for magnetometer..."));
+		delay_ms(100);
+	
 		if (mag_ist8310.detect()) {
-			b_printf(PSTR("Found IST8310 mag.\r\n"));
+			msgMagStatus = PSTR("Found IST8310.\r\n");
 			mag = &mag_ist8310;
 			break;
 		} else if (mag_hmc5843.detect()) {
-			b_printf(PSTR("Found HMC5843 mag.\r\n"));
+			msgMagStatus = PSTR("Found HMC5843.\r\n");
 			mag = &mag_hmc5843;
 			break;
 		}
-	} while (--retries > 0);
+	} while (--retries > 0);	
+	b_printf(msgMagStatus);
+
 	
 	if (mag == 0) {
-		b_printf(PSTR("Fatal error: magnetometer not found.\r\n"));
+		b_printf(PSTR("Halting.\r\n"));
 		while (1) ;
 	}
 
-	b_printf(PSTR("init 1\r\n"));
 	mag->init();
 
 	delay_ms(25);
-	b_printf(PSTR("init 2\r\n"));
 	mag->init();
 	delay_ms(25);
-	b_printf(PSTR("init 3\r\n"));
 	mag->init();
 	delay_ms(25);
-	b_printf(PSTR("mag init done\r\n"));
 #endif
 
     b_printf(PSTR("main_loop\r\n"));
