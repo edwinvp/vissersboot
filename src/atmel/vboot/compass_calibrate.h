@@ -43,6 +43,7 @@ private:
 	void print_bar(const comp_extreme & mm, int raw);
 	void print_m_and_r(char w,const comp_extreme & e, int raw);
 	void print_spaces_newline();
+	float half_range_of(const comp_extreme & e);
 		
 public:
     bool calibration_mode;

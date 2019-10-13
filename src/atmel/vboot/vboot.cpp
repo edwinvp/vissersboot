@@ -417,13 +417,15 @@ void setup_pwm()
 // ----------------------------------------------------------------------------
 void print_steering_msg()
 {
+	const char * msgFixStatus;
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-	b_printf(PSTR("GPS-NO_FIX "));
+		msgFixStatus=PSTR("GPS-NO_FIX ");
 	else if (gps_fix_age > GPS_STALE_TIME)
-	b_printf(PSTR("GPS-STALE "));
+		msgFixStatus=PSTR("GPS-STALE ");
 	else {
-		b_printf(PSTR("GPS-OK "));
+		msgFixStatus=PSTR("GPS-OK ");
 	}
+	b_printf(msgFixStatus);
 
 	int a1 = joystick.to_perc(OCR1A);
 	int b1 = joystick.to_perc(OCR1B);
@@ -431,14 +433,16 @@ void print_steering_msg()
 	unsigned int pv_d = steering.pv_used;
 	unsigned int err_d = steering.pid_err;
 
+	const char * msgMode;
 	if (stm.Step()==msAutoModeCourse)
-		b_printf(PSTR("[autoC] "));
+		msgMode=PSTR("[autoC] ");
 	else if (stm.Step()==msReverseThrust)
-		b_printf(PSTR("[reverse] "));
+		msgMode=PSTR("[reverse] ");
 	else if (stm.Step()==msAutoModeNormal)
-		b_printf(PSTR("[autoN] "));
+		msgMode=PSTR("[autoN] ");
 	else
-		b_printf(PSTR("[man] "));
+		msgMode=PSTR("[man] ");
+	b_printf(msgMode);
 
 	b_printf(PSTR("age=%ld "), gps_fix_age);
 
@@ -447,7 +451,7 @@ void print_steering_msg()
 		if (steering.SUBST_SP!=0)
 			b_printf(PSTR("*"));
 	
-		b_printf(PSTR(" "));
+		putchar(' ');
 
 		b_printf(PSTR("pv=%d"), pv_d);
 		if (steering.SUBST_PV!=0)
@@ -716,10 +720,7 @@ void read_user_input()
 void print_servo_msg(bool full)
 {
 	// Tell whether application considers the remote control up or down
-	if (rc_okay)
-		b_printf(PSTR("RC UP\r\n"));
-	else
-		b_printf(PSTR("RC DOWN\r\n"));
+	b_printf(rc_okay ? PSTR("RC UP\r\n") : PSTR("RC DOWN\r\n"));
 	
 	// Print the values of the incoming and outgoing servo channels
 	if (full) {
@@ -1714,8 +1715,7 @@ static void usb_control_out(void)
         if(head.bmReqType==USB_REQ_TYPE_OUT) {
 			// Host sets USB address
             putchar('A');
-            USB_set_address();		
-            putchar('a');
+            USB_set_address();
 			
             return;
         }
@@ -2033,13 +2033,10 @@ int main (void)
 		while (1) ;
 	}
 
-	mag->init();
-
-	delay_ms(25);
-	mag->init();
-	delay_ms(25);
-	mag->init();
-	delay_ms(25);
+	for (int i(0); i<3; i++) {
+		delay_ms(25);
+		mag->init();
+	}
 #endif
 
     b_printf(PSTR("main_loop\r\n"));
