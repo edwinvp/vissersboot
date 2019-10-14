@@ -5,8 +5,29 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBBConfig"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
+        Title="MainWindow" Height="319.934" Width="574.252">
+    <Grid Margin="0,0,32,36">
+        <Button Name="BtnConnect" Content="Connect" HorizontalAlignment="Left" Height="62" Margin="86,10,0,0" VerticalAlignment="Top" Width="110" Click="ConnectBtn_Click"/>
+        <Button Name="BtnDisconnect" Content="Disconnect" HorizontalAlignment="Left" Height="62" Margin="215,10,0,0" VerticalAlignment="Top" Width="110" Click="DisconnectBtn_Click" IsEnabled="false"/>
+        <Grid HorizontalAlignment="Left" Height="139" Margin="56,101,0,0" VerticalAlignment="Top" Width="320">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="32" />
+                <RowDefinition Height="32" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100" />
+                <!-- Document Name column -->
+                <ColumnDefinition Width="Auto" />
+                <!-- Actions column -->
+            </Grid.ColumnDefinitions>
+            <Label Content="Lat" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top"  Grid.Row="0" Grid.Column="0" />
+            <TextBox Name="GpsLat" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="0" Grid.Column="1" />
+            <Label Content="Lon" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="1" Grid.Column="0" />
+            <TextBox Name="GpsLon" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="1" Grid.Column="1" />
+            <Label Content="Age" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
+            <TextBox Name="GpsAge" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="2" Grid.Column="1" />
+
+        </Grid>
     </Grid>
 </Window>

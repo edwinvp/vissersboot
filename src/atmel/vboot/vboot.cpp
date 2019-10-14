@@ -42,6 +42,7 @@ uint8_t ctrl_write_PM(const void *addr, uint16_t len);
 static void handle_outgoing_bytes(void);
 static void handle_incoming_bytes(void);
 static void handle_CONTROL(void);
+void send_reserved_bytes();
 
 #define set_bit(REG, BIT) REG |= _BV(BIT)
 #define clear_bit(REG, BIT) REG &= ~_BV(BIT)
@@ -58,6 +59,9 @@ static void handle_CONTROL(void);
 #define EP_read16_le() ({uint16_t L, H; L=UEDATX; H=UEDATX; (H<<8)|L;})
 #define EP_write8(V) do{UEDATX = (V);}while(0)
 #define EP_write16_le(V) do{UEDATX=(V)&0xff;UEDATX=((V)>>8)&0xff;}while(0)
+
+// Outdata pending
+static bool usb_out_data_pending = false;
 
 // ----------------------------------------------------------------------------
 // Control (of motors)
@@ -102,8 +106,13 @@ static void handle_CONTROL(void);
 	"0123456789-+" (valid in PID configuration modi)
 */
 
-int tune_ptr(0);
-char tune_buf[16];
+//int tune_ptr(0);
+//char tune_buf[16];
+int cmd_ptr = 0;
+
+#define MAX_CMD_SIZE 15
+char cmd_buf[MAX_CMD_SIZE+1];
+char cmd_response[MAX_CMD_SIZE+1];
 
 int CfgMode(0);
 
@@ -417,6 +426,7 @@ void setup_pwm()
 // ----------------------------------------------------------------------------
 void print_steering_msg()
 {
+/*
 	const char * msgFixStatus;
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
 		msgFixStatus=PSTR("GPS-NO_FIX ");
@@ -460,10 +470,12 @@ void print_steering_msg()
 		b_printf(PSTR("sp=-- pv=-- "));
 
 	b_printf(PSTR(" err=%d: A=%d B=%d\r\n"), err_d, a1,b1);
+*/
 }
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
+/*
 	b_printf(PSTR("\x1b[1;1H"));
 	
     b_printf(PSTR(" x=%04d  \r\n y=%04d  \r\n z=%04d  \r\n course=%04d   \r\n sp=%04d   \r\n"),
@@ -474,6 +486,7 @@ void print_compass_msg()
     b_printf(PSTR("\r\nsmp#(good/bad)=%04d(%04d/%04d)        \r\n"), compass_smp, good_compass_smp, bad_compass_smp);
 	
 	cc.print_cal();
+*/
 }
 // ----------------------------------------------------------------------------
 void print_debug_msg()
@@ -485,6 +498,7 @@ void print_debug_msg()
 // ----------------------------------------------------------------------------
 void print_gps_msg()
 {
+/*
 	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
 		b_printf(PSTR("GPS-NO_FIX\r\n"));
 	else if (gps_fix_age > GPS_STALE_TIME)
@@ -493,6 +507,7 @@ void print_gps_msg()
 			b_printf(PSTR("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n"),
 			gps_fix_age, gps_lat, gps_lon, gps_course);
 	}
+*/
 }
 // ----------------------------------------------------------------------------
 void print_stats()
@@ -509,6 +524,7 @@ void clear_stats(void)
 // ----------------------------------------------------------------------------
 void tune_PrintValue(double dblParam)
 {
+/*
 	long l(0);
 
 	switch (msg_mode) {
@@ -536,10 +552,12 @@ void tune_PrintValue(double dblParam)
     case mmButton:
         break;
 	}
+	*/
 }
 // ----------------------------------------------------------------------------
 void tune_Config(double & dblParam, char c)
 {
+	/*
 	tune_buf[tune_ptr++] = c;
 
 	if (tune_ptr>15) {
@@ -588,12 +606,13 @@ void tune_Config(double & dblParam, char c)
             b_printf(PSTR("(err,bad)\r\n"));
 		}
 	}
-
+*/
 }
 
 // ----------------------------------------------------------------------------
 void handle_parameterization(char c)
 {
+	/*
 	switch (msg_mode) {
 	case mmPActionNorm:
 		tune_Config(steering.pid_normal.TUNE_P, c);
@@ -616,6 +635,7 @@ void handle_parameterization(char c)
 	default:
 		;		
 	}
+	*/
 }
 // ----------------------------------------------------------------------------
 void toggle_msg_mode(TMessageMode mm)
@@ -719,6 +739,7 @@ void read_user_input()
 
 void print_servo_msg(bool full)
 {
+/*
 	// Tell whether application considers the remote control up or down
 	b_printf(rc_okay ? PSTR("RC UP\r\n") : PSTR("RC DOWN\r\n"));
 	
@@ -744,10 +765,16 @@ void print_servo_msg(bool full)
 		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
 			k1_alive,k2_alive,k3_alive,k4_alive);
 	}
+*/
 }
 
 void periodic_msg()
 {
+	if (bit_is_set(UEINTX,TXINI)) {
+		clear_bit(UEINTX,TXINI);
+	}
+
+
 	switch (msg_mode) {
 	case mmServoCapture:
         print_servo_msg(true);
@@ -1829,6 +1856,109 @@ void handle_outgoing_bytes(void)
 		}
 	}
 	
+	if (usb_out_data_pending) {
+		clear_bit(UEINTX,FIFOCON);		
+		usb_out_data_pending=false;
+	}
+	
+}
+
+static unsigned long testreg = 0;
+
+/*
+Variables
+RO 0001 '42'
+*/
+
+unsigned long read_var(int reg)
+{
+    unsigned long age, data;
+    float lat(0), lon(0);
+
+    if (reg>=2 && reg<=4) {
+        gps.f_get_position(&lat,&lon,&age);   
+    }
+
+    switch (reg) {
+    case 1:
+        data=42;
+        break;
+
+    case 2:
+        data = *reinterpret_cast<long*>(&lat);
+        break;
+    case 3: 
+        data = *reinterpret_cast<long*>(&lon);
+        break;
+    case 4:
+        data = age;
+        break;
+
+    default:
+        data=0;
+    }
+
+    return data;
+}
+
+void write_var(int reg, unsigned long d)
+{
+    switch (reg) {
+    case 3:
+        testreg = d;
+        break;
+    }
+}
+
+void handle_command(void)
+{
+    int fields=0;
+    unsigned int addr = 0;
+    unsigned long data = 0;
+
+	cmd_response[0]=0;
+	
+	char cc = cmd_buf[0];
+	switch (cc) {
+    case 'R':        
+        putchar('R');
+        fields = sscanf(&cmd_buf[1],"%04x",&addr);
+        if (fields == 1) {
+            data = read_var(addr);
+		    sprintf(cmd_response,"OK %08lx\r\n",data);
+        }
+        else
+		    sprintf(cmd_response,"ERR R\r\n");
+        break;
+    case 'W':
+        putchar('W');
+        fields = sscanf(&cmd_buf[1],"%04x,%08lx",&addr,&data);
+        if (fields==2) {
+            write_var(addr,data);
+		    sprintf(cmd_response,"OK\r\n");
+        } else
+		    sprintf(cmd_response,"ERR W\r\n");
+        break;
+	}
+	
+	if (cmd_response[0]) {
+        putchar('R');
+
+		EP_select(1);
+
+		if (!usb_out_data_pending)
+			send_reserved_bytes();
+				
+        char * p = cmd_response;	
+		while (*p) {
+		    UEDATX = *p;
+            ++p;
+		}
+		
+		EP_select(0);
+        cmd_response[0]=0;
+		usb_out_data_pending=true;
+	}
 }
 
 // Possibly receive bytes from the pc/laptop
@@ -1849,9 +1979,24 @@ void handle_incoming_bytes(void)
 			// Read chars sent by the pc/laptop
 			for (int i(0);i<N;i++) {
 				usb_char = UEDATX;
+                    putchar(usb_char);
 
-				// Act if byte was received by UART				
-				fifo_write(usb_char);
+				if (cmd_ptr > MAX_CMD_SIZE) {
+					cmd_ptr = 0;						
+				}
+
+				cmd_buf[cmd_ptr++] = usb_char;				
+				
+				if (usb_char == '\n' || usb_char == '\r') {
+                    putchar('n');
+					handle_command();
+                	EP_select(2);
+
+					cmd_ptr=0;
+					cmd_buf[0]=0;
+				}
+				
+				
 			}
 		}
 		

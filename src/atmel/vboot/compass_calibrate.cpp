@@ -293,6 +293,7 @@ void CCompassCalibration::print_m_and_r(char w,const comp_extreme & e, int raw)
 // ----------------------------------------------------------------------------
 void CCompassCalibration::print_cal()
 {
+/*
     int iNoOffset = compass_course_no_offset;
     int iix = m_ix * 100.0;
     int iiz = m_iz * 100.0;
@@ -306,6 +307,7 @@ void CCompassCalibration::print_cal()
     b_printf(PSTR(" q=%d cs="), get_quadrant());
     PrintCalState();
 	print_spaces_newline();    
+*/
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::PrintCalState()
