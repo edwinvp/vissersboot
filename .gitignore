@@ -10,3 +10,6 @@ src/atmel/vboot.atsuo
 src/atmel/.vs/vboot/v14/.atsuo
 src/blink/blink/Debug
 src/blink/.vs
+.vs
+src/cs/QBBConfig/bin
+src/cs/QBBConfig/obj
