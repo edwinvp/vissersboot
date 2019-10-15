@@ -9,6 +9,19 @@ using System.Threading.Tasks;
 
 namespace QBBConfig
 {
+    enum USB_VAR
+    {
+        urInvalid=0,
+        urMagic = 1,
+        urGpsLat = 2,
+        urGpsLon = 3,
+        urGpsAge = 4,
+        urRcK1 = 10,
+        urRcK2,
+        urRcK3,
+        urRcK4
+    };
+
     class CommTask
     {
         private volatile bool do_stop = false;
@@ -109,6 +122,28 @@ namespace QBBConfig
                         _serialPort.WriteLine("R0004");
                         Status.set_age(ReadLong());
                     }
+
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R000A");
+                        Status.set_k1(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R000B");
+                        Status.set_k2(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R000C");
+                        Status.set_k3(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R000D");
+                        Status.set_k4(ReadLong());
+                    }
+
 
                     Thread.Sleep(100);
                 }

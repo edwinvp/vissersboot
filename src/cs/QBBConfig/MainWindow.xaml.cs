@@ -82,6 +82,10 @@ namespace QBBConfig
                 GpsLat.Text = m_task.Status.get_lat().ToString();
                 GpsLon.Text = m_task.Status.get_lon().ToString();
                 GpsAge.Text = m_task.Status.get_age().ToString();
+                pb_k1.Value = m_task.Status.get_k1();
+                pb_k2.Value = m_task.Status.get_k2();
+                pb_k3.Value = m_task.Status.get_k3();
+                pb_k4.Value = m_task.Status.get_k4();
             }
         }
 

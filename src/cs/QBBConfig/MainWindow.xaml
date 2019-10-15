@@ -29,5 +29,28 @@
             <TextBox Name="GpsAge" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="2" Grid.Column="1" />
 
         </Grid>
+
+        <Grid HorizontalAlignment="Left" Height="225" Margin="356,15,0,0" VerticalAlignment="Top" Width="150">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25" />
+                <RowDefinition Height="200" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="32" />
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0" Grid.Column="0" Content="K1" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="1" Content="K2" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="2" Content="K3" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="3" Content="K4" HorizontalAlignment="Center"/>
+            <ProgressBar Grid.Row="1" Grid.Column="0" x:Name="pb_k1" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="1" x:Name="pb_k2" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="2" x:Name="pb_k3" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="3" x:Name="pb_k4" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+
+        </Grid>
+
     </Grid>
 </Window>

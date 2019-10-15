@@ -78,6 +78,20 @@ static bool usb_out_data_pending = false;
 //    CCW >0    CW  <0
 
 // ----------------------------------------------------------------------------
+// USB register/variable overview
+// ----------------------------------------------------------------------------
+enum USB_VAR { urInvalid=0,
+    urMagic=1,
+    urGpsLat=2,
+    urGpsLon=3,    
+    urGpsAge=4,
+    urRcK1=10,
+    urRcK2,
+    urRcK3,
+    urRcK4
+};    
+
+// ----------------------------------------------------------------------------
 // RS-232 console command overview
 // ----------------------------------------------------------------------------
 
@@ -770,10 +784,10 @@ void print_servo_msg(bool full)
 
 void periodic_msg()
 {
+/*
 	if (bit_is_set(UEINTX,TXINI)) {
 		clear_bit(UEINTX,TXINI);
 	}
-
 
 	switch (msg_mode) {
 	case mmServoCapture:
@@ -841,6 +855,7 @@ void periodic_msg()
 	case mmNone:
         break;
 	}
+*/
 }
 
 TLedMode Step2LedMode(TMainState step)
@@ -1880,19 +1895,30 @@ unsigned long read_var(int reg)
     }
 
     switch (reg) {
-    case 1:
+    case urMagic:
         data=42;
         break;
-
-    case 2:
+    case urGpsLat:
         data = *reinterpret_cast<long*>(&lat);
         break;
-    case 3: 
+    case urGpsLon: 
         data = *reinterpret_cast<long*>(&lon);
         break;
-    case 4:
+    case urGpsAge:
         data = age;
         break;
+    case urRcK1:
+        data=k1_pulse_duration;
+        break;
+    case urRcK2:
+        data=k2_pulse_duration;
+        break;
+    case urRcK3:
+        data=k3_pulse_duration;
+        break;
+    case urRcK4:
+        data=k4_pulse_duration;
+        break;        
 
     default:
         data=0;
