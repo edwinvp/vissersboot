@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBBConfig"
         mc:Ignorable="d"
-        Title="MainWindow" Height="319.934" Width="574.252">
+        Title="MainWindow" Height="400.934" Width="600">
     <Grid Margin="0,0,32,36">
         <Button Name="BtnConnect" Content="Connect" HorizontalAlignment="Left" Height="62" Margin="86,10,0,0" VerticalAlignment="Top" Width="110" Click="ConnectBtn_Click"/>
         <Button Name="BtnDisconnect" Content="Disconnect" HorizontalAlignment="Left" Height="62" Margin="215,10,0,0" VerticalAlignment="Top" Width="110" Click="DisconnectBtn_Click" IsEnabled="false"/>
@@ -14,7 +14,9 @@
                 <RowDefinition Height="32" />
                 <RowDefinition Height="32" />
                 <RowDefinition Height="32" />
-            </Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+
+           </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100" />
                 <!-- Document Name column -->
@@ -27,28 +29,37 @@
             <TextBox Name="GpsLon" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="1" Grid.Column="1" />
             <Label Content="Age" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
             <TextBox Name="GpsAge" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="2" Grid.Column="1" />
+            <Label Content="Seq. Step" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" />
+            <TextBox Name="SeqStep" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="3" Grid.Column="1" />
 
         </Grid>
 
-        <Grid HorizontalAlignment="Left" Height="225" Margin="356,15,0,0" VerticalAlignment="Top" Width="150">
+        <Grid HorizontalAlignment="Left" Height="225" Margin="350,15,0,0" VerticalAlignment="Top" Width="180">
             <Grid.RowDefinitions>
                 <RowDefinition Height="25" />
                 <RowDefinition Height="200" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="32" />
-                <ColumnDefinition Width="32" />
-                <ColumnDefinition Width="32" />
-                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Grid.Column="0" Content="K1" HorizontalAlignment="Center"/>
             <Label Grid.Row="0" Grid.Column="1" Content="K2" HorizontalAlignment="Center"/>
             <Label Grid.Row="0" Grid.Column="2" Content="K3" HorizontalAlignment="Center"/>
             <Label Grid.Row="0" Grid.Column="3" Content="K4" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="5" Content="ML" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="6" Content="MR" HorizontalAlignment="Center"/>
             <ProgressBar Grid.Row="1" Grid.Column="0" x:Name="pb_k1" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
             <ProgressBar Grid.Row="1" Grid.Column="1" x:Name="pb_k2" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
             <ProgressBar Grid.Row="1" Grid.Column="2" x:Name="pb_k3" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
             <ProgressBar Grid.Row="1" Grid.Column="3" x:Name="pb_k4" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="5" x:Name="pb_ml" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="384" Maximum="512" Minimum="256"/>
+            <ProgressBar Grid.Row="1" Grid.Column="6" x:Name="pb_mr" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
 
         </Grid>
 

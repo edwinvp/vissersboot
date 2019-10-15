@@ -17,7 +17,6 @@ extern CWayPoints waypoints;
 extern CLedControl ledctrl;
 
 extern bool gps_valid;
-void print_stats();
 bool set_finish(int memory_no);
 void store_waypoint(int memory_no);
 
@@ -250,7 +249,6 @@ void CStateMachine::step_clear1()
 	if (!joystick.in_clear())
 		next_state = msCmdErrorMan;
     else if (!shown_stats) {
-        print_stats();
         shown_stats=true;
     }
     else if (state_time > 1000) {

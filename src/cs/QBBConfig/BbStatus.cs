@@ -8,13 +8,16 @@ namespace QBBConfig
 {
     class BbStatus
     {
-        private float m_lat;
-        private float m_lon;
-        private long m_age;
-        private long m_k1;
-        private long m_k2;
-        private long m_k3;
-        private long m_k4;
+        private float m_lat = 0;
+        private float m_lon = 0;
+        private ulong m_age = 0;
+        private long m_k1 = 0;
+        private long m_k2 = 0;
+        private long m_k3 = 0;
+        private long m_k4 = 0;
+        private long m_mainseq_step = 0;
+        private long m_motor_l = 0;
+        private long m_motor_r = 0;
 
         private Object Lck = new Object();
 
@@ -34,7 +37,7 @@ namespace QBBConfig
             }
         }
 
-        public void set_age(long age)
+        public void set_age(ulong age)
         {
             lock (Lck)
             {
@@ -74,6 +77,30 @@ namespace QBBConfig
             }
         }
 
+        public void set_mainseq_step(long s)
+        {
+            lock (Lck)
+            {
+                m_mainseq_step = s;
+            }
+        }
+
+        public void set_motor_l(long s)
+        {
+            lock (Lck)
+            {
+                m_motor_l = s;
+            }
+        }
+
+        public void set_motor_r(long s)
+        {
+            lock (Lck)
+            {
+                m_motor_r = s;
+            }
+        }
+
         public float get_lat()
         {
             lock (Lck)
@@ -90,7 +117,7 @@ namespace QBBConfig
             }
         }
 
-        public long get_age()
+        public ulong get_age()
         {
             lock (Lck)
             {
@@ -127,6 +154,30 @@ namespace QBBConfig
             lock (Lck)
             {
                 return m_k4;
+            }
+        }
+
+        public long get_mainseq_step()
+        {
+            lock (Lck)
+            {
+                return m_mainseq_step;
+            }
+        }
+
+        public long get_motor_l()
+        {
+            lock (Lck)
+            {
+                return m_motor_l;
+            }
+        }
+
+        public long get_motor_r()
+        {
+            lock (Lck)
+            {
+                return m_motor_r;
             }
         }
 

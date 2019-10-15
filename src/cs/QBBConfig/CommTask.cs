@@ -9,17 +9,42 @@ using System.Threading.Tasks;
 
 namespace QBBConfig
 {
-    enum USB_VAR
+    public enum TMainState
+    {
+        msManualMode = 0, // manual control mode
+        msAutoModeCourse, // 'course' adjustments
+        msAutoModeNormal, // automatic waypoint mode
+        msReverseThrust, // reverse thrust after arriving at wp
+        msCountJoyGoto, // count joystick 'up' command
+        msCountJoyGotoRetn,
+        msConfirmGotoPosX,
+        msCountJoyStore, // count joystick 'down' command
+        msCountJoyStoreRetn,
+        msConfirmStorePosX,
+        msClear1,
+        msClear2,
+        msConfirmClear,
+        msCmdErrorMan,
+        msCmdErrorAuto,
+        msLast
+    };
+
+    public enum USB_VAR
     {
         urInvalid=0,
         urMagic = 1,
         urGpsLat = 2,
         urGpsLon = 3,
         urGpsAge = 4,
+        urGpsValid = 5,
+        urGpsCourse = 6,
         urRcK1 = 10,
         urRcK2,
         urRcK3,
-        urRcK4
+        urRcK4,
+        urMainSeqStep = 20,
+        urMotorL = 30,
+        urMotorR = 31
     };
 
     class CommTask
@@ -75,6 +100,19 @@ namespace QBBConfig
             return 0;
         }
 
+        public ulong ReadULong()
+        {
+            try
+            {
+                string sLine = _serialPort.ReadLine().Trim();
+                return Convert.ToUInt32(sLine.Substring(3, 8), 16);
+            }
+            catch (Exception)
+            {
+            }
+            return 0;
+        }
+
         public void Run(object data)
         {
             try
@@ -120,7 +158,7 @@ namespace QBBConfig
                     if (!do_stop)
                     {
                         _serialPort.WriteLine("R0004");
-                        Status.set_age(ReadLong());
+                        Status.set_age(ReadULong());
                     }
 
                     if (!do_stop)
@@ -143,7 +181,21 @@ namespace QBBConfig
                         _serialPort.WriteLine("R000D");
                         Status.set_k4(ReadLong());
                     }
-
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R0014");
+                        Status.set_mainseq_step(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R001E");
+                        Status.set_motor_l(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R001F");
+                        Status.set_motor_r(ReadLong());
+                    }
 
                     Thread.Sleep(100);
                 }

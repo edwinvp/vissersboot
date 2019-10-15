@@ -81,13 +81,67 @@ namespace QBBConfig
             if (m_task != null) {
                 GpsLat.Text = m_task.Status.get_lat().ToString();
                 GpsLon.Text = m_task.Status.get_lon().ToString();
-                GpsAge.Text = m_task.Status.get_age().ToString();
+
+                ulong age = m_task.Status.get_age();
+                if (age > 10000)
+                    GpsAge.Text = "stale";
+                else if ((age & 0x80000000)!=0)
+                    GpsAge.Text = "invalid";
+                else
+                    GpsAge.Text = age.ToString();
+
                 pb_k1.Value = m_task.Status.get_k1();
                 pb_k2.Value = m_task.Status.get_k2();
                 pb_k3.Value = m_task.Status.get_k3();
                 pb_k4.Value = m_task.Status.get_k4();
+                pb_ml.Value = m_task.Status.get_motor_l();
+                pb_mr.Value = m_task.Status.get_motor_r();
+
+                TMainState stm = (TMainState)m_task.Status.get_mainseq_step();
+                string sStepName = StepToText(stm);
+                SeqStep.Text = sStepName;
             }
         }
 
+        private string StepToText(TMainState stm)
+        {
+            switch (stm)
+            {
+                case TMainState.msManualMode:
+                    return "msManualMode";
+                case TMainState.msAutoModeCourse:
+                    return "msAutoModeCourse";
+                case TMainState.msAutoModeNormal:
+                    return "msAutoModeNormal";
+                case TMainState.msReverseThrust:
+                    return "msReverseThrust";
+                case TMainState.msCountJoyGoto:
+                    return "msCountJoyGoto";
+                case TMainState.msCountJoyGotoRetn:
+                    return "msCountJoyGotoRetn";
+                case TMainState.msConfirmGotoPosX:
+                    return "msConfirmGotoPosX";
+                case TMainState.msCountJoyStore:
+                    return "msCountJoyStore";
+                case TMainState.msCountJoyStoreRetn:
+                    return "msCountJoyStoreRetn";
+                case TMainState.msConfirmStorePosX:
+                    return "msConfirmStorePosX";
+                case TMainState.msClear1:
+                    return "msClear1";
+                case TMainState.msClear2:
+                    return "msClear2";
+                case TMainState.msConfirmClear:
+                    return "msConfirmClear";
+                case TMainState.msCmdErrorMan:
+                    return "msCmdErrorMan";
+                case TMainState.msCmdErrorAuto:
+                    return "msCmdErrorAuto";
+                case TMainState.msLast:
+                    return "msLast";
+                default:
+                    return "?";
+            }
+        }
     }
 }

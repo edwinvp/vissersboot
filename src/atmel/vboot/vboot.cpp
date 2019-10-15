@@ -85,40 +85,16 @@ enum USB_VAR { urInvalid=0,
     urGpsLat=2,
     urGpsLon=3,    
     urGpsAge=4,
+    urGpsValid=5,
+    urGpsCourse=6,
     urRcK1=10,
     urRcK2,
     urRcK3,
-    urRcK4
+    urRcK4,
+    urMainSeqStep = 20,
+    urMotorL = 30,
+    urMotorR = 31,
 };    
-
-// ----------------------------------------------------------------------------
-// RS-232 console command overview
-// ----------------------------------------------------------------------------
-
-/*
-	(compass calibration)
-	t: go to (compass) calibration mode
-	r: reset (forget) compass calibration
-	n: set current direction vessel is pointing at as (true) 'North'
-	(screens)
-	c: view compass data screen
-	g: view GPS data screen
-	s: view steering screen
-	e: servo capture screen
-	(settings)
-	p: (normal PID 'P'-action configuration)
-	i: (normal PID 'I'-action configuration)
-	u: (aggressive PID 'P'-action configuration)
-	y: (aggressive PID 'I'-action configuration)
-
-	(auto steer test screen)
-	a: go straight to auto steer mode
-	x: don't stop steering (even after arriving)
-	d: substitute PV compass heading (enter 0 for no substution)
-	o: substitute SP heading (enter 0 for no substitution)
-
-	"0123456789-+" (valid in PID configuration modi)
-*/
 
 //int tune_ptr(0);
 //char tune_buf[16];
@@ -127,8 +103,6 @@ int cmd_ptr = 0;
 #define MAX_CMD_SIZE 15
 char cmd_buf[MAX_CMD_SIZE+1];
 char cmd_response[MAX_CMD_SIZE+1];
-
-int CfgMode(0);
 
 // ----------------------------------------------------------------------------
 // VARIABLES
@@ -147,9 +121,6 @@ CBaseMag * mag = 0;
 // Tests
 bool subst_pv = false;
 bool subst_sp = false;
-
-// Periodic message type selector
-TMessageMode msg_mode;
 
 // GPS input related
 unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
@@ -416,7 +387,7 @@ void setup_pwm()
 	// Clear on compare match
 	TCCR4C |= _BV(COM4D1);
 
-	OCR3A =  JOY_CENTER; // MR in center
+	OCR3A =  2500; // MR in center
 
 	set_bit(TIMSK3,TOIE3); // timer 3 overflow interrupt
 
@@ -428,7 +399,7 @@ void setup_pwm()
 	// 1.536 [ms] = 0x180 (neutral)
 	// 2,048 [ms] = 0x200 (+100%)	
 	TC4H = 0x1;
-	OCR4D = 0x00;
+	OCR4D = 0xc0;
 	
 	TC4H = 3;
 	OCR4C = 0xff;
@@ -441,34 +412,9 @@ void setup_pwm()
 void print_steering_msg()
 {
 /*
-	const char * msgFixStatus;
-	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-		msgFixStatus=PSTR("GPS-NO_FIX ");
-	else if (gps_fix_age > GPS_STALE_TIME)
-		msgFixStatus=PSTR("GPS-STALE ");
-	else {
-		msgFixStatus=PSTR("GPS-OK ");
-	}
-	b_printf(msgFixStatus);
-
-	int a1 = joystick.to_perc(OCR1A);
-	int b1 = joystick.to_perc(OCR1B);
 	unsigned int sp_d = steering.sp_used;
 	unsigned int pv_d = steering.pv_used;
 	unsigned int err_d = steering.pid_err;
-
-	const char * msgMode;
-	if (stm.Step()==msAutoModeCourse)
-		msgMode=PSTR("[autoC] ");
-	else if (stm.Step()==msReverseThrust)
-		msgMode=PSTR("[reverse] ");
-	else if (stm.Step()==msAutoModeNormal)
-		msgMode=PSTR("[autoN] ");
-	else
-		msgMode=PSTR("[man] ");
-	b_printf(msgMode);
-
-	b_printf(PSTR("age=%ld "), gps_fix_age);
 
 	if (stm.Step()==msAutoModeCourse || stm.Step()==msAutoModeNormal) {
 		b_printf(PSTR("sp=%d"), sp_d);
@@ -483,7 +429,7 @@ void print_steering_msg()
 	} else
 		b_printf(PSTR("sp=-- pv=-- "));
 
-	b_printf(PSTR(" err=%d: A=%d B=%d\r\n"), err_d, a1,b1);
+	b_printf(PSTR(" err=%d: \r\n"), err_d);
 */
 }
 // ----------------------------------------------------------------------------
@@ -501,32 +447,6 @@ void print_compass_msg()
 	
 	cc.print_cal();
 */
-}
-// ----------------------------------------------------------------------------
-void print_debug_msg()
-{
-	print_steering_msg();
-	print_compass_msg(); 	
-}
-
-// ----------------------------------------------------------------------------
-void print_gps_msg()
-{
-/*
-	if (gps_fix_age == TinyGPS::GPS_INVALID_AGE)
-		b_printf(PSTR("GPS-NO_FIX\r\n"));
-	else if (gps_fix_age > GPS_STALE_TIME)
-		b_printf(PSTR("GPS-STALE\r\n"));
-	else {
-			b_printf(PSTR("GPS-OK age=%ld. lat=%ld lon=%ld course=%ld\r\n"),
-			gps_fix_age, gps_lat, gps_lon, gps_course);
-	}
-*/
-}
-// ----------------------------------------------------------------------------
-void print_stats()
-{
-	print_gps_msg();
 }
 // ----------------------------------------------------------------------------
 void clear_stats(void)
@@ -651,15 +571,6 @@ void handle_parameterization(char c)
 	}
 	*/
 }
-// ----------------------------------------------------------------------------
-void toggle_msg_mode(TMessageMode mm)
-{
-    if (msg_mode == mm)
-        msg_mode = mmNone;
-    else
-        msg_mode = mm;
-}
-
 
 // ----------------------------------------------------------------------------
 // Handles GPS input
@@ -676,6 +587,7 @@ void read_uart()
 
 void read_user_input()
 {
+/*
 	while (fifo_avail()) {
 		char c = fifo_read();
 
@@ -745,6 +657,7 @@ void read_user_input()
 			break;
 		}	
 	}
+*/
 }
 
 // ----------------------------------------------------------------------------
@@ -759,101 +672,19 @@ void print_servo_msg(bool full)
 	
 	// Print the values of the incoming and outgoing servo channels
 	if (full) {
-		int k1_perc, k2_perc, k3_perc, k4_perc, a1, b1;
+		int a1, b1;
 
 		// Display incoming servo signals as received (2000 ... 4000, 0 = no signal)
-		k1_perc = joystick.to_perc(k1_pulse_duration);
-		k2_perc = joystick.to_perc(k2_pulse_duration);
-		k3_perc = joystick.to_perc(k3_pulse_duration);
-		k4_perc = joystick.to_perc(k4_pulse_duration);
 		// Same for outgoing signals (to motors)
 		a1 = joystick.to_perc(OCR1A);
 		b1 = joystick.to_perc(OCR1B);
 
-		b_printf(PSTR(" k1=%05d k2=%05d k3=%05d k4=%05d A=%05d B=%05d\r\n"),
-    		k1_perc, k2_perc,
-    		k3_perc, k4_perc,
+		b_printf(PSTR(" A=%05d B=%05d\r\n"),
     		a1, b1);
 			
 		// Show how many pulses the capture interrupts have seen
 		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
 			k1_alive,k2_alive,k3_alive,k4_alive);
-	}
-*/
-}
-
-void periodic_msg()
-{
-/*
-	if (bit_is_set(UEINTX,TXINI)) {
-		clear_bit(UEINTX,TXINI);
-	}
-
-	switch (msg_mode) {
-	case mmServoCapture:
-        print_servo_msg(true);
-		break;
-
-	case mmPActionNorm:
-		b_printf(PSTR("(set normal P-action): "));
-		tune_PrintValue(steering.pid_normal.TUNE_P);
-		break;
-
-	case mmIActionNorm:
-		b_printf(PSTR("(set normal I-action): "));
-		tune_PrintValue(steering.pid_normal.TUNE_I);
-		break;
-
-	case mmPActionAggr:
-		b_printf(PSTR("(set aggressive P-action): "));
-		tune_PrintValue(steering.pid_aggressive.TUNE_P);
-		break;
-
-	case mmIActionAggr:
-		b_printf(PSTR("(set aggressive I-action): "));
-		tune_PrintValue(steering.pid_aggressive.TUNE_I);
-		break;
-
-	case mmPVSubst:
-		b_printf(PSTR("(set PV-subst): "));
-		tune_PrintValue(steering.SUBST_PV);
-		break;
-
-	case mmSPSubst:
-		b_printf(PSTR("(set SP-subst): "));
-		tune_PrintValue(steering.SUBST_SP);
-		break;
-
-	case mmGps:
-		print_gps_msg();
-		break;
-
-	case mmSteering:
-		print_steering_msg();
-		break;
-
-	case mmDebug:
-		print_debug_msg();
-	break;
-
-	case mmCompass:
-		print_compass_msg();
-		break;
-
-	case mmLast:
-		msg_mode = mmSteering;
-		break;
-
-    case mmButton:
-        b_printf(PSTR("button: "));
-        if (PINF & (1<<PINF7))
-            b_printf(PSTR("up\r\n"));
-        else
-            b_printf(PSTR("down\r\n"));
-        break;
-
-	case mmNone:
-        break;
 	}
 */
 }
@@ -1037,8 +868,6 @@ void process_500ms()
 		b_printf(PSTR("GPS down\r\n"));
 
 	check_rc();
-
-	periodic_msg();
 
 	gps_valid_prev = gps_valid;
 }
@@ -1887,25 +1716,26 @@ RO 0001 '42'
 
 unsigned long read_var(int reg)
 {
-    unsigned long age, data;
-    float lat(0), lon(0);
-
-    if (reg>=2 && reg<=4) {
-        gps.f_get_position(&lat,&lon,&age);   
-    }
-
+    unsigned long data(0);
+    
     switch (reg) {
     case urMagic:
         data=42;
         break;
     case urGpsLat:
-        data = *reinterpret_cast<long*>(&lat);
+        data = *reinterpret_cast<long*>(&waypoints.gp_current.lat);
         break;
     case urGpsLon: 
-        data = *reinterpret_cast<long*>(&lon);
+        data = *reinterpret_cast<long*>(&waypoints.gp_current.lon);
         break;
     case urGpsAge:
-        data = age;
+        data = gps_fix_age;
+        break;
+    case urGpsValid:
+        data = gps_valid ? 1 : 0;
+        break;
+    case urGpsCourse:
+        data = gps_course;
         break;
     case urRcK1:
         data=k1_pulse_duration;
@@ -1919,6 +1749,19 @@ unsigned long read_var(int reg)
     case urRcK4:
         data=k4_pulse_duration;
         break;        
+    case urMainSeqStep:
+        data=stm.Step();
+        break;
+    case urMotorL:
+        cli();
+        data = OCR4D;
+        data |= ((unsigned int)TC4H) << 8;
+        data &= 0x03ff;
+        sei();
+        break;       
+    case urMotorR:
+        data = OCR3A;
+        break;
 
     default:
         data=0;
@@ -2005,7 +1848,6 @@ void handle_incoming_bytes(void)
 			// Read chars sent by the pc/laptop
 			for (int i(0);i<N;i++) {
 				usb_char = UEDATX;
-                    putchar(usb_char);
 
 				if (cmd_ptr > MAX_CMD_SIZE) {
 					cmd_ptr = 0;						
@@ -2014,7 +1856,6 @@ void handle_incoming_bytes(void)
 				cmd_buf[cmd_ptr++] = usb_char;				
 				
 				if (usb_char == '\n' || usb_char == '\r') {
-                    putchar('n');
 					handle_command();
                 	EP_select(2);
 
@@ -2161,9 +2002,6 @@ int main (void)
 	// Setup other peripherals
 	setup_capture_inputs();
 	setup_pwm();
-
-	// Initial periodic message mode
-	msg_mode = mmNone;
 
 	clear_stats();
 
