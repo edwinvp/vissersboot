@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace QBBConfig
 {
+    enum ECalibrationState
+    {
+        csNotCalibrated=0, csCenterDetect, csTurn1, csTurn2, csFinish, csCalibrated
+    };
+
     class BbStatus
     {
         private float m_lat = 0;
@@ -21,6 +26,11 @@ namespace QBBConfig
         private float m_steering_sp = 0;
         private float m_steering_pv = 0;
         private float m_steering_pid_err = 0;
+        private long m_mag_raw_x = 0;
+        private long m_mag_raw_y = 0;
+        private long m_mag_raw_z = 0;
+        private float m_mag_course = 0.0f;
+        private ECalibrationState m_mag_cal_state = 0;
 
         private Object Lck = new Object();
 
@@ -128,6 +138,46 @@ namespace QBBConfig
             }
         }
 
+        public void set_mag_raw_x(long d)
+        {
+            lock (Lck)
+            {
+                m_mag_raw_x = d;
+            }
+        }
+
+        public void set_mag_raw_y(long d)
+        {
+            lock (Lck)
+            {
+                m_mag_raw_y = d;
+            }
+        }
+
+        public void set_mag_raw_z(long d)
+        {
+            lock (Lck)
+            {
+                m_mag_raw_z = d;
+            }
+        }
+
+        public void set_mag_course(float f)
+        {
+            lock (Lck)
+            {
+                m_mag_course = f;
+            }
+        }
+
+        public void set_mag_cal_state(ECalibrationState d)
+        {
+            lock (Lck)
+            {
+                m_mag_cal_state = d;
+            }
+        }
+
         public float get_lat()
         {
             lock (Lck)
@@ -229,6 +279,46 @@ namespace QBBConfig
             lock (Lck)
             {
                 return m_steering_pid_err;
+            }
+        }
+
+        public long get_mag_raw_x()
+        {
+            lock (Lck)
+            {
+                return m_mag_raw_x;
+            }
+        }
+
+        public long get_mag_raw_y()
+        {
+            lock (Lck)
+            {
+                return m_mag_raw_y;
+            }
+        }
+
+        public long get_mag_raw_z()
+        {
+            lock (Lck)
+            {
+                return m_mag_raw_z;
+            }
+        }
+
+        public float get_mag_course()
+        {
+            lock (Lck)
+            {
+                return m_mag_course;
+            }
+        }
+
+        public ECalibrationState get_mag_cal_state()
+        {
+            lock (Lck)
+            {
+                return m_mag_cal_state;
             }
         }
 

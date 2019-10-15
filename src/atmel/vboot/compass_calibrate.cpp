@@ -255,6 +255,7 @@ void CCompassCalibration::toggle_calibration_mode()
         b_printf(PSTR("OFF\r\n"));
 }   
 // ----------------------------------------------------------------------------
+/*
 void CCompassCalibration::print_bar(const comp_extreme & mm, int raw)
 {
 	putchar(raw<mm.fin_min ? '<' : '[');
@@ -279,35 +280,25 @@ void CCompassCalibration::print_bar(const comp_extreme & mm, int raw)
 	putchar(raw>mm.fin_max ? '>' : ']');
 }
 // ----------------------------------------------------------------------------
-void CCompassCalibration::print_spaces_newline()
-{
-	b_printf(PSTR("            \r\n"));	
-}
-// ----------------------------------------------------------------------------
 void CCompassCalibration::print_m_and_r(char w,const comp_extreme & e, int raw)
 {
 	b_printf(PSTR(" %cr=%04d ... %04d [%04d] "), w, e.fin_min, e.fin_max, raw);
 	print_bar(e,raw);
-	print_spaces_newline();
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::print_cal()
 {
-/*
     int iNoOffset = compass_course_no_offset;
     int iix = m_ix * 100.0;
     int iiz = m_iz * 100.0;
 
     b_printf(PSTR(" no offset=%d px=%d%% pz=%d%%"), iNoOffset, iix, iiz);
-	print_spaces_newline();
 	print_m_and_r('x',mm_x,raw_x);
 	print_m_and_r('y',mm_y,raw_y);
 	print_m_and_r('z',mm_z,raw_z);
 
     b_printf(PSTR(" q=%d cs="), get_quadrant());
     PrintCalState();
-	print_spaces_newline();    
-*/
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::PrintCalState()
@@ -338,15 +329,13 @@ void CCompassCalibration::PrintCalState()
 	
 	b_printf(pMsg);
 }
+*/
 // ----------------------------------------------------------------------------
 void CCompassCalibration::SetCalState(ECalibrationState new_state)
 {
     if (new_state != m_cal_state) {
         step_time=0;
         m_cal_state = new_state;
-        b_printf(PSTR("ccstate: "));
-        PrintCalState();
-        b_printf(PSTR("\r\n"));
     }
 }
 // ----------------------------------------------------------------------------

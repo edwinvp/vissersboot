@@ -47,7 +47,12 @@ namespace QBBConfig
         urMotorR = 31,
         urSteeringSP = 40,
         urSteeringPV = 41,
-        urSteeringPID_ERR = 42
+        urSteeringPID_ERR = 42,
+        urMagRawX = 50,
+        urMagRawY = 51,
+        urMagRawZ = 52,
+        urMagCourse = 53,
+        urMagCalState = 54
     };
 
     class CommTask
@@ -116,6 +121,14 @@ namespace QBBConfig
             return 0;
         }
 
+        public void SendReadCommand(USB_VAR uv)
+        {
+            int iv = (int)uv;
+            String sHex = iv.ToString("X4");
+            String sReadCmd = "R" + sHex;
+            _serialPort.WriteLine(sReadCmd);
+        }
+
         public void Run(object data)
         {
             try
@@ -148,71 +161,97 @@ namespace QBBConfig
                 {
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R0002");
+                        SendReadCommand(USB_VAR.urGpsLat);
                         Status.set_lat(ReadFloat());
                     }
 
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R0003");
+                        SendReadCommand(USB_VAR.urGpsLon);
                         Status.set_lon(ReadFloat());
                     }
 
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R0004");
+                        SendReadCommand(USB_VAR.urGpsAge);
                         Status.set_age(ReadULong());
                     }
 
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R000A");
+                        SendReadCommand(USB_VAR.urRcK1);
                         Status.set_k1(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R000B");
+                        SendReadCommand(USB_VAR.urRcK2);
                         Status.set_k2(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R000C");
+                        SendReadCommand(USB_VAR.urRcK3);
                         Status.set_k3(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R000D");
+                        SendReadCommand(USB_VAR.urRcK4);
                         Status.set_k4(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R0014");
+                        SendReadCommand(USB_VAR.urMainSeqStep);
                         Status.set_mainseq_step(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R001E");
+                        SendReadCommand(USB_VAR.urMotorL);
                         Status.set_motor_l(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R001F");
+                        SendReadCommand(USB_VAR.urMotorR);
                         Status.set_motor_r(ReadLong());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R0028");
+                        SendReadCommand(USB_VAR.urSteeringSP);
                         Status.set_steering_sp(ReadFloat());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R0029");
+                        SendReadCommand(USB_VAR.urSteeringPV);
                         Status.set_steering_pv(ReadFloat());
                     }
                     if (!do_stop)
                     {
-                        _serialPort.WriteLine("R002A");
+                        SendReadCommand(USB_VAR.urSteeringPID_ERR);
                         Status.set_steering_pid_err(ReadFloat());
+                    }
+
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urMagRawX);
+                        Status.set_mag_raw_x(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urMagRawY);
+                        Status.set_mag_raw_y(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urMagRawZ);
+                        Status.set_mag_raw_z(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urMagCourse);
+                        Status.set_mag_course(ReadFloat());
+                    }
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urMagCalState);
+                        Status.set_mag_cal_state((ECalibrationState)ReadLong());
                     }
 
                     Thread.Sleep(100);

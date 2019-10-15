@@ -94,6 +94,12 @@ namespace QBBConfig
                 SteeringPV.Text = m_task.Status.get_steering_pv().ToString();
                 SteeringPidErr.Text = m_task.Status.get_steering_pid_err().ToString();
 
+                MagRawX.Text = m_task.Status.get_mag_raw_x().ToString();
+                MagRawY.Text = m_task.Status.get_mag_raw_y().ToString();
+                MagRawZ.Text = m_task.Status.get_mag_raw_z().ToString();
+                MagCourse.Text = m_task.Status.get_mag_course().ToString();
+                MagCalState.Text = CalibrationStateToText(m_task.Status.get_mag_cal_state());
+
                 pb_k1.Value = m_task.Status.get_k1();
                 pb_k2.Value = m_task.Status.get_k2();
                 pb_k3.Value = m_task.Status.get_k3();
@@ -104,6 +110,26 @@ namespace QBBConfig
                 TMainState stm = (TMainState)m_task.Status.get_mainseq_step();
                 string sStepName = StepToText(stm);
                 SeqStep.Text = sStepName;
+            }
+        }
+
+        private string CalibrationStateToText(ECalibrationState cs)
+        {
+            switch (cs) {
+            case ECalibrationState.csNotCalibrated:
+                    return "csNotCalibrated";
+            case ECalibrationState.csCenterDetect:
+                    return "csCenterDetect";
+            case ECalibrationState.csTurn1:
+                return "csTurn1";
+            case ECalibrationState.csTurn2:
+                return "csTurn2";
+            case ECalibrationState.csFinish:
+                return "csFinish";
+            case ECalibrationState.csCalibrated:
+                return "csCalibrated";
+            default:
+                return "";
             }
         }
 

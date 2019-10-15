@@ -5,19 +5,25 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBBConfig"
         mc:Ignorable="d"
-        Title="MainWindow" Height="400.934" Width="600">
+        Title="MainWindow" Height="525" Width="600">
     <Grid Margin="0,0,32,36">
         <Button Name="BtnConnect" Content="Connect" HorizontalAlignment="Left" Height="62" Margin="86,10,0,0" VerticalAlignment="Top" Width="110" Click="ConnectBtn_Click"/>
         <Button Name="BtnDisconnect" Content="Disconnect" HorizontalAlignment="Left" Height="62" Margin="215,10,0,0" VerticalAlignment="Top" Width="110" Click="DisconnectBtn_Click" IsEnabled="false"/>
-        <Grid HorizontalAlignment="Left" Height="250" Margin="56,101,0,0" VerticalAlignment="Top" Width="320">
+        <Grid HorizontalAlignment="Left" Height="350" Margin="25,90,0,0" VerticalAlignment="Top" Width="320">
             <Grid.RowDefinitions>
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
-                <RowDefinition Height="32" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100" />
@@ -25,21 +31,32 @@
                 <ColumnDefinition Width="Auto" />
                 <!-- Actions column -->
             </Grid.ColumnDefinitions>
-            <Label Content="Lat" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top"  Grid.Row="0" Grid.Column="0" />
-            <TextBox Name="GpsLat" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="0" Grid.Column="1" />
-            <Label Content="Lon" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="1" Grid.Column="0" />
-            <TextBox Name="GpsLon" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="1" Grid.Column="1" />
-            <Label Content="Age" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="2" Grid.Column="0" />
-            <TextBox Name="GpsAge" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="2" Grid.Column="1" />
-            <Label Content="Seq. Step" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" />
-            <TextBox Name="SeqStep" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="3" Grid.Column="1" />
+            <Label Content="Lat" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+            <TextBox Name="GpsLat" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="0" Grid.Column="1" />
+            <Label Content="Lon" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+            <TextBox Name="GpsLon" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="1" Grid.Column="1" />
+            <Label Content="Age" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+            <TextBox Name="GpsAge" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="2" Grid.Column="1" />
+            <Label Content="Seq. Step" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
+            <TextBox Name="SeqStep" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="3" Grid.Column="1" />
 
-            <Label Content="SP" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="4" Grid.Column="0" />
-            <TextBox Name="SteeringSP" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="4" Grid.Column="1" />
-            <Label Content="PV" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="5" Grid.Column="0" />
-            <TextBox Name="SteeringPV" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="5" Grid.Column="1" />
-            <Label Content="PID ERR" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="6" Grid.Column="0" />
-            <TextBox Name="SteeringPidErr" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="6" Grid.Column="1" />
+            <Label Content="SP" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
+            <TextBox Name="SteeringSP" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="4" Grid.Column="1" />
+            <Label Content="PV" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0" />
+            <TextBox Name="SteeringPV" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="5" Grid.Column="1" />
+            <Label Content="PID ERR" HorizontalAlignment="Left" Grid.Row="6" Grid.Column="0" />
+            <TextBox Name="SteeringPidErr" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="6" Grid.Column="1" />
+
+            <Label Content="MAG RAW X" HorizontalAlignment="Left" Grid.Row="7" Grid.Column="0" />
+            <TextBox Name="MagRawX" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="7" Grid.Column="1" />
+            <Label Content="MAG RAW Y" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0" />
+            <TextBox Name="MagRawY" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="8" Grid.Column="1" />
+            <Label Content="MAG RAW Z" HorizontalAlignment="Left" Grid.Row="9" Grid.Column="0" />
+            <TextBox Name="MagRawZ" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="9" Grid.Column="1" />
+            <Label Content="MAG COURSE" HorizontalAlignment="Left" Grid.Row="10" Grid.Column="0" />
+            <TextBox Name="MagCourse" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="10" Grid.Column="1" />
+            <Label Content="MAG CAL STATE" HorizontalAlignment="Left" Grid.Row="11" Grid.Column="0" />
+            <TextBox Name="MagCalState" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="11" Grid.Column="1" />
 
         </Grid>
 

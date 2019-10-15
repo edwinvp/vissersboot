@@ -96,7 +96,12 @@ enum USB_VAR { urInvalid=0,
     urMotorR = 31,
     urSteeringSP = 40,
     urSteeringPV = 41,
-    urSteeringPID_ERR = 42    
+    urSteeringPID_ERR = 42,
+    urMagRawX = 50,
+    urMagRawY = 51,
+    urMagRawZ = 52,
+    urMagCourse = 53,
+    urMagCalState = 54    
 };    
 
 //int tune_ptr(0);
@@ -425,8 +430,6 @@ void print_steering_msg()
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
-	b_printf(PSTR("\x1b[1;1H"));
-	
     b_printf(PSTR(" x=%04d  \r\n y=%04d  \r\n z=%04d  \r\n course=%04d   \r\n sp=%04d   \r\n"),
 		mag->compass_raw.x.value, mag->compass_raw.y.value, mag->compass_raw.z.value,
 		int(steering.compass_course),
@@ -591,30 +594,6 @@ void read_user_input()
 		case 'n':
 			cc.set_true_north();
 			break;
-		case 'c':
-            toggle_msg_mode(mmCompass);
-			break;
-		case 'g':
-			toggle_msg_mode(mmGps);
-			break;
-		case 'p':
-			toggle_msg_mode(mmPActionNorm);
-			break;
-		case 'i':
-			toggle_msg_mode(mmIActionNorm);
-			break;
-		case 's':
-			toggle_msg_mode(mmSteering);
-			break;
-		case 'u':
-			toggle_msg_mode(mmPActionAggr);
-			break;
-		case 'y':
-			toggle_msg_mode(mmIActionAggr);
-			break;			
-		case 'e':
-			toggle_msg_mode(mmServoCapture);
-			break;
 		case 'a':
 			stm.straight_to_auto = true;
 			break;
@@ -659,17 +638,7 @@ void print_servo_msg(bool full)
 	b_printf(rc_okay ? PSTR("RC UP\r\n") : PSTR("RC DOWN\r\n"));
 	
 	// Print the values of the incoming and outgoing servo channels
-	if (full) {
-		int a1, b1;
-
-		// Display incoming servo signals as received (2000 ... 4000, 0 = no signal)
-		// Same for outgoing signals (to motors)
-		a1 = joystick.to_perc(OCR1A);
-		b1 = joystick.to_perc(OCR1B);
-
-		b_printf(PSTR(" A=%05d B=%05d\r\n"),
-    		a1, b1);
-			
+	if (full) {		
 		// Show how many pulses the capture interrupts have seen
 		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
 			k1_alive,k2_alive,k3_alive,k4_alive);
@@ -1757,6 +1726,27 @@ unsigned long read_var(int reg)
     case urSteeringPID_ERR:
         data = *reinterpret_cast<long*>(&steering.pid_err);
         break;    
+        
+    case urMagRawX:
+        data=cc.raw_x;
+        break;
+
+    case urMagRawY:
+        data=cc.raw_y;
+        break;
+
+    case urMagRawZ:
+        data=cc.raw_z;
+        break;
+
+    case urMagCourse:
+        data = *reinterpret_cast<long*>(&cc.compass_course);
+        break;
+
+    case urMagCalState:
+        data = cc.get_state();
+        break;
+        
     default:
         data=0;
     }
@@ -1784,7 +1774,6 @@ void handle_command(void)
 	char cc = cmd_buf[0];
 	switch (cc) {
     case 'R':        
-        putchar('R');
         fields = sscanf(&cmd_buf[1],"%04x",&addr);
         if (fields == 1) {
             data = read_var(addr);
