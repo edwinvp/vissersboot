@@ -94,6 +94,9 @@ enum USB_VAR { urInvalid=0,
     urMainSeqStep = 20,
     urMotorL = 30,
     urMotorR = 31,
+    urSteeringSP = 40,
+    urSteeringPV = 41,
+    urSteeringPID_ERR = 42    
 };    
 
 //int tune_ptr(0);
@@ -409,33 +412,19 @@ void setup_pwm()
 #endif
 }
 // ----------------------------------------------------------------------------
+/*
 void print_steering_msg()
 {
-/*
-	unsigned int sp_d = steering.sp_used;
-	unsigned int pv_d = steering.pv_used;
-	unsigned int err_d = steering.pid_err;
-
 	if (stm.Step()==msAutoModeCourse || stm.Step()==msAutoModeNormal) {
-		b_printf(PSTR("sp=%d"), sp_d);
 		if (steering.SUBST_SP!=0)
 			b_printf(PSTR("*"));
-	
-		putchar(' ');
-
-		b_printf(PSTR("pv=%d"), pv_d);
 		if (steering.SUBST_PV!=0)
 			b_printf(PSTR("*"));
-	} else
-		b_printf(PSTR("sp=-- pv=-- "));
-
-	b_printf(PSTR(" err=%d: \r\n"), err_d);
-*/
+	}
 }
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
-/*
 	b_printf(PSTR("\x1b[1;1H"));
 	
     b_printf(PSTR(" x=%04d  \r\n y=%04d  \r\n z=%04d  \r\n course=%04d   \r\n sp=%04d   \r\n"),
@@ -446,8 +435,8 @@ void print_compass_msg()
     b_printf(PSTR("\r\nsmp#(good/bad)=%04d(%04d/%04d)        \r\n"), compass_smp, good_compass_smp, bad_compass_smp);
 	
 	cc.print_cal();
-*/
 }
+*/
 // ----------------------------------------------------------------------------
 void clear_stats(void)
 {
@@ -663,10 +652,9 @@ void read_user_input()
 // ----------------------------------------------------------------------------
 // Periodic message
 // ----------------------------------------------------------------------------
-
+/*
 void print_servo_msg(bool full)
 {
-/*
 	// Tell whether application considers the remote control up or down
 	b_printf(rc_okay ? PSTR("RC UP\r\n") : PSTR("RC DOWN\r\n"));
 	
@@ -686,8 +674,8 @@ void print_servo_msg(bool full)
 		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
 			k1_alive,k2_alive,k3_alive,k4_alive);
 	}
-*/
 }
+*/
 
 TLedMode Step2LedMode(TMainState step)
 {
@@ -745,9 +733,7 @@ void check_rc()
 	if (!k4_ok)
 		k4_pulse_duration = JOY_CENTER;
 	
-	if (rc_okay != rc_okay_prev) {		
-		print_servo_msg(false);
-		
+	if (rc_okay != rc_okay_prev) {	
 		// See description of `rc_ignore_first_command` declaration
 		if (rc_okay)
 			stm.rc_ignore_first_command=true;
@@ -1762,7 +1748,15 @@ unsigned long read_var(int reg)
     case urMotorR:
         data = OCR3A;
         break;
-
+    case urSteeringSP:
+        data = *reinterpret_cast<long*>(&steering.sp_used);
+        break;
+    case urSteeringPV:
+        data = *reinterpret_cast<long*>(&steering.pv_used);
+        break;
+    case urSteeringPID_ERR:
+        data = *reinterpret_cast<long*>(&steering.pid_err);
+        break;    
     default:
         data=0;
     }

@@ -90,6 +90,10 @@ namespace QBBConfig
                 else
                     GpsAge.Text = age.ToString();
 
+                SteeringSP.Text = m_task.Status.get_steering_sp().ToString();
+                SteeringPV.Text = m_task.Status.get_steering_pv().ToString();
+                SteeringPidErr.Text = m_task.Status.get_steering_pid_err().ToString();
+
                 pb_k1.Value = m_task.Status.get_k1();
                 pb_k2.Value = m_task.Status.get_k2();
                 pb_k3.Value = m_task.Status.get_k3();

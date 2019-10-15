@@ -44,7 +44,10 @@ namespace QBBConfig
         urRcK4,
         urMainSeqStep = 20,
         urMotorL = 30,
-        urMotorR = 31
+        urMotorR = 31,
+        urSteeringSP = 40,
+        urSteeringPV = 41,
+        urSteeringPID_ERR = 42
     };
 
     class CommTask
@@ -195,6 +198,21 @@ namespace QBBConfig
                     {
                         _serialPort.WriteLine("R001F");
                         Status.set_motor_r(ReadLong());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R0028");
+                        Status.set_steering_sp(ReadFloat());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R0029");
+                        Status.set_steering_pv(ReadFloat());
+                    }
+                    if (!do_stop)
+                    {
+                        _serialPort.WriteLine("R002A");
+                        Status.set_steering_pid_err(ReadFloat());
                     }
 
                     Thread.Sleep(100);

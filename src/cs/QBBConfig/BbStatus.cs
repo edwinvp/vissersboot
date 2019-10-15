@@ -15,9 +15,12 @@ namespace QBBConfig
         private long m_k2 = 0;
         private long m_k3 = 0;
         private long m_k4 = 0;
-        private long m_mainseq_step = 0;
+        private long m_mainseq_step = -1;
         private long m_motor_l = 0;
         private long m_motor_r = 0;
+        private float m_steering_sp = 0;
+        private float m_steering_pv = 0;
+        private float m_steering_pid_err = 0;
 
         private Object Lck = new Object();
 
@@ -101,6 +104,30 @@ namespace QBBConfig
             }
         }
 
+        public void set_steering_sp(float f)
+        {
+            lock (Lck)
+            {
+                m_steering_sp = f;
+            }
+        }
+
+        public void set_steering_pv(float f)
+        {
+            lock (Lck)
+            {
+                m_steering_pv = f;
+            }
+        }
+
+        public void set_steering_pid_err(float f)
+        {
+            lock (Lck)
+            {
+                m_steering_pid_err = f;
+            }
+        }
+
         public float get_lat()
         {
             lock (Lck)
@@ -178,6 +205,30 @@ namespace QBBConfig
             lock (Lck)
             {
                 return m_motor_r;
+            }
+        }
+
+        public float get_steering_sp()
+        {
+            lock (Lck)
+            {
+                return m_steering_sp;
+            }
+        }
+
+        public float get_steering_pv()
+        {
+            lock (Lck)
+            {
+                return m_steering_pv;
+            }
+        }
+
+        public float get_steering_pid_err()
+        {
+            lock (Lck)
+            {
+                return m_steering_pid_err;
             }
         }
 

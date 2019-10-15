@@ -9,14 +9,16 @@
     <Grid Margin="0,0,32,36">
         <Button Name="BtnConnect" Content="Connect" HorizontalAlignment="Left" Height="62" Margin="86,10,0,0" VerticalAlignment="Top" Width="110" Click="ConnectBtn_Click"/>
         <Button Name="BtnDisconnect" Content="Disconnect" HorizontalAlignment="Left" Height="62" Margin="215,10,0,0" VerticalAlignment="Top" Width="110" Click="DisconnectBtn_Click" IsEnabled="false"/>
-        <Grid HorizontalAlignment="Left" Height="139" Margin="56,101,0,0" VerticalAlignment="Top" Width="320">
+        <Grid HorizontalAlignment="Left" Height="250" Margin="56,101,0,0" VerticalAlignment="Top" Width="320">
             <Grid.RowDefinitions>
                 <RowDefinition Height="32" />
                 <RowDefinition Height="32" />
                 <RowDefinition Height="32" />
                 <RowDefinition Height="32" />
-
-           </Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="32" />
+                <RowDefinition Height="32" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="100" />
                 <!-- Document Name column -->
@@ -31,6 +33,13 @@
             <TextBox Name="GpsAge" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="2" Grid.Column="1" />
             <Label Content="Seq. Step" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="3" Grid.Column="0" />
             <TextBox Name="SeqStep" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="3" Grid.Column="1" />
+
+            <Label Content="SP" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="4" Grid.Column="0" />
+            <TextBox Name="SteeringSP" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="4" Grid.Column="1" />
+            <Label Content="PV" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="5" Grid.Column="0" />
+            <TextBox Name="SteeringPV" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="5" Grid.Column="1" />
+            <Label Content="PID ERR" HorizontalAlignment="Left" Height="32" VerticalAlignment="Top" Grid.Row="6" Grid.Column="0" />
+            <TextBox Name="SteeringPidErr" HorizontalAlignment="Left" Height="32"  TextWrapping="Wrap" Text="-" VerticalAlignment="Top" Width="180" Grid.Row="6" Grid.Column="1" />
 
         </Grid>
 
