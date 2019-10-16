@@ -322,9 +322,6 @@ void Fake_UART_ISR(unsigned UDR1) {
 void setup_capture_inputs()
 {
 #ifndef _WIN32
-    // Configure PB4 as output (head lights / tail lights; L)
-    // PORTB |= _BV(PORTB4);
-
 	// Configure PB7 (RC CH1/K1) as input
 	DDRB &= ~_BV(DDB7);
 	PORTB &= ~_BV(PORTB7);
@@ -626,9 +623,9 @@ void process_100ms()
 
     // Switch head lights / tail lights on or off    
     if (steering.motor_running())
-        PORTD |= _BV(PORTD2);
+        PORTD |= _BV(PORTD6);
     else
-        PORTD &= ~_BV(PORTD2);
+        PORTD &= ~_BV(PORTD6);
 
 	// Run main state machine
     stm.Run();
@@ -1947,6 +1944,9 @@ int main (void)
 
     // Configure PC7 (Arduino LED) as output
     DDRC |= _BV(DDC7);
+
+    // Configure PD6 as output (head lights / tail lights; L)
+    DDRD |= _BV(DDD6);
 
 	// Setup other peripherals
 	setup_capture_inputs();
