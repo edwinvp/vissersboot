@@ -169,6 +169,7 @@
             <Button x:Name="BtnStartCalibration" Content="Start Calibration" Margin="5,5,5,5" HorizontalAlignment="Left" Height="41"  VerticalAlignment="Top" Width="139" Click="BtnStartCalibration_Click"/>
             <Button x:Name="BtnSetTrueNorth" Content="Set true north" HorizontalAlignment="Left" Margin="5,5,5,5"  Height="41" VerticalAlignment="Top" Width="139" Click="BtnSetTrueNorth_Click"/>
         </StackPanel>
-        
+        <Label x:Name="LblFreq" Content="FF" HorizontalAlignment="Left" Height="33" Margin="542,200,0,0" VerticalAlignment="Top" Width="42"/>
+
     </Grid>
 </Window>

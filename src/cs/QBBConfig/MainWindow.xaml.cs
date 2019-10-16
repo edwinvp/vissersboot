@@ -24,6 +24,11 @@ namespace QBBConfig
         private CommTask m_task;
         private Thread m_thread;
 
+        int iCount = 0;
+        int iN1 = 0;
+        int iN2 = 0;
+        int iDelta = 0;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -44,6 +49,22 @@ namespace QBBConfig
 
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
+            if (m_task != null)
+            {
+                if (iCount == 0)
+                    iN1 = m_task.GetCounter();
+
+                if (iCount >= 3)
+                {
+                    iN2 = m_task.GetCounter();
+                    iDelta = iN2 - iN1;
+                    iCount = 0;
+
+                    LblFreq.Content = iDelta.ToString();
+                } else 
+                    iCount++;
+            }
+
             // code goes here
             if (m_task != null) {
                 GpsLat.Text = m_task.Status.get_lat().ToString();

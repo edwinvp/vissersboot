@@ -118,7 +118,7 @@ enum USB_VAR { urInvalid=0,
 //char tune_buf[16];
 int cmd_ptr = 0;
 
-#define MAX_CMD_SIZE 15
+#define MAX_CMD_SIZE 24
 char cmd_buf[MAX_CMD_SIZE+1];
 char cmd_response[MAX_CMD_SIZE+1];
 
@@ -1831,7 +1831,7 @@ void handle_command(void)
         fields = sscanf(&cmd_buf[1],"%04x",&addr);
         if (fields == 1) {
             data = read_var(addr);
-		    sprintf(cmd_response,"OK %08lx\r\n",data);
+		    sprintf(cmd_response,"ROK %04x,%08lx\r\n",addr,data);
         }
         else
 		    sprintf(cmd_response,"ERR R\r\n");
@@ -1841,15 +1841,13 @@ void handle_command(void)
         fields = sscanf(&cmd_buf[1],"%04x,%08lx",&addr,&data);
         if (fields==2) {
             write_var(addr,data);
-		    sprintf(cmd_response,"OK\r\n");
+		    sprintf(cmd_response,"WOK %04x\r\n", addr);
         } else
 		    sprintf(cmd_response,"ERR W\r\n");
         break;
 	}
 	
 	if (cmd_response[0]) {
-        putchar('R');
-
 		EP_select(1);
 
 		if (!usb_out_data_pending)

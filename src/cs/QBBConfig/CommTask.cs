@@ -72,7 +72,14 @@ namespace QBBConfig
         private volatile int wr_data = 0;
         private volatile bool do_write = false;
 
+        private volatile int m_counter = 0;
+
         static SerialPort _serialPort;
+
+        public int GetCounter()
+        {
+            return m_counter;
+        }
 
         public void Stop()
         {
@@ -92,26 +99,16 @@ namespace QBBConfig
             return BitConverter.ToSingle(newArray, 0);
         }
 
-        public float ReadFloat()
+        public float UintToFloat(uint uiData)
         {
-            try
-            {
-                string sLine = _serialPort.ReadLine().Trim();
+            byte b3 = (byte)((uiData >> 24) & 255);
+            byte b2 = (byte)((uiData >> 16) & 255);
+            byte b1 = (byte)((uiData >> 8) & 255);
+            byte b0 = (byte)(uiData & 255);
 
-                byte b3 = Convert.ToByte(sLine.Substring(3,2), 16);
-                byte b2 = Convert.ToByte(sLine.Substring(5,2), 16);
-                byte b1 = Convert.ToByte(sLine.Substring(7,2), 16);
-                byte b0 = Convert.ToByte(sLine.Substring(9,2), 16);
+            byte[] byteArray = { b3, b2, b1, b0 };
 
-                byte[] byteArray = { b3, b2, b1, b0 };
-
-                return ToFloat(byteArray);
-
-            }
-            catch (Exception)
-            {
-            }
-            return 0;
+            return ToFloat(byteArray);
         }
 
         public void SendWriteCommand(int iAddr, int iData)
@@ -135,30 +132,88 @@ namespace QBBConfig
             return false;
         }
 
-        public long ReadLong()
+        public void SetFromRaw(USB_VAR uv, uint uiData)
         {
-            try
+            switch (uv)
             {
-                string sLine = _serialPort.ReadLine().Trim();
-                return Convert.ToInt32(sLine.Substring(3, 8), 16);
+                case USB_VAR.urGpsLat:
+                    Status.set_lat(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urGpsLon:
+                    Status.set_lon(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urGpsAge:
+                    Status.set_age(uiData);
+                    break;
+                case USB_VAR.urRcK1:
+                    Status.set_k1((long)uiData);
+                    break;
+                case USB_VAR.urRcK2:
+                    Status.set_k2((long)uiData);
+                    break;
+                case USB_VAR.urRcK3:
+                    Status.set_k3((long)uiData);
+                    break;
+                case USB_VAR.urRcK4:
+                    Status.set_k4((long)uiData);
+                    break;
+                case USB_VAR.urMainSeqStep:
+                    Status.set_mainseq_step((long)uiData);
+                    break;
+                case USB_VAR.urMotorL:
+                    Status.set_motor_l((int)uiData);
+                    break;
+                case USB_VAR.urMotorR:
+                    Status.set_motor_r((int)uiData);
+                    break;
+                case USB_VAR.urMagRawX:
+                    Status.set_mag_raw_x((int)uiData);
+                    break;
+                case USB_VAR.urMagRawY:
+                    Status.set_mag_raw_y((int)uiData);
+                    break;
+                case USB_VAR.urMagRawZ:
+                    Status.set_mag_raw_z((int)uiData);
+                    break;
+                case USB_VAR.urMagCourse:
+                    Status.set_mag_course(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urMagCalState:
+                    Status.set_mag_cal_state((ECalibrationState)uiData);
+                    break;
+                case USB_VAR.urSteeringSP:
+                    Status.set_steering_sp(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urSteeringPV:
+                    Status.set_steering_pv(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urSteeringPID_ERR:
+                    Status.set_steering_pid_err(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urBtnState:
+                    Status.set_button_state((int)uiData);
+                    break;
+
             }
-            catch (Exception)
-            {
-            }
-            return 0;
+
         }
 
-        public ulong ReadULong()
+        public void ReadResponse()
         {
             try
             {
                 string sLine = _serialPort.ReadLine().Trim();
-                return Convert.ToUInt32(sLine.Substring(3, 8), 16);
+
+                int iAddr = Convert.ToInt32(sLine.Substring(4, 4), 16);
+                uint uiData = Convert.ToUInt32(sLine.Substring(9, 8), 16);
+
+                SetFromRaw((USB_VAR)iAddr, uiData);
+
             }
             catch (Exception)
             {
             }
-            return 0;
+            return;
         }
 
         public void SendReadCommand(USB_VAR uv)
@@ -199,104 +254,63 @@ namespace QBBConfig
 
                 while (!do_stop)
                 {
+                    m_counter++;
+
                     if (!do_stop)
                     {
                         SendReadCommand(USB_VAR.urGpsLat);
-                        Status.set_lat(ReadFloat());
-                    }
-
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urGpsLon);
-                        Status.set_lon(ReadFloat());
-                    }
-
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urGpsAge);
-                        Status.set_age(ReadULong());
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
                     }
 
                     if (!do_stop)
                     {
                         SendReadCommand(USB_VAR.urRcK1);
-                        Status.set_k1(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urRcK2);
-                        Status.set_k2(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urRcK3);
-                        Status.set_k3(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urRcK4);
-                        Status.set_k4(ReadLong());
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
                     }
+
                     if (!do_stop)
                     {
                         SendReadCommand(USB_VAR.urMainSeqStep);
-                        Status.set_mainseq_step(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urMotorL);
-                        Status.set_motor_l(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urMotorR);
-                        Status.set_motor_r(ReadLong());
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
                     }
                     if (!do_stop)
                     {
                         SendReadCommand(USB_VAR.urSteeringSP);
-                        Status.set_steering_sp(ReadFloat());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urSteeringPV);
-                        Status.set_steering_pv(ReadFloat());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urSteeringPID_ERR);
-                        Status.set_steering_pid_err(ReadFloat());
+                        SendReadCommand(USB_VAR.urBtnState);
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
                     }
 
                     if (!do_stop)
                     {
                         SendReadCommand(USB_VAR.urMagRawX);
-                        Status.set_mag_raw_x(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urMagRawY);
-                        Status.set_mag_raw_y(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urMagRawZ);
-                        Status.set_mag_raw_z(ReadLong());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urMagCourse);
-                        Status.set_mag_course(ReadFloat());
-                    }
-                    if (!do_stop)
-                    {
                         SendReadCommand(USB_VAR.urMagCalState);
-                        Status.set_mag_cal_state((ECalibrationState)ReadLong());
-                    }
-                    if (!do_stop)
-                    {
-                        SendReadCommand(USB_VAR.urBtnState);
-                        Status.set_button_state(ReadLong());
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
                     }
 
                     if (!do_stop && do_write)
@@ -310,10 +324,9 @@ namespace QBBConfig
                             Debug.Print("Write succeeded");
                         else
                             Debug.Print("Write failed");
-                    }
-                    
+                    }                    
 
-                    Thread.Sleep(100);
+                    Thread.Sleep(50);
                 }
 
                 Debug.Print("Stopping. Closing COM-port.");
