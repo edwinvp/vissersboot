@@ -118,8 +118,8 @@ namespace QBBConfig
         {
             String sHexAddr = iAddr.ToString("X4");
             String sHexData = iData.ToString("X8");
-            String sReadCmd = "W" + sHexAddr + sHexData;
-            _serialPort.WriteLine(sReadCmd);
+            String sWriteCmd = "W" + sHexAddr + "," + sHexData;
+            _serialPort.WriteLine(sWriteCmd);
         }
 
         public bool CheckWriteResponse()
