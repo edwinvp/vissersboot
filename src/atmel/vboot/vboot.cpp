@@ -97,6 +97,10 @@ enum USB_VAR { urInvalid=0,
     urSteeringSP = 40,
     urSteeringPV = 41,
     urSteeringPID_ERR = 42,
+    urPidNormalP = 43,
+    urPidNormalI = 44,
+    urPidAggresiveP = 45,
+    urPidAggresiveI = 46,    
     urMagRawX = 50,
     urMagRawY = 51,
     urMagRawZ = 52,
@@ -1646,6 +1650,20 @@ Variables
 RO 0001 '42'
 */
 
+double cast_long_to_double(unsigned long data)
+{
+    float * pDbl = reinterpret_cast<float*>(&data);
+    float f = *pDbl;
+    return f;
+}
+
+long cast_double_to_long(double data)
+{
+    float f = data;
+    long * pLong = reinterpret_cast<long*>(&f);
+    return *pLong;
+}
+
 unsigned long read_var(int reg)
 {
     unsigned long data(0);
@@ -1747,6 +1765,19 @@ unsigned long read_var(int reg)
         data = btn_state ? 1 : 0;
         break;
         
+    case urPidNormalP:
+        data = cast_double_to_long(steering.pid_normal.TUNE_P);
+        break;
+    case urPidNormalI:
+        data = cast_double_to_long(steering.pid_normal.TUNE_I);
+        break;
+    case urPidAggresiveP:
+        data = cast_double_to_long(steering.pid_aggressive.TUNE_P);
+        break;
+    case urPidAggresiveI:
+        data = cast_double_to_long(steering.pid_aggressive.TUNE_I);
+        break;
+        
     default:
         data=0;
     }
@@ -1781,6 +1812,19 @@ void write_var(int reg, unsigned long d)
     case urSetTrueNorth:
         cc.set_true_north();
         break;        
+        
+    case urPidNormalP:        
+        steering.pid_normal.TUNE_P = cast_long_to_double(d);
+        break;
+    case urPidNormalI:
+        steering.pid_normal.TUNE_I = cast_long_to_double(d);
+        break;
+    case urPidAggresiveP:
+        steering.pid_aggressive.TUNE_P = cast_long_to_double(d);
+        break;
+    case urPidAggresiveI:
+        steering.pid_aggressive.TUNE_I = cast_long_to_double(d);
+        break;
     }
 }
 
