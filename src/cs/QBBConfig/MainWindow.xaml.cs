@@ -144,13 +144,6 @@ namespace QBBConfig
             }
         }
 
-        private float a = 0;
-        private void BtnDrawClick(object sender, RoutedEventArgs e)
-        {
-            a += 45f;
-            set_need_angle(a);
-        }
-
         private void MenuItem_Connect(object sender, RoutedEventArgs e)
         {
             try
@@ -190,6 +183,30 @@ namespace QBBConfig
             {
                 MessageBox.Show("Can't disconnect: " + except.Message, "Exception");
             }
+        }
+
+        private void BtnWriteVar_Click(object sender, RoutedEventArgs e)
+        {
+            string sAddr = TextAddr.Text.ToString();
+            string sNewValue = TextNewValue.Text.ToString();
+            int iAddr = int.Parse(sAddr);
+            int iNewValue = int.Parse(sNewValue);
+            if (m_task != null)
+            {
+                m_task.WriteLongIndirect((USB_VAR)iAddr, iNewValue);
+            }
+        }
+
+        private void BtnStartCalibration_Click(object sender, RoutedEventArgs e)
+        {
+            if (m_task != null)
+                m_task.WriteLongIndirect(USB_VAR.urBtnState, 1);
+        }
+
+        private void BtnSetTrueNorth_Click(object sender, RoutedEventArgs e)
+        {
+            if (m_task != null)
+                m_task.WriteLongIndirect(USB_VAR.urSetTrueNorth, 1);
         }
     }
 }

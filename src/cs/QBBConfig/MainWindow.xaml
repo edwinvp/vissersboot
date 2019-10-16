@@ -5,39 +5,35 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBBConfig"
         mc:Ignorable="d"
-        Title="Quartel Bait Boat Monitor" Height="525" Width="800">
+        Title="Quartel Bait Boat Monitor" Height="450" Width="800">
     <Grid Margin="0,0,3,3">
 
-        <Grid HorizontalAlignment="Left" Height="100" Margin="550,90,0,0" VerticalAlignment="Top" Width="192">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="40" />
-                <!-- Document Name column -->
-                <ColumnDefinition Width="Auto" />
-                <!-- Actions column -->
-            </Grid.ColumnDefinitions>
-            <Label Content="Lat" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
-            <TextBox Name="GpsLat" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="150" Grid.Row="0" Grid.Column="1" />
-            <Label Content="Lon" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
-            <TextBox Name="GpsLon" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="150" Grid.Row="1" Grid.Column="1" />
-            <Label Content="Age" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
-            <TextBox Name="GpsAge" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="150"  Grid.Row="2" Grid.Column="1" />
-        </Grid>
+        <StackPanel HorizontalAlignment="Left" Height="130" Margin="559,30,0,0" VerticalAlignment="Top" Width="190">
+            <Label Content="GPS Reception" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+            <Grid HorizontalAlignment="Stretch" Height="80" Margin="5,5,5,5" VerticalAlignment="Top" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <!-- Document Name column -->
+                    <ColumnDefinition Width="*" />
+                    <!-- Actions column -->
+                </Grid.ColumnDefinitions>
+                <Label Content="Lat" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+                <TextBox Name="GpsLat" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="0" Grid.Column="1" />
+                <Label Content="Lon" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+                <TextBox Name="GpsLon" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="1" Grid.Column="1" />
+                <Label Content="Age" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+                <TextBox Name="GpsAge" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="2" Grid.Column="1" />
+            </Grid>
+        </StackPanel>
 
-        <Grid HorizontalAlignment="Left" Height="350" Margin="25,30,0,0" VerticalAlignment="Top" Width="320">
+        <Grid HorizontalAlignment="Left" Height="140" Margin="25,30,0,0" VerticalAlignment="Top" Width="320">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
                 <RowDefinition Height="25" />
                 <RowDefinition Height="25" />
                 <RowDefinition Height="25" />
@@ -59,23 +55,44 @@
             <TextBox Name="SteeringPV" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="2" Grid.Column="1" />
             <Label Content="PID ERR" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
             <TextBox Name="SteeringPidErr" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="3" Grid.Column="1" />
-
-            <Label Content="MAG RAW X" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
-            <TextBox Name="MagRawX" HorizontalAlignment="Left" Grid.Row="4" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
-            <Label Content="MAG RAW Y" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0" />
-            <TextBox Name="MagRawY" HorizontalAlignment="Left" Grid.Row="5" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
-            <Label Content="MAG RAW Z" HorizontalAlignment="Left" Grid.Row="6" Grid.Column="0" />
-            <TextBox Name="MagRawZ" HorizontalAlignment="Left" Grid.Row="6" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
-            <Label Content="MAG COURSE" HorizontalAlignment="Left" Grid.Row="7" Grid.Column="0" />
-            <TextBox Name="MagCourse" HorizontalAlignment="Left" Grid.Row="7" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
-            <Label Content="MAG CAL STATE" HorizontalAlignment="Left" Grid.Row="8" Grid.Column="0" />
-            <TextBox Name="MagCalState" HorizontalAlignment="Left" Grid.Row="8" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
-            <Label Content="BUTTON CAL" HorizontalAlignment="Left" Grid.Row="9" Grid.Column="0" />
-            <TextBox Name="BtnState" HorizontalAlignment="Left" Grid.Row="9" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
-
+            <Label Content="BUTTON CAL" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
+            <TextBox Name="BtnState" HorizontalAlignment="Left" Grid.Row="4" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
         </Grid>
 
-        <Grid HorizontalAlignment="Left" Height="225" Margin="350,15,0,0" VerticalAlignment="Top" Width="180">
+        <StackPanel HorizontalAlignment="Left" Width="300" Height="200" Margin="10,170,0,0" VerticalAlignment="Top" >
+            <Label Content="Magnetometer" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+
+            <Grid HorizontalAlignment="Left" Height="135" Margin="5,5,5,5" VerticalAlignment="Top" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <!-- Document Name column -->
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Actions column -->
+                </Grid.ColumnDefinitions>
+
+                <Label Content="MAG RAW X" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+                <TextBox Name="MagRawX" HorizontalAlignment="Left" Grid.Row="0" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG RAW Y" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+                <TextBox Name="MagRawY" HorizontalAlignment="Left" Grid.Row="1" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG RAW Z" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+                <TextBox Name="MagRawZ" HorizontalAlignment="Left" Grid.Row="2" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG COURSE" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
+                <TextBox Name="MagCourse" HorizontalAlignment="Left" Grid.Row="3" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG CAL STATE" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
+                <TextBox Name="MagCalState" HorizontalAlignment="Left" Grid.Row="4" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+
+            </Grid>
+        </StackPanel>
+
+        <Grid HorizontalAlignment="Left" Height="225" Margin="350,20,0,0" VerticalAlignment="Top" Width="180">
             <Grid.RowDefinitions>
                 <RowDefinition Height="25" />
                 <RowDefinition Height="200" />
@@ -103,7 +120,7 @@
             <ProgressBar Grid.Row="1" Grid.Column="6" x:Name="pb_mr" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
 
         </Grid>
-        <Canvas x:Name="MagCanvas" HorizontalAlignment="Left" Height="160" Margin="350,220,0,0" VerticalAlignment="Top" Width="160">
+        <Canvas x:Name="MagCanvas" HorizontalAlignment="Left" Height="160" Margin="350,230,0,0" VerticalAlignment="Top" Width="160">
 
             <Ellipse HorizontalAlignment="Center" Height="140"  Stroke="Black" StrokeThickness="2" VerticalAlignment="Center" Width="140" Canvas.Top="10" Canvas.Left="10">
                 <Ellipse.Fill>
@@ -114,6 +131,10 @@
                     </LinearGradientBrush>
                 </Ellipse.Fill>
             </Ellipse>
+            <TextBlock Text="N" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="75" Canvas.Top="10" />
+            <TextBlock Text="E" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="135" Canvas.Top="70" />
+            <TextBlock Text="S" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="75" Canvas.Top="125" />
+            <TextBlock Text="W" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="15" Canvas.Top="70" />
             <Path Name="NeedleShadow" Fill="Black" StrokeThickness="2" Canvas.Left="82" Canvas.Top="77" Opacity="0.6">
                 <Path.Data>
                     <StreamGeometry>M -5,10 L 0 -50 L 5 10 Z</StreamGeometry>
@@ -133,13 +154,21 @@
             <Ellipse HorizontalAlignment="Center" Stroke="DarkSlateGray" Fill="Silver" StrokeThickness="0.5" VerticalAlignment="Center" Width="6" Height="6" Canvas.Top="77" Canvas.Left="77"/>
 
         </Canvas>
-        <Button Content="Drawing Test" HorizontalAlignment="Left" Height="32" Margin="357,408,0,0" VerticalAlignment="Top" Width="163" Click="BtnDrawClick"/>
         <Menu HorizontalAlignment="Stretch" Height="20" Margin="0,0,0,0" VerticalAlignment="Top">
             <MenuItem Header="Communications">
                 <MenuItem Name="MnuItemConnect" Header="Connect" Click="MenuItem_Connect" />
                 <MenuItem Name="MnuItemDisconnect" Header="Disconnect" Click="MenuItem_Disconnect"/>
             </MenuItem>
         </Menu>
+        <TextBox x:Name="TextAddr" HorizontalAlignment="Left" Height="26" Margin="615,195,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
+        <TextBox x:Name="TextNewValue" HorizontalAlignment="Left" Height="26" Margin="691,195,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
+        <Button x:Name="BtnWriteVar" Content="Write Var" HorizontalAlignment="Left" Height="25" Margin="615,226,0,0" VerticalAlignment="Top" Width="147" Click="BtnWriteVar_Click"/>
 
+        <StackPanel HorizontalAlignment="Left" Width="170" Height="130" Margin="550,270,0,0" VerticalAlignment="Top" >
+            <Label Content="Compass Calibration" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+            <Button x:Name="BtnStartCalibration" Content="Start Calibration" Margin="5,5,5,5" HorizontalAlignment="Left" Height="41"  VerticalAlignment="Top" Width="139" Click="BtnStartCalibration_Click"/>
+            <Button x:Name="BtnSetTrueNorth" Content="Set true north" HorizontalAlignment="Left" Margin="5,5,5,5"  Height="41" VerticalAlignment="Top" Width="139" Click="BtnSetTrueNorth_Click"/>
+        </StackPanel>
+        
     </Grid>
 </Window>

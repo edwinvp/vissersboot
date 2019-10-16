@@ -53,7 +53,14 @@ namespace QBBConfig
         urMagRawZ = 52,
         urMagCourse = 53,
         urMagCalState = 54,
-        urBtnState = 60
+        urMagMinX = 55,
+        urMagMaxX = 56,
+        urMagMinY = 57,
+        urMagMaxY = 58,
+        urMagMinZ = 59,
+        urMagMaxZ = 60,
+        urBtnState = 80,
+        urSetTrueNorth,
     };
 
     class CommTask
@@ -61,11 +68,22 @@ namespace QBBConfig
         private volatile bool do_stop = false;
         public BbStatus Status = new BbStatus();
 
+        private volatile int wr_addr = 0;
+        private volatile int wr_data = 0;
+        private volatile bool do_write = false;
+
         static SerialPort _serialPort;
 
         public void Stop()
         {
             do_stop = true;
+        }
+
+        public void WriteLongIndirect(USB_VAR iAddr, int iValue)
+        {
+            wr_addr = (int)iAddr;
+            wr_data = iValue;
+            do_write = true;
         }
 
         static float ToFloat(byte[] input)
@@ -94,6 +112,27 @@ namespace QBBConfig
             {
             }
             return 0;
+        }
+
+        public void SendWriteCommand(int iAddr, int iData)
+        {
+            String sHexAddr = iAddr.ToString("X4");
+            String sHexData = iData.ToString("X8");
+            String sReadCmd = "W" + sHexAddr + sHexData;
+            _serialPort.WriteLine(sReadCmd);
+        }
+
+        public bool CheckWriteResponse()
+        {
+            try
+            {
+                string sLine = _serialPort.ReadLine().Trim();
+                return true;
+            }
+            catch (Exception)
+            {
+            }
+            return false;
         }
 
         public long ReadLong()
@@ -258,6 +297,19 @@ namespace QBBConfig
                     {
                         SendReadCommand(USB_VAR.urBtnState);
                         Status.set_button_state(ReadLong());
+                    }
+
+                    if (!do_stop && do_write)
+                    {
+                        int iAddr = wr_addr;
+                        int iData = wr_data;
+                        do_write = false;
+
+                        SendWriteCommand(iAddr,iData);
+                        if (CheckWriteResponse())
+                            Debug.Print("Write succeeded");
+                        else
+                            Debug.Print("Write failed");
                     }
                     
 

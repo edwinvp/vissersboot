@@ -102,7 +102,16 @@ enum USB_VAR { urInvalid=0,
     urMagRawZ = 52,
     urMagCourse = 53,
     urMagCalState = 54,
-    urBtnState = 60
+    urMagMinX = 55,
+    urMagMaxX = 56,
+    urMagMinY = 57,
+    urMagMaxY = 58,
+    urMagMinZ = 59,
+    urMagMaxZ = 60,
+    
+    urBtnState = 80,
+    urSetTrueNorth = 81
+    
 };    
 
 //int tune_ptr(0);
@@ -1748,6 +1757,25 @@ unsigned long read_var(int reg)
         data = cc.get_state();
         break;
         
+    case urMagMinX:
+        data = cc.mm_x.fin_min;
+        break;
+    case urMagMaxX:
+        data = cc.mm_x.fin_max;
+        break;
+    case urMagMinY:
+        data = cc.mm_y.fin_min;
+        break;
+    case urMagMaxY:
+        data = cc.mm_y.fin_max;
+        break;
+    case urMagMinZ:
+        data = cc.mm_z.fin_min;
+        break;
+    case urMagMaxZ:
+        data = cc.mm_z.fin_max;
+        break;        
+        
     case urBtnState:
         data = btn_state ? 1 : 0;
         break;
@@ -1764,7 +1792,28 @@ void write_var(int reg, unsigned long d)
     switch (reg) {
     case urBtnState:
         btn_pressed = d != 0 ? true : false;
+        break;        
+    case urMagMinX:
+        cc.mm_x.fin_min = d;
         break;
+    case urMagMaxX:
+        cc.mm_x.fin_max = d;
+        break;                
+    case urMagMinY:
+        cc.mm_y.fin_min = d;
+        break;    
+    case urMagMaxY:
+        cc.mm_y.fin_max = d;
+        break;    
+    case urMagMinZ:
+        cc.mm_z.fin_min = d;
+        break;    
+    case urMagMaxZ:
+        cc.mm_z.fin_max = d;
+        break;
+    case urSetTrueNorth:
+        cc.set_true_north();
+        break;        
     }
 }
 
