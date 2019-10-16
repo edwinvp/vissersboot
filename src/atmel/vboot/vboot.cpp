@@ -136,10 +136,6 @@ CIST8310 mag_ist8310;
 CHMC5843 mag_hmc5843;
 CBaseMag * mag = 0;
 
-// Tests
-bool subst_pv = false;
-bool subst_sp = false;
-
 // GPS input related
 unsigned long gps_fix_age = TinyGPS::GPS_INVALID_AGE;
 TinyGPS gps;
@@ -428,15 +424,6 @@ void setup_pwm()
 }
 // ----------------------------------------------------------------------------
 /*
-void print_steering_msg()
-{
-	if (stm.Step()==msAutoModeCourse || stm.Step()==msAutoModeNormal) {
-		if (steering.SUBST_SP!=0)
-			b_printf(PSTR("*"));
-		if (steering.SUBST_PV!=0)
-			b_printf(PSTR("*"));
-	}
-}
 // ----------------------------------------------------------------------------
 void print_compass_msg()
 {
@@ -477,11 +464,6 @@ void tune_PrintValue(double dblParam)
 	case mmIActionAggr:
 		l = dblParam*1000.0;
 		b_printf(PSTR("(set): %ld (x1000)\r\n"),l);
-		break;
-	case mmPVSubst:
-	case mmSPSubst:
-		l = dblParam;
-		b_printf(PSTR("(set): %ld (x1)\r\n"),l);
 		break;
 	case mmDebug:
 		break;
@@ -525,9 +507,6 @@ void tune_Config(double & dblParam, char c)
 			case mmIActionAggr:
 				dblParam = ld / 1000.0;
 				break;
-			case mmPVSubst:
-			case mmSPSubst:
-				dblParam = ld;
 			case mmDebug:
 				break;
 			case mmLast:
@@ -562,12 +541,6 @@ void handle_parameterization(char c)
 	case mmIActionAggr:
 		tune_Config(steering.pid_aggressive.TUNE_I, c);
 		break;		
-	case mmPVSubst:
-		tune_Config(steering.SUBST_PV, c);
-		break;
-	case mmSPSubst:
-		tune_Config(steering.SUBST_SP, c);
-		break;
 	default:
 		;		
 	}
@@ -609,12 +582,6 @@ void read_user_input()
 			break;
 		case 'x':
             steering.toggle_dont_stop();
-			break;
-		case 'd':
-			msg_mode = mmPVSubst;
-			break;
-		case 'o':
-			msg_mode = mmSPSubst;
 			break;
 		case '0':
 		case '1':

@@ -26,8 +26,6 @@ CSteering::CSteering() :
     bearing_sp(0.0f),
     pv_used(0.0f),
     sp_used(0.0f),
-    SUBST_SP(0.0),
-    SUBST_PV(0.0),
 	p_add(0),
 	i_add(0),
 	d_add(0),
@@ -125,17 +123,8 @@ void CSteering::auto_steer()
 	else
 		max_correct = pid_normal.max_steering;
 
-    // Use different, manually entered course (a test mode)
-    if (SUBST_SP != 0.0)
-        sp_used = SUBST_SP;
-    else
-        sp_used = bearing_sp;
-
-    // Use simulated, manually entered compass (a test mode)
-    if (SUBST_PV != 0.0)
-        pv_used = SUBST_PV;
-    else
-        pv_used = compass_course;
+    sp_used = bearing_sp;
+    pv_used = compass_course;
 
     // Only enable I-action when in normal auto mode (not course mode)
 	CPidParams * params(0);
