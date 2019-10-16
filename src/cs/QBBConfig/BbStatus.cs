@@ -31,6 +31,7 @@ namespace QBBConfig
         private long m_mag_raw_z = 0;
         private float m_mag_course = 0.0f;
         private ECalibrationState m_mag_cal_state = 0;
+        private long m_button = 0;
 
         private Object Lck = new Object();
 
@@ -178,6 +179,14 @@ namespace QBBConfig
             }
         }
 
+        public void set_button_state(long b)
+        {
+            lock (Lck)
+            {
+                m_button = b;
+            }
+        }
+
         public float get_lat()
         {
             lock (Lck)
@@ -319,6 +328,14 @@ namespace QBBConfig
             lock (Lck)
             {
                 return m_mag_cal_state;
+            }
+        }
+
+        public long get_button_state()
+        {
+            lock (Lck)
+            {
+                return m_button;
             }
         }
 

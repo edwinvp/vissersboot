@@ -33,48 +33,7 @@ namespace QBBConfig
             dispatcherTimer.Interval = new TimeSpan(0, 0, 0,0,250);
             dispatcherTimer.Start();
         }
-
-        private void DisconnectBtn_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (m_thread != null)
-                {
-                    m_task.Stop();
-                    m_thread.Join();
-                    m_thread = null;
-                    m_task = null;
-                }
-
-                BtnConnect.IsEnabled = true;
-                BtnDisconnect.IsEnabled = false;
-            }
-            catch (Exception except)
-            {
-                MessageBox.Show("Can't disconnect: " + except.Message, "Exception");
-            }
-        }
-
-        private void ConnectBtn_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                if (m_thread != null)
-                    throw new Exception("Already connected or in the progress of connecting");
-
-                m_task = new CommTask();
-                m_thread = new Thread(m_task.Run);
-                m_thread.Start();
-
-                BtnConnect.IsEnabled = false;
-                BtnDisconnect.IsEnabled = true;
-            }
-            catch (Exception except)
-            {
-                MessageBox.Show("Can't connect: " + except.Message, "Exception");
-            }
-        }
-
+                
         private void set_need_angle(float new_angle)
         {
             RotateTransform rt1 = (RotateTransform)CompassNeedle.RenderTransform;
@@ -106,7 +65,8 @@ namespace QBBConfig
                 MagRawY.Text = m_task.Status.get_mag_raw_y().ToString();
                 MagRawZ.Text = m_task.Status.get_mag_raw_z().ToString();
                 MagCourse.Text = m_task.Status.get_mag_course().ToString();
-                MagCalState.Text = CalibrationStateToText(m_task.Status.get_mag_cal_state());
+                MagCalState.Text = CalibrationStateToText(m_task.Status.get_mag_cal_state());                
+                BtnState.Text = m_task.Status.get_button_state().ToString();
 
                 pb_k1.Value = m_task.Status.get_k1();
                 pb_k2.Value = m_task.Status.get_k2();
@@ -189,6 +149,47 @@ namespace QBBConfig
         {
             a += 45f;
             set_need_angle(a);
+        }
+
+        private void MenuItem_Connect(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (m_thread != null)
+                    throw new Exception("Already connected or in the progress of connecting");
+
+                m_task = new CommTask();
+                m_thread = new Thread(m_task.Run);
+                m_thread.Start();
+
+                MnuItemConnect.IsEnabled = false;
+                MnuItemDisconnect.IsEnabled = true;
+            }
+            catch (Exception except)
+            {
+                MessageBox.Show("Can't connect: " + except.Message, "Exception");
+            }
+        }
+
+        private void MenuItem_Disconnect(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (m_thread != null)
+                {
+                    m_task.Stop();
+                    m_thread.Join();
+                    m_thread = null;
+                    m_task = null;
+                }
+
+                MnuItemConnect.IsEnabled = true;
+                MnuItemDisconnect.IsEnabled = false;
+            }
+            catch (Exception except)
+            {
+                MessageBox.Show("Can't disconnect: " + except.Message, "Exception");
+            }
         }
     }
 }

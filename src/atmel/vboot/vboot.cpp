@@ -101,7 +101,8 @@ enum USB_VAR { urInvalid=0,
     urMagRawY = 51,
     urMagRawZ = 52,
     urMagCourse = 53,
-    urMagCalState = 54    
+    urMagCalState = 54,
+    urBtnState = 60
 };    
 
 //int tune_ptr(0);
@@ -1747,6 +1748,10 @@ unsigned long read_var(int reg)
         data = cc.get_state();
         break;
         
+    case urBtnState:
+        data = btn_state ? 1 : 0;
+        break;
+        
     default:
         data=0;
     }
@@ -1757,8 +1762,8 @@ unsigned long read_var(int reg)
 void write_var(int reg, unsigned long d)
 {
     switch (reg) {
-    case 3:
-        testreg = d;
+    case urBtnState:
+        btn_pressed = d != 0 ? true : false;
         break;
     }
 }

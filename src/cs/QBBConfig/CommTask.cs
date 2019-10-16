@@ -52,7 +52,8 @@ namespace QBBConfig
         urMagRawY = 51,
         urMagRawZ = 52,
         urMagCourse = 53,
-        urMagCalState = 54
+        urMagCalState = 54,
+        urBtnState = 60
     };
 
     class CommTask
@@ -253,6 +254,12 @@ namespace QBBConfig
                         SendReadCommand(USB_VAR.urMagCalState);
                         Status.set_mag_cal_state((ECalibrationState)ReadLong());
                     }
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urBtnState);
+                        Status.set_button_state(ReadLong());
+                    }
+                    
 
                     Thread.Sleep(100);
                 }
