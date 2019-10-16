@@ -376,9 +376,7 @@ void setup_pwm()
 #ifndef _WIN32
 	setup_timer_3();
 	setup_timer_4();
-
-    // Configure PC7 (Arduino LED) as output
-    DDRC |= _BV(DDC7);
+    
 	// Configure PC6 (MR) & PD7 (ML) as outputs
 	DDRC |= _BV(DDC6);
 	DDRD |= _BV(DDD7);
@@ -2002,6 +2000,9 @@ int main (void)
 	cc.load_calibration();
 	steering.load_calibration();
     waypoints.load_waypoints();
+
+    // Configure PC7 (Arduino LED) as output
+    DDRC |= _BV(DDC7);
 
 	// Setup other peripherals
 	setup_capture_inputs();
