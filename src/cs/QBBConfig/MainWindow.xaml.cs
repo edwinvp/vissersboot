@@ -75,6 +75,14 @@ namespace QBBConfig
             }
         }
 
+        private void set_need_angle(float new_angle)
+        {
+            RotateTransform rt1 = (RotateTransform)CompassNeedle.RenderTransform;
+            rt1.Angle = new_angle;
+            RotateTransform rt2 = (RotateTransform)NeedleShadow.RenderTransform;
+            rt2.Angle = new_angle;
+        }
+
         private void dispatcherTimer_Tick(object sender, EventArgs e)
         {
             // code goes here
@@ -106,6 +114,8 @@ namespace QBBConfig
                 pb_k4.Value = m_task.Status.get_k4();
                 pb_ml.Value = m_task.Status.get_motor_l();
                 pb_mr.Value = m_task.Status.get_motor_r();
+
+                set_need_angle(m_task.Status.get_mag_course());
 
                 TMainState stm = (TMainState)m_task.Status.get_mainseq_step();
                 string sStepName = StepToText(stm);
@@ -172,6 +182,13 @@ namespace QBBConfig
                 default:
                     return "?";
             }
+        }
+
+        private float a = 0;
+        private void BtnDrawClick(object sender, RoutedEventArgs e)
+        {
+            a += 45f;
+            set_need_angle(a);
         }
     }
 }
