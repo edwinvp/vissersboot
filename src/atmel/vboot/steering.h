@@ -91,6 +91,8 @@ public:
 
 	void load_calibration();
 	void save_calibration();
+    
+    static void SetPwm(float ml, float mr);
 };
 
 #endif

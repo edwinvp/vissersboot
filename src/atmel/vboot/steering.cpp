@@ -4,6 +4,7 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
+#include <avr/interrupt.h>
 #else
 #include "fakeio.h"
 #endif
@@ -227,13 +228,7 @@ void CSteering::manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc)
 	motor_r = CJoystick::to_perc(mot_R_dc)/100.0f;
 
 	// Pass through motor left and right setpoints to PWM module
-	if (m_output_enable) {
-		OCR1A = mot_L_dc;
-		OCR1B = mot_R_dc;
-	} else {
-		OCR1A = JOY_CENTER;
-		OCR1B = JOY_CENTER;
-	}
+    SetMotorSpeeds(motor_l,motor_r);
 }
 // ----------------------------------------------------------------------------
 bool CSteering::motor_running()
@@ -253,16 +248,42 @@ void CSteering::do_reverse_thrust()
 	SetMotorSpeeds(motor_l,motor_r);
 }
 // ----------------------------------------------------------------------------
+// Motor factors: ml: -1.0 .. +1.0, mr: -1.0 ... +1.0
 void CSteering::SetMotorSpeeds(float ml, float mr)
-{
-	// Convert to values that the servo hardware understands (2000...4000)
-	if (m_output_enable) {
-		OCR1A = (float)JOY_CENTER + (ml * 1000.0);
-		OCR1B = (float)JOY_CENTER + (mr * 1000.0);
-	} else {
-		OCR1A = JOY_CENTER;
-		OCR1B = JOY_CENTER;
+{          
+	// Convert to values that the servo hardware understands
+	if (!m_output_enable) {
+		ml=0;
+		mr=0;
 	}
+    
+    SetPwm(ml,mr);
+}    
+    
+void CSteering::SetPwm(float ml, float mr)
+{        
+    // Left motor, 10-bit PWM.
+    // Range 0x100 ... 0x200 (~ -100 % ... +100 %)
+    // Based on 16 MHz crystal timing: Timer freq = 250.00 [kHz]
+    //   1,024 [ms] = 0x100 (-100%)
+    //   1.536 [ms] = 0x180 (neutral)
+    //   2,048 [ms] = 0x200 (+100%)
+    unsigned int pl = (float)384.0 + (ml * 128.0);
+    
+    // Right motor, 16-bit PWM 
+    // Range 2000 ... 4000 ( -100 % ... +100 %)
+    unsigned int pr = (float)JOY_CENTER + (mr * 1000.0);
+
+    cli();
+  
+    // Left motor (10-bits)
+    TC4H = (pl >> 8)&3; // bits 9:8
+    OCR4D = (pl & 255); // bits 7:0
+    
+    // Right motor (16-bit)
+    OCR3A = pr;
+    
+    sei(); 
 }
 // ----------------------------------------------------------------------------
 float CSteering::get_motor_L_perc()

@@ -400,24 +400,16 @@ void setup_pwm()
 	// Clear on compare match
 	TCCR4C |= _BV(COM4D1);
 
-	OCR3A =  2500; // MR in center
+    // Set TOP value for timer 4
+    cli();
+    TC4H = 3;
+    OCR4C = 0xff;
+    sei();
+    
+    // Send "neutral position" servo signal for now
+    CSteering::SetPwm(0.0f,0.0f);
 
 	set_bit(TIMSK3,TOIE3); // timer 3 overflow interrupt
-
-	cli();
-
-	// Based on 16 MHz crystal timing:
-	// Timer freq: 250.00 [kHz]
-	// 1,024 [ms] = 0x100 (-100%)
-	// 1.536 [ms] = 0x180 (neutral)
-	// 2,048 [ms] = 0x200 (+100%)	
-	TC4H = 0x1;
-	OCR4D = 0xc0;
-	
-	TC4H = 3;
-	OCR4C = 0xff;
-	sei();
-	
 	
 #endif
 }
