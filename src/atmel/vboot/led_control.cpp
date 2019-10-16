@@ -7,9 +7,9 @@
 #endif
 #include "state_machine.h"
 
-// LED output pin (currently PORTB pin 5)
-#define LED_PIN PORTB5
-#define LED_REG PORTB
+// LED output pin (currently PORTC pin 7)
+#define LED_PIN PORTC7
+#define LED_REG PORTC
 
 CLedControl::CLedControl() : slow_blink_prev(false),
     fast_blink(false),

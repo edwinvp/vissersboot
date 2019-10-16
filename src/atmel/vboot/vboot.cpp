@@ -377,6 +377,8 @@ void setup_pwm()
 	setup_timer_3();
 	setup_timer_4();
 
+    // Configure PC7 (Arduino LED) as output
+    DDRC |= _BV(DDC7);
 	// Configure PC6 (MR) & PD7 (ML) as outputs
 	DDRC |= _BV(DDC6);
 	DDRD |= _BV(DDD7);
