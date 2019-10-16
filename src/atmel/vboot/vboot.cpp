@@ -1463,6 +1463,7 @@ static void usb_control_out(void)
 		case FTDI_SIO_SET_DATA:
 		case FTDI_SIO_SET_FLOW_CTRL:
 		case FTDI_SIO_SET_LATENCY_TIMER:
+        case FTDI_SIO_SET_EVENT_CHAR:
 			ok=1;
 			break;
 		default:
