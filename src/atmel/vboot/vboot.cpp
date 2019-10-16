@@ -118,8 +118,6 @@ enum USB_VAR { urInvalid=0,
     
 };    
 
-//int tune_ptr(0);
-//char tune_buf[16];
 int cmd_ptr = 0;
 
 #define MAX_CMD_SIZE 24
@@ -449,37 +447,10 @@ void clear_stats(void)
 	good_compass_smp=0;
 }
 // ----------------------------------------------------------------------------
-void tune_PrintValue(double dblParam)
-{
 /*
-	long l(0);
-
-	switch (msg_mode) {
-	case mmCompass:
-	case mmNone:
-	case mmGps:
-	case mmLast:
-	case mmServoCapture:
-	case mmSteering:
-		break;		
-	case mmPActionNorm:
-	case mmIActionNorm:
-	case mmPActionAggr:
-	case mmIActionAggr:
-		l = dblParam*1000.0;
-		b_printf(PSTR("(set): %ld (x1000)\r\n"),l);
-		break;
-	case mmDebug:
-		break;
-    case mmButton:
-        break;
-	}
-	*/
-}
 // ----------------------------------------------------------------------------
 void tune_Config(double & dblParam, char c)
 {
-	/*
 	tune_buf[tune_ptr++] = c;
 
 	if (tune_ptr>15) {
@@ -498,59 +469,13 @@ void tune_Config(double & dblParam, char c)
 			dblParam = nv;
 			b_printf(PSTR("new value accepted) %ld\r\n"),ld);
 
-			switch (msg_mode) {
-			case mmNone:
-			case mmCompass:
-			case mmGps:
-			case mmServoCapture:
-			case mmSteering:
-				break;										
-			case mmPActionNorm:
-			case mmIActionNorm:
-			case mmPActionAggr:
-			case mmIActionAggr:
-				dblParam = ld / 1000.0;
-				break;
-			case mmDebug:
-				break;
-			case mmLast:
-				break;
-            case mmButton:
-                break;
-			};
-
 			steering.save_calibration();
-
-		} else {
+		} else
             b_printf(PSTR("(err,bad)\r\n"));
-		}
 	}
+}
 */
-}
-
-// ----------------------------------------------------------------------------
-void handle_parameterization(char c)
-{
-	/*
-	switch (msg_mode) {
-	case mmPActionNorm:
-		tune_Config(steering.pid_normal.TUNE_P, c);
-		break;
-	case mmIActionNorm:
-		tune_Config(steering.pid_normal.TUNE_I, c);
-		break;
-	case mmPActionAggr:
-		tune_Config(steering.pid_aggressive.TUNE_P, c);
-		break;
-	case mmIActionAggr:
-		tune_Config(steering.pid_aggressive.TUNE_I, c);
-		break;		
-	default:
-		;		
-	}
-	*/
-}
-
+    
 // ----------------------------------------------------------------------------
 // Handles GPS input
 // ----------------------------------------------------------------------------
@@ -564,22 +489,16 @@ void read_uart()
 	}
 }
 
+/*
 void read_user_input()
 {
-/*
 	while (fifo_avail()) {
 		char c = fifo_read();
 
 		switch (c) {
-		case 't':
-			cc.toggle_calibration_mode();
-			break;
 		case 'r':
 			cc.reset_compass_calibration();
 			b_printf(PSTR("Compass calibration reset\r\n"));
-			break;
-		case 'n':
-			cc.set_true_north();
 			break;
 		case 'a':
 			stm.straight_to_auto = true;
@@ -587,27 +506,10 @@ void read_user_input()
 		case 'x':
             steering.toggle_dont_stop();
 			break;
-		case '0':
-		case '1':
-		case '2':
-		case '3':
-		case '4':
-		case '5':
-		case '6':
-		case '7':
-		case '8':
-		case '9':
-		case '.':
-		case '-':
-		case '+':
-		case 13:
-		case 10:
-			handle_parameterization(c);
-			break;
 		}	
 	}
-*/
 }
+*/
 
 // ----------------------------------------------------------------------------
 // Periodic message
@@ -873,8 +775,6 @@ void process()
 
 	// Handle UART (GPS) input
 	read_uart(); // also happens with this disabled
-	// Handle user input (typing in commands etc.)
-	read_user_input();
 
 	// Calculate initial bearing with Haversine function
 	steering.bearing_sp = waypoints.gp_current.bearingTo(waypoints.gp_finish);
