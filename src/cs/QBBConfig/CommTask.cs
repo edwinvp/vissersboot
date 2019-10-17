@@ -74,7 +74,14 @@ namespace QBBConfig
 
         private volatile int m_counter = 0;
 
+        private string ComPortName = "COM1";
+
         static SerialPort _serialPort;
+
+        public void SetComPort(string sComPort)
+        {
+            ComPortName = sComPort;
+        }
 
         public int GetCounter()
         {
@@ -235,7 +242,7 @@ namespace QBBConfig
                 _serialPort = new SerialPort();
 
                 // Allow the user to set the appropriate properties.
-                _serialPort.PortName = "COM15";
+                _serialPort.PortName = ComPortName;
                 _serialPort.BaudRate = 9600;
                 _serialPort.Parity = Parity.None;
                 _serialPort.DataBits = 8;

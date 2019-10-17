@@ -172,7 +172,19 @@ namespace QBBConfig
                 if (m_thread != null)
                     throw new Exception("Already connected or in the progress of connecting");
 
+                // Allow user to select COM port
+                PortSelectionWnd wndPort = new PortSelectionWnd();
+                wndPort.Owner = this;
+
+                bool? result = wndPort.ShowDialog();
+
+                if (!result.HasValue || result == false) 
+                    return;
+
+                string SelectedComPort = wndPort.GetSelectedComPort();
+                
                 m_task = new CommTask();
+                m_task.SetComPort(SelectedComPort);
                 m_thread = new Thread(m_task.Run);
                 m_thread.Start();
 
