@@ -5,12 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBBConfig"
         mc:Ignorable="d"
-        Title="PortSelectionWnd" Height="175" Width="350"
+        Title="Select Serial (COM) Port" Height="150" Width="310"
         WindowStartupLocation="CenterOwner">
     <Grid>
-        <ComboBox Name="ComboPortNames" HorizontalAlignment="Left" Height="30" VerticalAlignment="Top" Width="285" Margin="27,25,0,0"/>
-        <Button Name="CancelBtn" Content="Cancel" HorizontalAlignment="Left" Height="33" Margin="98,88,0,0" VerticalAlignment="Top" Width="85" Click="CancelBtn_Click"/>
-        <Button Name="OkBtn" Content="OK" HorizontalAlignment="Left" Height="33" Margin="203,88,0,0" VerticalAlignment="Top" Width="109" Click="OkBtn_Click"/>
+        <ComboBox Name="ComboPortNames" HorizontalAlignment="Left" Height="30" VerticalAlignment="Top" Width="243" Margin="27,25,0,0"/>
+        <Button Name="CancelBtn" Content="Cancel" HorizontalAlignment="Left" Height="33" Margin="27,67,0,0" VerticalAlignment="Top" Width="108" Click="CancelBtn_Click"/>
+        <Button Name="OkBtn" Content="OK" HorizontalAlignment="Left" Height="33" Margin="152,67,0,0" VerticalAlignment="Top" Width="118" Click="OkBtn_Click"/>
 
     </Grid>
 </Window>
