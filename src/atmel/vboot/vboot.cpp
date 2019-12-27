@@ -114,7 +114,8 @@ enum USB_VAR { urInvalid=0,
     urMagMaxZ = 60,
     
     urBtnState = 80,
-    urSetTrueNorth = 81
+    urSetTrueNorth = 81,
+    urMagType = 82
     
 };    
 
@@ -150,6 +151,7 @@ long gps_lat, gps_lon, gps_course;
 bool btn_prev_state(false);
 bool btn_state(false);
 bool btn_pressed(false);
+unsigned char mag_type = 0;
 
 // Compass input
 int16_t good_compass_smp;
@@ -1655,6 +1657,10 @@ unsigned long read_var(int reg)
         data = btn_state ? 1 : 0;
         break;
         
+    case urMagType:
+        data = mag_type;
+        break;
+        
     case urPidNormalP:
         data = cast_double_to_long(steering.pid_normal.TUNE_P);
         break;
@@ -1959,8 +1965,10 @@ int main (void)
 	i2cSetBitrate(30);
 	
 	// Search for magnetometer
-	int retries(250);
+	int retries(50);
 	const char * msgMagStatus = PSTR("(not found)\r\n");
+
+    mag_type = 255;
 
 	do {
 		b_printf(PSTR("Probing for magnetometer..."));
@@ -1969,16 +1977,17 @@ int main (void)
 		if (mag_ist8310.detect()) {
 			msgMagStatus = PSTR("Found IST8310.\r\n");
 			mag = &mag_ist8310;
+            mag_type = 83;
 			break;
 		} else if (mag_hmc5843.detect()) {
 			msgMagStatus = PSTR("Found HMC5843.\r\n");
 			mag = &mag_hmc5843;
+            mag_type = 58;
 			break;
 		}
 	} while (--retries > 0);	
 	b_printf(msgMagStatus);
 
-	
 	if (mag == 0) {
 		b_printf(PSTR("Halting.\r\n"));
 		while (1) ;

@@ -62,9 +62,10 @@
         <StackPanel HorizontalAlignment="Left" Width="300" Height="200" Margin="10,170,0,0" VerticalAlignment="Top" >
             <Label Content="Magnetometer" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
 
-            <Grid HorizontalAlignment="Left" Height="135" Margin="5,5,5,5" VerticalAlignment="Top" >
+            <Grid HorizontalAlignment="Left" Height="160" Margin="5,5,5,5" VerticalAlignment="Top" >
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="25" />
                     <RowDefinition Height="25" />
                     <RowDefinition Height="25" />
                     <RowDefinition Height="25" />
@@ -88,6 +89,8 @@
                 <TextBox Name="MagCourse" HorizontalAlignment="Left" Grid.Row="3" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
                 <Label Content="MAG CAL STATE" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
                 <TextBox Name="MagCalState" HorizontalAlignment="Left" Grid.Row="4" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG TYPE" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0" />
+                <TextBox Name="MagType" HorizontalAlignment="Left" Grid.Row="5" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
 
             </Grid>
         </StackPanel>

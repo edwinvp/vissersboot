@@ -88,6 +88,7 @@ namespace QBBConfig
                 MagCourse.Text = m_task.Status.get_mag_course().ToString();
                 MagCalState.Text = CalibrationStateToText(m_task.Status.get_mag_cal_state());                
                 BtnState.Text = m_task.Status.get_button_state().ToString();
+                MagType.Text = m_task.Status.get_mag_type().ToString();
 
                 pb_k1.Value = m_task.Status.get_k1();
                 pb_k2.Value = m_task.Status.get_k2();

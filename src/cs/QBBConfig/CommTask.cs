@@ -61,6 +61,7 @@ namespace QBBConfig
         urMagMaxZ = 60,
         urBtnState = 80,
         urSetTrueNorth,
+        urMagType,
     };
 
     class CommTask
@@ -200,6 +201,9 @@ namespace QBBConfig
                 case USB_VAR.urBtnState:
                     Status.set_button_state((int)uiData);
                     break;
+                case USB_VAR.urMagType:
+                    Status.set_mag_type((int)uiData);
+                    break;
 
             }
 
@@ -300,6 +304,8 @@ namespace QBBConfig
                         SendReadCommand(USB_VAR.urSteeringPV);
                         SendReadCommand(USB_VAR.urSteeringPID_ERR);
                         SendReadCommand(USB_VAR.urBtnState);
+                        SendReadCommand(USB_VAR.urMagType);
+                        ReadResponse();
                         ReadResponse();
                         ReadResponse();
                         ReadResponse();
