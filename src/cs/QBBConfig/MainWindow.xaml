@@ -1,0 +1,189 @@
+﻿<Window x:Class="QBBConfig.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:QBBConfig"
+        mc:Ignorable="d"
+        Title="Quartel Bait Boat Monitor" Height="450" Width="800">
+    <Grid Margin="0,0,3,3">
+
+        <StackPanel HorizontalAlignment="Left" Height="130" Margin="559,30,0,0" VerticalAlignment="Top" Width="190">
+            <Label Content="GPS Reception" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+            <Grid HorizontalAlignment="Stretch" Height="80" Margin="5,5,5,5" VerticalAlignment="Top" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="40" />
+                    <!-- Document Name column -->
+                    <ColumnDefinition Width="*" />
+                    <!-- Actions column -->
+                </Grid.ColumnDefinitions>
+                <Label Content="Lat" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+                <TextBox Name="GpsLat" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="0" Grid.Column="1" />
+                <Label Content="Lon" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+                <TextBox Name="GpsLon" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="1" Grid.Column="1" />
+                <Label Content="Age" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+                <TextBox Name="GpsAge" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="2" Grid.Column="1" />
+            </Grid>
+        </StackPanel>
+
+        <Grid HorizontalAlignment="Left" Height="140" Margin="25,30,0,0" VerticalAlignment="Top" Width="320">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="100" />
+                <!-- Document Name column -->
+                <ColumnDefinition Width="Auto" />
+                <!-- Actions column -->
+            </Grid.ColumnDefinitions>
+            <Label Content="Seq. Step" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+            <TextBox Name="SeqStep" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="0" Grid.Column="1" />
+
+            <Label Content="SP" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+            <TextBox Name="SteeringSP" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="1" Grid.Column="1" />
+            <Label Content="PV" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+            <TextBox Name="SteeringPV" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="2" Grid.Column="1" />
+            <Label Content="PID ERR" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
+            <TextBox Name="SteeringPidErr" HorizontalAlignment="Left" TextWrapping="Wrap" Text="-" Width="180" Grid.Row="3" Grid.Column="1" />
+            <Label Content="BUTTON CAL" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
+            <TextBox Name="BtnState" HorizontalAlignment="Left" Grid.Row="4" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+        </Grid>
+
+        <StackPanel HorizontalAlignment="Left" Width="300" Height="200" Margin="10,170,0,0" VerticalAlignment="Top" >
+            <Label Content="Magnetometer" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+
+            <Grid HorizontalAlignment="Left" Height="160" Margin="5,5,5,5" VerticalAlignment="Top" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <!-- Document Name column -->
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Actions column -->
+                </Grid.ColumnDefinitions>
+
+                <Label Content="MAG RAW X" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+                <TextBox Name="MagRawX" HorizontalAlignment="Left" Grid.Row="0" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG RAW Y" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+                <TextBox Name="MagRawY" HorizontalAlignment="Left" Grid.Row="1" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG RAW Z" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+                <TextBox Name="MagRawZ" HorizontalAlignment="Left" Grid.Row="2" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG COURSE" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
+                <TextBox Name="MagCourse" HorizontalAlignment="Left" Grid.Row="3" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG CAL STATE" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
+                <TextBox Name="MagCalState" HorizontalAlignment="Left" Grid.Row="4" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+                <Label Content="MAG TYPE" HorizontalAlignment="Left" Grid.Row="5" Grid.Column="0" />
+                <TextBox Name="MagType" HorizontalAlignment="Left" Grid.Row="5" TextWrapping="Wrap" Text="-" Width="180" Grid.Column="1" />
+
+            </Grid>
+        </StackPanel>
+
+        <Grid HorizontalAlignment="Left" Height="225" Margin="350,20,0,0" VerticalAlignment="Top" Width="180">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25" />
+                <RowDefinition Height="200" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="27" />
+                <ColumnDefinition Width="27" />
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0" Grid.Column="0" Content="K1" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="1" Content="K2" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="2" Content="K3" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="3" Content="K4" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="5" Content="ML" HorizontalAlignment="Center"/>
+            <Label Grid.Row="0" Grid.Column="6" Content="MR" HorizontalAlignment="Center"/>
+            <ProgressBar Grid.Row="1" Grid.Column="0" x:Name="pb_k1" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="1" x:Name="pb_k2" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="2" x:Name="pb_k3" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="3" x:Name="pb_k4" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+            <ProgressBar Grid.Row="1" Grid.Column="5" x:Name="pb_ml" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="384" Maximum="512" Minimum="256"/>
+            <ProgressBar Grid.Row="1" Grid.Column="6" x:Name="pb_mr" HorizontalAlignment="Center" Height="165" VerticalAlignment="Top" Width="20" Orientation="Vertical" Value="3000" Maximum="4000" Minimum="2000"/>
+
+        </Grid>
+        <Canvas x:Name="MagCanvas" HorizontalAlignment="Left" Height="160" Margin="350,230,0,0" VerticalAlignment="Top" Width="160">
+
+            <Ellipse HorizontalAlignment="Center" Height="140"  Stroke="Black" StrokeThickness="2" VerticalAlignment="Center" Width="140" Canvas.Top="10" Canvas.Left="10">
+                <Ellipse.Fill>
+                    <LinearGradientBrush StartPoint="0.0,0.0" EndPoint="1.0,1.0">
+                        <GradientStop Color="Silver" Offset="0.0" />
+                        <GradientStop Color="FloralWhite" Offset="0.5" />
+                        <GradientStop Color="White" Offset="0.8" />
+                    </LinearGradientBrush>
+                </Ellipse.Fill>
+            </Ellipse>
+            <TextBlock Text="N" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="75" Canvas.Top="10" />
+            <TextBlock Text="E" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="133" Canvas.Top="70" />
+            <TextBlock Text="S" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="76" Canvas.Top="127" />
+            <TextBlock Text="W" FontFamily="Segoe UI Semibold" FontSize="16" Canvas.Left="14" Canvas.Top="70" />
+            <Path Name="NeedleShadow" Fill="Black" StrokeThickness="2" Canvas.Left="82" Canvas.Top="82" Opacity="0.6">
+                <Path.Data>
+                    <StreamGeometry>m -1.8703573,-46.450022 c 0.127638,-0.745741 0.249321,-1.529824 0.634503,-2.182059 0.32735897,-0.554325 0.71984497,-1.367668 1.36361497,-1.367668 0.64377,0 1.03625603,0.813343 1.36361503,1.367668 0.38518,0.652235 0.506949,1.436318 0.634499,2.182059 0.05579,0.323862 0.05488,0.660761 0.05503,0.99058 1.37e-4,0.336533 -0.05332,0.671389 -0.05503,1.007573 -0.06081,11.89995 -0.40067,23.932559 1.584445,35.6658938 0.105807,0.6257992 0.213665,1.2826257 0.545662,1.8236133 0.550576,0.8958949 1.727279,1.2841477 2.287534,2.1743889 0.91046,1.4478288 1.590063,3.1711168 1.57671,4.88128424 C 8.1066157,1.8115253 7.3928077,3.5311161 6.4590537,4.9737257 5.8810407,5.8671563 4.6716887,6.2371416 4.1239927,7.148477 3.8001057,7.6887398 3.7322147,8.3502775 3.6372017,8.9730339 1.8398617,20.735221 2.3778187,32.742493 2.1258747,44.638639 c -0.01408,0.665743 0.09398,1.33953 0,1.998458 -0.106833,0.749467 -0.195981,1.563682 -0.634499,2.180842 -0.393757,0.554165 -0.98601303,1.256582 -1.66175503,1.182312 -0.527348,-0.05796 -0.807275,-0.71886 -1.06547597,-1.182312 -0.368468,-0.661374 -0.527683,-1.431375 -0.634502,-2.180842 -0.09398,-0.658928 0.01408,-1.332715 0,-1.998458 -0.251928,-11.896146 0.286006,-23.903418 -1.511327,-35.6656051 -0.095,-0.6227564 -0.162472,-1.2854543 -0.486788,-1.8245569 -0.54948,-0.9125677 -1.763874,-1.279726 -2.343051,-2.1747513 -0.933461,-1.4412322 -1.653185,-3.1629254 -1.653185,-4.88041446 0,-1.71719904 0.719724,-3.43831234 1.653185,-4.88055934 0.579177,-0.8948081 1.793571,-1.2622563 2.343051,-2.1751138 0.324343,-0.5385228 0.391775,-1.2016555 0.486788,-1.8236133 1.79734,-11.7626928 1.585817,-23.7669438 1.511327,-35.6658938 -0.0024,-0.335959 -0.05541,-0.670896 -0.0553,-1.007573 1.37e-4,-0.332124 -5.25e-4,-0.663906 0.0553,-0.99058 z</StreamGeometry>
+                </Path.Data>
+                <Path.RenderTransform>
+                    <RotateTransform Angle="0" CenterX="0" CenterY="0.0"/>
+                </Path.RenderTransform>
+            </Path>
+            <Path Name="CompassNeedle" Stroke="Black" StrokeThickness="0.5" Canvas.Left="80" Canvas.Top="80">
+                <Path.Data>
+                    <StreamGeometry>m -1.8703573,-46.450022 c 0.127638,-0.745741 0.249321,-1.529824 0.634503,-2.182059 0.32735897,-0.554325 0.71984497,-1.367668 1.36361497,-1.367668 0.64377,0 1.03625603,0.813343 1.36361503,1.367668 0.38518,0.652235 0.506949,1.436318 0.634499,2.182059 0.05579,0.323862 0.05488,0.660761 0.05503,0.99058 1.37e-4,0.336533 -0.05332,0.671389 -0.05503,1.007573 -0.06081,11.89995 -0.40067,23.932559 1.584445,35.6658938 0.105807,0.6257992 0.213665,1.2826257 0.545662,1.8236133 0.550576,0.8958949 1.727279,1.2841477 2.287534,2.1743889 0.91046,1.4478288 1.590063,3.1711168 1.57671,4.88128424 C 8.1066157,1.8115253 7.3928077,3.5311161 6.4590537,4.9737257 5.8810407,5.8671563 4.6716887,6.2371416 4.1239927,7.148477 3.8001057,7.6887398 3.7322147,8.3502775 3.6372017,8.9730339 1.8398617,20.735221 2.3778187,32.742493 2.1258747,44.638639 c -0.01408,0.665743 0.09398,1.33953 0,1.998458 -0.106833,0.749467 -0.195981,1.563682 -0.634499,2.180842 -0.393757,0.554165 -0.98601303,1.256582 -1.66175503,1.182312 -0.527348,-0.05796 -0.807275,-0.71886 -1.06547597,-1.182312 -0.368468,-0.661374 -0.527683,-1.431375 -0.634502,-2.180842 -0.09398,-0.658928 0.01408,-1.332715 0,-1.998458 -0.251928,-11.896146 0.286006,-23.903418 -1.511327,-35.6656051 -0.095,-0.6227564 -0.162472,-1.2854543 -0.486788,-1.8245569 -0.54948,-0.9125677 -1.763874,-1.279726 -2.343051,-2.1747513 -0.933461,-1.4412322 -1.653185,-3.1629254 -1.653185,-4.88041446 0,-1.71719904 0.719724,-3.43831234 1.653185,-4.88055934 0.579177,-0.8948081 1.793571,-1.2622563 2.343051,-2.1751138 0.324343,-0.5385228 0.391775,-1.2016555 0.486788,-1.8236133 1.79734,-11.7626928 1.585817,-23.7669438 1.511327,-35.6658938 -0.0024,-0.335959 -0.05541,-0.670896 -0.0553,-1.007573 1.37e-4,-0.332124 -5.25e-4,-0.663906 0.0553,-0.99058 z</StreamGeometry>
+                </Path.Data>
+                <Path.Fill>
+                    <LinearGradientBrush StartPoint="0.0,0.0" EndPoint="1.0,1.0">
+                        <GradientStop Color="Red" Offset="0.0" />
+                        <GradientStop Color="Red" Offset="0.3" />
+                        <GradientStop Color="DarkRed" Offset="0.4" />
+                        <GradientStop Color="DarkSlateGray" Offset="0.5" />
+                        <GradientStop Color="Blue" Offset="0.6" />
+                        <GradientStop Color="DodgerBlue" Offset="0.7" />
+                        <GradientStop Color="DodgerBlue" Offset="0.8" />
+                    </LinearGradientBrush>
+                </Path.Fill>
+                <Path.RenderTransform>
+                    <RotateTransform Angle="0" CenterX="0" CenterY="0.0"/>
+                </Path.RenderTransform>
+            </Path>
+            <Ellipse HorizontalAlignment="Center" Stroke="DarkSlateGray" Fill="Silver" StrokeThickness="0.5" VerticalAlignment="Center" Width="6" Height="6" Canvas.Top="77" Canvas.Left="77"/>
+
+        </Canvas>
+        <Menu HorizontalAlignment="Stretch" Height="20" Margin="0,0,0,0" VerticalAlignment="Top">
+            <MenuItem Header="Communications">
+                <MenuItem Name="MnuItemConnect" Header="Connect" Click="MenuItem_Connect" />
+                <MenuItem Name="MnuItemDisconnect" Header="Disconnect" Click="MenuItem_Disconnect"/>
+            </MenuItem>
+        </Menu>
+        <TextBox x:Name="TextAddr" HorizontalAlignment="Left" Height="26" Margin="615,195,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
+        <TextBox x:Name="TextNewValue" HorizontalAlignment="Left" Height="26" Margin="691,195,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
+        <Button x:Name="BtnWriteVar" Content="Write Var" HorizontalAlignment="Left" Height="25" Margin="615,226,0,0" VerticalAlignment="Top" Width="147" Click="BtnWriteVar_Click"/>
+
+        <StackPanel HorizontalAlignment="Left" Width="170" Height="130" Margin="550,270,0,0" VerticalAlignment="Top" >
+            <Label Content="Compass Calibration" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+            <Button x:Name="BtnStartCalibration" Content="Start Calibration" Margin="5,5,5,5" HorizontalAlignment="Left" Height="41"  VerticalAlignment="Top" Width="139" Click="BtnStartCalibration_Click"/>
+            <Button x:Name="BtnSetTrueNorth" Content="Set true north" HorizontalAlignment="Left" Margin="5,5,5,5"  Height="41" VerticalAlignment="Top" Width="139" Click="BtnSetTrueNorth_Click"/>
+        </StackPanel>
+        <Label x:Name="LblFreq" Content="FF" HorizontalAlignment="Left" Height="33" Margin="542,200,0,0" VerticalAlignment="Top" Width="42"/>
+
+    </Grid>
+</Window>

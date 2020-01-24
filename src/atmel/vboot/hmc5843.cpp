@@ -41,41 +41,27 @@ void CHMC5843::sample()
 	CResult r = read_i2c_reg8(HMC5843,0x02);
 	
 	if (!r.okay) {
-		b_printf(PSTR("Read of reg 2 failed (I)\r\n"));
 		return;
 	}
 	
 	if (r.okay && ( r.data != 0))  {
-		b_printf(PSTR("Mode appears wrong (first chance).\r\n"));
 		_delay_ms(5);
-		r = read_i2c_reg8(HMC5843,0x02);
-		
-		if (!r.okay)
-			b_printf(PSTR("Read of reg 2 failed (II)\r\n"));
+		r = read_i2c_reg8(HMC5843,0x02);	
 
 		if (r.okay && ( r.data != 0))  {
 			int data = r.data;
-			b_printf(PSTR("Huh? Somebody changed the mag mode register, it is now %d!\r\n"),data);
+			b_printf(PSTR("Mag mode reg changed, now %d!\r\n"),data);
 			write_i2c_reg(HMC5843,0x02,0x00);
 		}
 	}
 	
 	compass_raw.x = read_hmc5843(0x03);
 
-	if (!compass_raw.x.valid)	
-		b_printf(PSTR("Read of reg X failed\r\n"));
-
-	if (compass_raw.x.valid) {
+	if (compass_raw.x.valid)
 		compass_raw.y = read_hmc5843(0x05);
-		if (!compass_raw.y.valid)
-			b_printf(PSTR("Read of reg Y failed\r\n"));		
-	}
 		
-	if (compass_raw.y.valid) {
+	if (compass_raw.y.valid)
 		compass_raw.z = read_hmc5843(0x07);
-		if (!compass_raw.z.valid)
-			b_printf(PSTR("Read of reg Z failed\r\n"));
-	}
 		
 	post_sample_check();	
 }

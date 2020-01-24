@@ -116,6 +116,12 @@ float CCompassCalibration::coords_to_angle(float ix, float iz)
 	return d;
 }
 
+float CCompassCalibration::half_range_of(const comp_extreme & e)
+{
+	float w = e.fin_max - e.fin_min;
+	return w/2.0f;
+}
+
 float CCompassCalibration::calc_course(const TCompassTriple & compass_raw)
 {
 	raw_x = compass_raw.x.value;
@@ -125,27 +131,23 @@ float CCompassCalibration::calc_course(const TCompassTriple & compass_raw)
 	compass_course_no_offset = 0.0f;
 	
 	TCompassTriple centered;
-	centered.x.value=0;
-	centered.y.value=0;
-	centered.z.value=0;
+	
+	float hw = half_range_of(mm_x);
+	float hh = half_range_of(mm_z);
 
-	float w = mm_x.fin_max - mm_x.fin_min;
-	float h = mm_z.fin_max - mm_z.fin_min;
-
-	if (w>=0 && h>=0) {
-		centered.x.value = (compass_raw.x.value - mm_x.fin_min - (w/2.0));
-		centered.z.value = -(compass_raw.z.value - mm_z.fin_min - (h/2.0));
+	if (hw>=0 && hh>=0) {
+		centered.x.value = (compass_raw.x.value - mm_x.fin_min - hw);
+		centered.z.value = -(compass_raw.z.value - mm_z.fin_min - hh);
 	}
 
-	if (w>0 && h>0) {
-        m_ix = (float)centered.x.value / (w/2.0);
-		m_iz = (float)centered.z.value / (h/2.0);
+	if (hw>0 && hh>0) {
+        m_ix = (float)centered.x.value / hw;
+		m_iz = (float)centered.z.value / hh;
 
 		compass_course_no_offset = coords_to_angle(m_ix,m_iz);
 	}
 
 	compass_course = clip_degrees(compass_course_no_offset + compass_north_offset);
-
 	return compass_course;
 }
 
@@ -156,7 +158,7 @@ void CCompassCalibration::set_north()
 
 void CCompassCalibration::store_calibration()
 {
-    b_printf(PSTR("Storing compass calibration to EEPROM.\r\n"));
+    b_printf(PSTR("Storing compass calibration.\r\n"));
     
     // Put data in array of `raw` words
     uint16_t rec[8];
@@ -181,7 +183,7 @@ void CCompassCalibration::store_calibration()
 // ----------------------------------------------------------------------------
 void CCompassCalibration::load_calibration()
 {
-    b_printf(PSTR("Loading compass calibration from EEPROM..."));
+    b_printf(PSTR("Load calibration: "));
 
     // Array to receive 'raw' words from EEPROM    
     uint16_t rec[8];
@@ -216,7 +218,7 @@ void CCompassCalibration::load_calibration()
 
     } else {
         // Data is corrupted somehow (or was never stored before).
-        b_printf(PSTR("FAILED (checksum)\r\n"));
+        b_printf(PSTR("FAILED\r\n"));
     }    
 }
 // ----------------------------------------------------------------------------
@@ -253,38 +255,35 @@ void CCompassCalibration::toggle_calibration_mode()
         b_printf(PSTR("OFF\r\n"));
 }   
 // ----------------------------------------------------------------------------
+/*
 void CCompassCalibration::print_bar(const comp_extreme & mm, int raw)
 {
-	if (raw<mm.fin_min)
-		b_printf(PSTR("<"));
-	else
-		b_printf(PSTR("["));
+	putchar(raw<mm.fin_min ? '<' : '[');
 		
 	int clip = raw;
 	clip = raw<mm.fin_min ? mm.fin_min : clip;
 	clip = raw>mm.fin_max ? mm.fin_max : clip;
 	
-	double r = (mm.fin_max-mm.fin_min);
+	double r(mm.fin_max-mm.fin_min);
 	
 	int pp = 0;
 	
 	if (r > 5.0 && r < 65536.0) {
-		double r = ((double)clip - mm.fin_min) / (mm.fin_max-mm.fin_min) * 50.0;
-		pp = (int)r;
+		double perc = ((double)clip - mm.fin_min) / r * 50.0;
+		pp = (int)perc;
 	}
 	
 	for (int p = 0; p<=50; p++) {
-		if (p == pp)
-			b_printf(PSTR("#"));
-		else
-			b_printf(PSTR("."));
+		putchar(p == pp ? '#' : '.');
 	}
 
-	if (raw>mm.fin_max)
-		b_printf(PSTR(">"));
-	else
-		b_printf(PSTR("]"));
-	
+	putchar(raw>mm.fin_max ? '>' : ']');
+}
+// ----------------------------------------------------------------------------
+void CCompassCalibration::print_m_and_r(char w,const comp_extreme & e, int raw)
+{
+	b_printf(PSTR(" %cr=%04d ... %04d [%04d] "), w, e.fin_min, e.fin_max, raw);
+	print_bar(e,raw);
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::print_cal()
@@ -293,57 +292,50 @@ void CCompassCalibration::print_cal()
     int iix = m_ix * 100.0;
     int iiz = m_iz * 100.0;
 
-    b_printf(PSTR(" no offset=%d px=%d%% pz=%d%%          \r\n"), iNoOffset, iix, iiz);
-	b_printf(PSTR(" xr=%04d ... %04d [%04d] "), mm_x.fin_min, mm_x.fin_max, raw_x);
-	print_bar(mm_x,raw_x);
-	b_printf(PSTR("     \r\n"));
-	
-	b_printf(PSTR(" yr=%04d ... %04d [%04d] "), mm_y.fin_min, mm_y.fin_max, raw_y);
-	print_bar(mm_y,raw_y);
-	b_printf(PSTR("     \r\n"));
-
-	b_printf(PSTR(" zr=%04d ... %04d [%04d] "), mm_z.fin_min, mm_z.fin_max, raw_z);
-	print_bar(mm_z,raw_z);
-	b_printf(PSTR("     \r\n"));
+    b_printf(PSTR(" no offset=%d px=%d%% pz=%d%%"), iNoOffset, iix, iiz);
+	print_m_and_r('x',mm_x,raw_x);
+	print_m_and_r('y',mm_y,raw_y);
+	print_m_and_r('z',mm_z,raw_z);
 
     b_printf(PSTR(" q=%d cs="), get_quadrant());
     PrintCalState();
-    b_printf(PSTR("            \r\n"));
 }
 // ----------------------------------------------------------------------------
 void CCompassCalibration::PrintCalState()
 {
+	const char * pMsg;
     switch (m_cal_state) {
     case csNotCalibrated:
-        b_printf(PSTR("not calibrated"));
+        pMsg=PSTR("not calibrated");
         break;
     case csCenterDetect:
-        b_printf(PSTR("center detect"));
+        pMsg=PSTR("center detect");
         break;
     case csTurn1:
-        b_printf(PSTR("turn1"));
+        pMsg=PSTR("turn1");
         break;
     case csTurn2:
-        b_printf(PSTR("turn2"));
+        pMsg=PSTR("turn2");
         break;
     case csFinish:
-        b_printf(PSTR("finish"));
+        pMsg=PSTR("finish");
+		break;
     case csCalibrated:
-        b_printf(PSTR("calibrated"));
+        pMsg=PSTR("calibrated");
         break;
     default:
-        b_printf(PSTR("???"));
+        pMsg=PSTR("???");
     }
+	
+	b_printf(pMsg);
 }
+*/
 // ----------------------------------------------------------------------------
 void CCompassCalibration::SetCalState(ECalibrationState new_state)
 {
     if (new_state != m_cal_state) {
         step_time=0;
         m_cal_state = new_state;
-        b_printf(PSTR("ccstate: "));
-        PrintCalState();
-        b_printf(PSTR("\r\n"));
     }
 }
 // ----------------------------------------------------------------------------

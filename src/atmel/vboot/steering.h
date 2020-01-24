@@ -40,10 +40,7 @@ public:
     float pv_used;
 	float sp_used;
 	float cv_clipped;
-
-    double SUBST_SP;
-    double SUBST_PV;
-
+    
 	// PID controller vars
 	float p_add;
 	float i_add;
@@ -94,6 +91,8 @@ public:
 
 	void load_calibration();
 	void save_calibration();
+    
+    static void SetPwm(float ml, float mr);
 };
 
 #endif

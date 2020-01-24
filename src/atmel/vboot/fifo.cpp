@@ -1,7 +1,7 @@
 #include "fifo.h"
 // ----------------------------------------------------------------------------
 volatile unsigned char head = 0,tail = 0;
-#define FIFO_SIZE 16
+#define FIFO_SIZE 64
 #define FIFO_MASK (FIFO_SIZE-1)
 volatile char uart_fifo[FIFO_SIZE];
 // ----------------------------------------------------------------------------

@@ -1,0 +1,36 @@
+8 bit
+[ms]     			counts
+0.0				0
+1.0 ms negative                 13  
+1.5 ms neutral                  19  
+2.0 ms positive                 25
+20 ms				255
+= 6 levels per direction!
+
+10 bit
+[ms]     			counts
+0.0				0
+1.0 ms negative                 51,15  
+1.5 ms neutral                  77
+2.0 ms positive                 102,3
+20 ms				1023
+= 26 levels per direction!
+
+11 bit
+[ms]     			counts
+0.0				0
+1.0 ms negative                 102,3
+1.5 ms neutral                  154
+2.0 ms positive                 204,7
+20 ms				2047
+= 52 levels per direction!
+
+
+16 bit
+[ms]     			counts
+0.0				0
+1.0 ms negative                 3276
+1.5 ms neutral                  4915
+2.0 ms positive                 6553
+20 ms				65535
+= 1639 levels per direction

@@ -38,9 +38,8 @@ private:
 	float clip_degrees(float d);
     void SetCalState(ECalibrationState new_state);
     int get_quadrant();
-    void PrintCalState();
     void DetectCwTurn();
-	void print_bar(const comp_extreme & mm, int raw);
+	float half_range_of(const comp_extreme & e);
 		
 public:
     bool calibration_mode;
