@@ -1,6 +1,7 @@
 #include "settings.h"
 #ifndef _WIN32
 #include <avr/pgmspace.h>
+#include <avr/io.h>
 #endif
 #include "compass_calibrate.h"
 #include "state_machine.h"
@@ -437,35 +438,6 @@ void clear_stats(void)
 	bad_compass_smp=-0;
 	good_compass_smp=0;
 }
-// ----------------------------------------------------------------------------
-/*
-// ----------------------------------------------------------------------------
-void tune_Config(double & dblParam, char c)
-{
-	tune_buf[tune_ptr++] = c;
-
-	if (tune_ptr>15) {
-		tune_ptr=0;
-		b_printf(PSTR("(err)\r\n"));
-		return;
-	}
-
-	if (c==13 || c==10) {
-		double nv(0);
-		long ld(0);
-		tune_buf[tune_ptr]=0;
-		int fields = sscanf(tune_buf,"%ld",&ld);
-		tune_ptr=0;
-		if (fields == 1) {
-			dblParam = nv;
-			b_printf(PSTR("new value accepted) %ld\r\n"),ld);
-
-			steering.save_calibration();
-		} else
-            b_printf(PSTR("(err,bad)\r\n"));
-	}
-}
-*/
     
 // ----------------------------------------------------------------------------
 // Handles GPS input
@@ -479,28 +451,6 @@ void read_uart()
 		gps.encode(c);
 	}
 }
-
-/*
-void read_user_input()
-{
-	while (fifo_avail()) {
-		char c = fifo_read();
-
-		switch (c) {
-		case 'r':
-			cc.reset_compass_calibration();
-			b_printf(PSTR("Compass calibration reset\r\n"));
-			break;
-		case 'a':
-			stm.straight_to_auto = true;
-			break;
-		case 'x':
-            steering.toggle_dont_stop();
-			break;
-		}	
-	}
-}
-*/
 
 // ----------------------------------------------------------------------------
 // Periodic message
@@ -1918,9 +1868,25 @@ int main (void)
 #endif
 {
 #ifndef _WIN32
-	// Enable interrupts
-	USBCON=0;
+	UDIEN = 0;
+    UDINT = 0;    
+	//USBCON=0;
 
+    // Configure PC7 (Arduino LED) as output
+    DDRC |= _BV(DDC7);
+    
+    // LED output pin (currently PORTC pin 7)
+    #define LED_PIN PORTC7
+    #define LED_REG PORTC
+
+    int i(0);
+    for (i=0; i<10; i++) {
+        LED_REG |= _BV(LED_PIN);
+	    _delay_ms(50);
+        LED_REG &= ~_BV(LED_PIN);
+	    _delay_ms(50);
+    }
+   
 	/* set pin 5 of PORTB for output*/
 	DDRB |= _BV(DDB5);
 

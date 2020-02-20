@@ -1,0 +1,83 @@
+Flash only:
+-C"C:\avrdude\avrdude.conf" -p atmega32u4 -c usbasp-clone -P usb -U flash:w:"$(ProjectDir)Debug\$(TargetName).hex":i
+
+Safe mode , doesn't update fuses:
+-C"C:\avrdude\avrdude.conf"    -p atmega32u4 -c usbasp-clone -P usb -U efuse:w:0xcf:m  -U hfuse:w:0xd9:m  -U lfuse:w:0x51:m -U flash:w:"$(ProjectDir)Debug\$(TargetName).hex":i
+This unfortunately bricks the device, sets the wrong lfuse which doesn't use the high speed crystal:
+-C"C:\avrdude\avrdude.conf" -u -p atmega32u4 -c usbasp-clone -P usb -U efuse:w:0xcf:m  -U hfuse:w:0xd9:m  -U lfuse:w:0x51:m -U flash:w:"$(ProjectDir)Debug\$(TargetName).hex":i
+
+An lfuse of 0x51 sets the wrong options ( 0x0101`0001 --> 7,5,3,2,1 --> CLKDIV8,SUT1,CKSEL3,CKSEL2,CKSEL1 )
+
+This reads the fuses:
+-C"C:\avrdude\avrdude.conf" -u -p atmega32u4 -c usbasp-clone -P usb -U efuse:r:-:h  -U hfuse:r:-:h  -U lfuse:r:-:h
+On original board, you will see these fuses:
+Original fuses: e=0xcb h=0xd8 l=0xff
+
+But the idea is to disable BOOTRST,
+so we only update the hfuse:
+-C"C:\avrdude\avrdude.conf" -u -p atmega32u4 -c usbasp-clone -P usb --U hfuse:w:0xd9:m
+
+
+
+Old info:
+
+e=0b11001011  5,4,2 --> ?,?,FUSE_BODLEVEL2
+h=0b11011000  5,2,1,0 --> SPIEN, BOOTSZ1,BOOTSZ0, BOOTRST
+l=0b11111111  n/a
+
+
+
+
+#define LFUSE_DEFAULT (FUSE_CKSEL1 & FUSE_CKSEL2 & FUSE_CKSEL3 & FUSE_SUT1 & FUSE_CKDIV8)
+#define FUSE_CKSEL1 (unsigned char)~_BV(1)  /* Select Clock Source */
+#define FUSE_CKSEL2 (unsigned char)~_BV(2)  /* Select Clock Source */
+#define FUSE_CKSEL3 (unsigned char)~_BV(3)  /* Select Clock Source */
+#define FUSE_SUT1   (unsigned char)~_BV(5)  /* Select start-up time */
+#define FUSE_CKDIV8 (unsigned char)~_BV(7)  /* Divide clock by 8 */
+11111101
+11111011
+11110111
+11011111
+01111111
+========
+01010001 = 0x51
+
+#define HFUSE_DEFAULT (FUSE_BOOTSZ0 & FUSE_SPIEN)
+#define FUSE_BOOTSZ0 (unsigned char)~_BV(1)  /* Select Boot Size */
+
+11111101 = 0xfd
+
+Now:
+0xd8:
+11011000    5,2,1,0
+
+#define FUSE_BOOTRST (unsigned char)~_BV(0)  /* Select Reset Vector */
+#define FUSE_BOOTSZ0 (unsigned char)~_BV(1)  /* Select Boot Size */
+#define FUSE_BOOTSZ1 (unsigned char)~_BV(2)  /* Select Boot Size */
+#define FUSE_EESAVE  (unsigned char)~_BV(3)  /* EEPROM memory is preserved through chip erase */
+#define FUSE_WDTON   (unsigned char)~_BV(4)  /* Watchdog timer always on */
+#define FUSE_SPIEN   (unsigned char)~_BV(5)  /* Enable Serial programming and Data Downloading */
+#define FUSE_JTAGEN  (unsigned char)~_BV(6)  /* Enable JTAG */
+#define FUSE_OCDEN   (unsigned char)~_BV(7)  /* Enable OCD */
+
+#define FUSE_SPIEN   (unsigned char)~_BV(5)  /* Enable Serial programming and Data Downloading */
+#define FUSE_BOOTSZ1 (unsigned char)~_BV(2)  /* Select Boot Size */
+#define FUSE_BOOTSZ0 (unsigned char)~_BV(1)  /* Select Boot Size */
+#define FUSE_BOOTRST (unsigned char)~_BV(0)  /* Select Reset Vector */
+
+
+#define EFUSE_DEFAULT (0xFF)
+
+0xcf
+
+#define FUSE_BODLEVEL0 (unsigned char)~_BV(0)  /* Brown-out Detector trigger level */
+#define FUSE_BODLEVEL1 (unsigned char)~_BV(1)  /* Brown-out Detector trigger level */
+#define FUSE_BODLEVEL2 (unsigned char)~_BV(2)  /* Brown-out Detector trigger level */
+#define FUSE_HWBE      (unsigned char)~_BV(3)  /* Hardware Boot Enable */
+
+11001111
+
+
+CLKSEL 1110 (default)
+       1111 (programmed --> low power xtal osc)
+       0001 (present --> reserved or external clock)
