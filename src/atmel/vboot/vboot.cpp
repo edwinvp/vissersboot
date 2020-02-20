@@ -648,6 +648,16 @@ void process_500ms()
 
 	check_rc();
 
+    TMainState step = stm.Step();
+    if (step == msAutoModeCourse || step == msAutoModeNormal) {       
+        b_printf(PSTR("(auto) sp=%04d  pv=%04d  \r\n"),
+            int(steering.bearing_sp),
+            int(steering.compass_course));
+    } else if (step == msManualMode) {
+        b_printf(PSTR("(auto) pv=%04d  \r\n"),
+        int(steering.compass_course));
+    }
+
 	gps_valid_prev = gps_valid;
 }
 
