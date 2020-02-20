@@ -5,6 +5,7 @@
 #include "lat_lon.h"
 #include "waypoints.h"
 #include "led_control.h"
+#include "compass_calibrate.h"
 #ifndef _WIN32
 #include <avr/pgmspace.h>
 #else
@@ -15,6 +16,7 @@ extern CSteering steering;
 extern CJoystick joystick;
 extern CWayPoints waypoints;
 extern CLedControl ledctrl;
+extern CCompassCalibration cc;
 
 extern bool gps_valid;
 bool set_finish(int memory_no);
@@ -197,20 +199,22 @@ void CStateMachine::step_manual_mode()
 	if (joystick.in_goto()) {
 		joy_pulses = 0;
 
-		if (gps_valid)
+        if (cc.calibration_mode)
+            cc.set_true_north();
+		else if (gps_valid)
 			next_state = msCountJoyGoto;
 		else
 			next_state = msCmdErrorMan;
 
-		} else if (joystick.in_store()) {
-			joy_pulses = 0;
-			next_state = msCountJoyStore;
-		} else if (joystick.in_clear()) {
-			shown_stats = false;
-			next_state = msClear1;
-		} else if (straight_to_auto) {
-			straight_to_auto = false;
-			next_state = msAutoModeCourse;
+    } else if (joystick.in_store()) {           
+        joy_pulses = 0;
+        next_state = msCountJoyStore;
+	} else if (joystick.in_clear()) {
+		shown_stats = false;
+		next_state = msClear1;
+	} else if (straight_to_auto) {
+		straight_to_auto = false;
+		next_state = msAutoModeCourse;
 	}
 }
 // ----------------------------------------------------------------------------
