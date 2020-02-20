@@ -1,0 +1,16 @@
+
+Left control:
+
+up: goto waypoint
+down: store waypoint
+left: cancel any auto mode and enable manual control
+right: clear waypoints (to do this, first hold down in this position,  release and then confirm by holding it again)
+
+
+Right control:
+
+up: sail forward
+down: reverse
+left: make left turn
+right: make right turn
+
