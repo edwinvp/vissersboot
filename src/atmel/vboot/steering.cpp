@@ -38,8 +38,8 @@ CSteering::CSteering() :
 	// Auto steer PID-tune parameters
 
 	// PID settings for initial vessel pointing (more agressive)
-	pid_aggressive.TUNE_P=10.0; // P-action
-	pid_aggressive.TUNE_I=1.5; // I-action
+	pid_aggressive.TUNE_P=5.0; // P-action
+	pid_aggressive.TUNE_I=0.75; // I-action
 	pid_aggressive.TUNE_D=0.0;  // D-action
 	// Max steering action done by controller
 	pid_aggressive.max_steering = 0.9*global_max_speed;
