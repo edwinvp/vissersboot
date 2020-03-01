@@ -417,21 +417,6 @@ void setup_pwm()
 #endif
 }
 // ----------------------------------------------------------------------------
-/*
-// ----------------------------------------------------------------------------
-void print_compass_msg()
-{
-    b_printf(PSTR(" x=%04d  \r\n y=%04d  \r\n z=%04d  \r\n course=%04d   \r\n sp=%04d   \r\n"),
-		mag->compass_raw.x.value, mag->compass_raw.y.value, mag->compass_raw.z.value,
-		int(steering.compass_course),
-		int(steering.bearing_sp));
-
-    b_printf(PSTR("\r\nsmp#(good/bad)=%04d(%04d/%04d)        \r\n"), compass_smp, good_compass_smp, bad_compass_smp);
-	
-	cc.print_cal();
-}
-*/
-// ----------------------------------------------------------------------------
 void clear_stats(void)
 {
 	compass_smp=0;
@@ -451,24 +436,6 @@ void read_uart()
 		gps.encode(c);
 	}
 }
-
-// ----------------------------------------------------------------------------
-// Periodic message
-// ----------------------------------------------------------------------------
-/*
-void print_servo_msg(bool full)
-{
-	// Tell whether application considers the remote control up or down
-	b_printf(rc_okay ? PSTR("RC UP\r\n") : PSTR("RC DOWN\r\n"));
-	
-	// Print the values of the incoming and outgoing servo channels
-	if (full) {		
-		// Show how many pulses the capture interrupts have seen
-		b_printf(PSTR("Capture status: %d %d %d %d\r\n"),
-			k1_alive,k2_alive,k3_alive,k4_alive);
-	}
-}
-*/
 
 TLedMode Step2LedMode(TMainState step)
 {
