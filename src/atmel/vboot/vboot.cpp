@@ -172,6 +172,10 @@ volatile unsigned long global_ms_timer = 0;
 unsigned long t_100ms_start_ms(0);
 unsigned long t_500ms_start_ms(0);
 
+// USART auto baud selection
+unsigned int gps_down_count = 0;
+unsigned int gps_baud = 19200;
+
 // ----------------------------------------------------------------------------
 // PWM/JOYSTICK/MOTOR vars
 // ----------------------------------------------------------------------------
@@ -507,6 +511,37 @@ void check_rc()
 	k4_alive=0;	
 }
 
+void auto_baud_rate()
+{
+    if (gps_valid) {
+        gps_down_count=0;
+        } else {
+        gps_down_count++;
+            
+        if (gps_down_count > 6) {
+            gps_down_count = 0;
+
+            switch (gps_baud) {
+                case 9600:
+                gps_baud = 19200;
+                break;
+                case 19200:
+                gps_baud = 38400;
+                break;
+                case 38400:
+                gps_baud = 9600;
+                break;
+                default:
+                gps_baud = 38400;
+            }
+
+            b_printf(PSTR("Setting USART to %d bps\r\n"),gps_baud);
+            USART_SetBaud(gps_baud);
+        }
+            
+    }       
+}
+
 // ----------------------------------------------------------------------------
 // 100 [ms] process
 // ----------------------------------------------------------------------------
@@ -604,6 +639,8 @@ void process_500ms()
 		gps_valid= true;
 
 	}
+
+    auto_baud_rate();
 
 	if (global_ms_timer > MS_BEFORE_OP_ENABLE)
 		steering.set_output_enable(true);
@@ -1868,7 +1905,7 @@ int main (void)
 	DDRB |= _BV(DDB5);
 
 	// Setup serial (UART) input
-	USART_Init();  // Initialize USART
+	USART_Init(gps_baud);  // Initialize USART
 #endif
 	sei();         // enable all interrupts
 
