@@ -33,6 +33,10 @@ namespace QBBConfig
         private ECalibrationState m_mag_cal_state = 0;
         private long m_button = 0;
         private long m_mag_type = 0;
+        private float m_pid_normal_p = 0;
+        private float m_pid_normal_i = 0;
+        private float m_pid_aggr_p = 0;
+        private float m_pid_aggr_i = 0;
 
         private Object Lck = new Object();
 
@@ -196,6 +200,38 @@ namespace QBBConfig
             }
         }
 
+        public void set_pid_normal_p(float f)
+        {
+            lock (Lck)
+            {
+                m_pid_normal_p = f;
+            }
+        }
+
+        public void set_pid_normal_i(float f)
+        {
+            lock (Lck)
+            {
+                m_pid_normal_i = f;
+            }
+        }
+
+        public void set_pid_aggr_p(float f)
+        {
+            lock (Lck)
+            {
+                m_pid_aggr_p = f;
+            }
+        }
+
+        public void set_pid_aggr_i(float f)
+        {
+            lock (Lck)
+            {
+                m_pid_aggr_i = f;
+            }
+        }
+
         public float get_lat()
         {
             lock (Lck)
@@ -353,6 +389,38 @@ namespace QBBConfig
             lock (Lck)
             {
                 return m_mag_type;
+            }
+        }
+
+        public float get_pid_normal_p()
+        {
+            lock (Lck)
+            {
+                return m_pid_normal_p;
+            }
+        }
+
+        public float get_pid_normal_i()
+        {
+            lock (Lck)
+            {
+                return m_pid_normal_i;
+            }
+        }
+
+        public float get_pid_aggr_p()
+        {
+            lock (Lck)
+            {
+                return m_pid_aggr_p;
+            }
+        }
+
+        public float get_pid_aggr_i()
+        {
+            lock (Lck)
+            {
+                return m_pid_aggr_i;
             }
         }
     }

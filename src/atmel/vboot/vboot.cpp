@@ -101,7 +101,8 @@ enum USB_VAR { urInvalid=0,
     urPidNormalP = 43,
     urPidNormalI = 44,
     urPidAggresiveP = 45,
-    urPidAggresiveI = 46,    
+    urPidAggresiveI = 46,
+    urPidSaveCal = 47, /* writing this "variable" will trigger a save-to-EEPROM action of the PID-settings */
     urMagRawX = 50,
     urMagRawY = 51,
     urMagRawZ = 52,
@@ -658,7 +659,7 @@ void process_500ms()
             int(steering.bearing_sp),
             int(steering.compass_course));
     } else if (step == msManualMode) {
-        b_printf(PSTR("(auto) pv=%04d  \r\n"),
+        b_printf(PSTR("(man) pv=%04d \r\n"),
         int(steering.compass_course));
     }
 
@@ -1685,6 +1686,11 @@ void write_var(int reg, unsigned long d)
     case urPidAggresiveI:
         steering.pid_aggressive.TUNE_I = cast_long_to_double(d);
         break;
+        
+    case urPidSaveCal:        
+        steering.save_calibration();
+        break;
+        
     }
 }
 

@@ -97,6 +97,11 @@ namespace QBBConfig
                 pb_ml.Value = m_task.Status.get_motor_l();
                 pb_mr.Value = m_task.Status.get_motor_r();
 
+                Pnorm.Text = m_task.Status.get_pid_normal_p().ToString();
+                Inorm.Text = m_task.Status.get_pid_normal_i().ToString();
+                Paggr.Text = m_task.Status.get_pid_aggr_p().ToString();
+                IAggr.Text = m_task.Status.get_pid_aggr_i().ToString();
+
                 set_need_angle(m_task.Status.get_mag_course());
 
                 TMainState stm = (TMainState)m_task.Status.get_mainseq_step();
@@ -241,6 +246,42 @@ namespace QBBConfig
         {
             if (m_task != null)
                 m_task.WriteLongIndirect(USB_VAR.urSetTrueNorth, 1);
+        }
+
+        private void ChangeCalibrationSetting(USB_VAR reg)
+        {
+            NewValueWnd wndValue = new NewValueWnd();
+            wndValue.Owner = this;
+
+            bool? result = wndValue.ShowDialog();
+
+            if (!result.HasValue || result == false)
+                return;
+
+            float NewValue = wndValue.GetValue();
+
+            if (m_task != null)
+                m_task.WriteCalibrationSettingIndirect(reg, NewValue);
+        }
+
+        private void BtnChangePNormal_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeCalibrationSetting(USB_VAR.urPidNormalP);
+        }
+
+        private void BtnChangeINormal_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeCalibrationSetting(USB_VAR.urPidNormalI);
+        }
+
+        private void BtnChangePAggr_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeCalibrationSetting(USB_VAR.urPidAggresiveP);
+        }
+
+        private void BtnChangeIAggr_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeCalibrationSetting(USB_VAR.urPidAggresiveI);
         }
     }
 }

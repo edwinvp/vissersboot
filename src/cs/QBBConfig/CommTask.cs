@@ -48,6 +48,11 @@ namespace QBBConfig
         urSteeringSP = 40,
         urSteeringPV = 41,
         urSteeringPID_ERR = 42,
+        urPidNormalP = 43,
+        urPidNormalI = 44,
+        urPidAggresiveP = 45,
+        urPidAggresiveI = 46,
+        urPidSaveCal = 47, /* writing this "variable" will trigger a save-to-EEPROM action of the PID-settings */
         urMagRawX = 50,
         urMagRawY = 51,
         urMagRawZ = 52,
@@ -72,6 +77,7 @@ namespace QBBConfig
         private volatile int wr_addr = 0;
         private volatile int wr_data = 0;
         private volatile bool do_write = false;
+        private volatile bool do_calibration_write = false;
 
         private volatile int m_counter = 0;
 
@@ -94,6 +100,13 @@ namespace QBBConfig
             do_stop = true;
         }
 
+        public void WriteCalibrationSettingIndirect(USB_VAR iAddr, float flValue)
+        {
+            wr_addr = (int)iAddr;
+            wr_data = FloatToInt(flValue);
+            do_calibration_write = true;
+        }
+
         public void WriteLongIndirect(USB_VAR iAddr, int iValue)
         {
             wr_addr = (int)iAddr;
@@ -105,6 +118,12 @@ namespace QBBConfig
         {
             byte[] newArray = new[] { input[3], input[2], input[1], input[0] };
             return BitConverter.ToSingle(newArray, 0);
+        }
+
+        public int FloatToInt(float fVal)
+        {
+            byte[] arr = BitConverter.GetBytes(fVal);
+            return BitConverter.ToInt32(arr,0);
         }
 
         public float UintToFloat(uint uiData)
@@ -203,6 +222,19 @@ namespace QBBConfig
                     break;
                 case USB_VAR.urMagType:
                     Status.set_mag_type((int)uiData);
+                    break;
+
+                case USB_VAR.urPidNormalP:
+                    Status.set_pid_normal_p(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urPidNormalI:
+                    Status.set_pid_normal_i(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urPidAggresiveP:
+                    Status.set_pid_aggr_p(UintToFloat(uiData));
+                    break;
+                case USB_VAR.urPidAggresiveI:
+                    Status.set_pid_aggr_i(UintToFloat(uiData));
                     break;
 
             }
@@ -324,6 +356,39 @@ namespace QBBConfig
                         ReadResponse();
                         ReadResponse();
                         ReadResponse();
+                    }
+
+                    if (!do_stop)
+                    {
+                        SendReadCommand(USB_VAR.urPidNormalP);
+                        SendReadCommand(USB_VAR.urPidNormalI);
+                        SendReadCommand(USB_VAR.urPidAggresiveP);
+                        SendReadCommand(USB_VAR.urPidAggresiveI);
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
+                        ReadResponse();
+                    }
+
+
+                    if (!do_stop && do_calibration_write)
+                    {
+                        int iAddr = wr_addr;
+                        int iData = wr_data;
+                        do_calibration_write = false;
+
+                        SendWriteCommand(iAddr, iData);
+                        if (CheckWriteResponse())
+                            Debug.Print("Calibration Write succeeded");
+                        else
+                            Debug.Print("Calibration Write failed");
+
+                        // Trigger save-to-EEPROM action
+                        SendWriteCommand((int)USB_VAR.urPidSaveCal, 1);
+                        if (CheckWriteResponse())
+                            Debug.Print("Flush to EEPROM cmd delivered");
+                        else
+                            Debug.Print("Flush to EEPROM cmd could not be delivered");
                     }
 
                     if (!do_stop && do_write)

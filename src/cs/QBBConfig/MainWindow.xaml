@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QBBConfig"
         mc:Ignorable="d"
-        Title="Quartel Bait Boat Monitor" Height="450" Width="800">
+        Title="Quartel Bait Boat Monitor" Height="450" Width="979">
     <Grid Margin="0,0,3,3">
 
         <StackPanel HorizontalAlignment="Left" Height="130" Margin="559,30,0,0" VerticalAlignment="Top" Width="190">
@@ -185,5 +185,42 @@
         </StackPanel>
         <Label x:Name="LblFreq" Content="FF" HorizontalAlignment="Left" Height="33" Margin="542,200,0,0" VerticalAlignment="Top" Width="42"/>
 
+
+        <StackPanel HorizontalAlignment="Left" Height="150" Margin="750,30,0,0" VerticalAlignment="Top" Width="190">
+            <Label Content="PI Controller" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
+
+            <Grid HorizontalAlignment="Stretch" Height="110" Margin="5,5,5,5" VerticalAlignment="Top" >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                    <RowDefinition Height="25" />
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Document Name column -->
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                    <!-- Actions column -->
+                </Grid.ColumnDefinitions>
+                <Label Content="Pnormal" HorizontalAlignment="Left" Grid.Row="0" Grid.Column="0" />
+                <TextBox Name="Pnorm" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="0" Grid.Column="1" />
+                <Label Content="Inormal" HorizontalAlignment="Left" Grid.Row="1" Grid.Column="0" />
+                <TextBox Name="Inorm" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="1" Grid.Column="1" />
+                <Label Content="Paggressive" HorizontalAlignment="Left" Grid.Row="2" Grid.Column="0" />
+                <TextBox Name="Paggr" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="2" Grid.Column="1" />
+                <Label Content="Iaggressive" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
+                <TextBox Name="IAggr" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="3" Grid.Column="1" />
+
+                <Button x:Name="BtnChangePNormal" Grid.Row="0" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangePNormal_Click"/>
+                <Button x:Name="BtnChangeINormal" Grid.Row="1" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangeINormal_Click"/>
+                <Button x:Name="BtnChangePAggr" Grid.Row="2" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangePAggr_Click"/>
+                <Button x:Name="BtnChangeIAggr" Grid.Row="3" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangeIAggr_Click"/>
+            </Grid>
+
+        </StackPanel>
+
+
     </Grid>
+
 </Window>
