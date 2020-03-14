@@ -15,7 +15,7 @@ Original fuses: e=0xcb h=0xd8 l=0xff
 
 But the idea is to disable BOOTRST,
 so we only update the hfuse:
--C"C:\avrdude\avrdude.conf" -u -p atmega32u4 -c usbasp-clone -P usb --U hfuse:w:0xd9:m
+-C"C:\avrdude\avrdude.conf" -u -p atmega32u4 -c usbasp-clone -P usb -U hfuse:w:0xd9:m
 
 
 
