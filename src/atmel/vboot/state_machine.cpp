@@ -234,7 +234,7 @@ void CStateMachine::step_auto_mode_course()
 // ----------------------------------------------------------------------------
 void CStateMachine::step_auto_mode_normal()
 {
-    if (fabs(steering.pid_err) > 32)
+    if (fabs(steering.pid_err) > 90)
 		next_state = msAutoModeCourse;
     
     abort_auto_if();
