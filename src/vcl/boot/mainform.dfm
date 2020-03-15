@@ -348,6 +348,10 @@ object MainFrm: TMainFrm
     TabOrder = 2
     object TsCourseOverview: TTabSheet
       Caption = 'TsCourseOverview'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PaintBox1: TPaintBox
         Left = 0
         Top = 0
@@ -363,6 +367,10 @@ object MainFrm: TMainFrm
     object TsMagneto: TTabSheet
       Caption = 'TsMagneto'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PaintBox2: TPaintBox
         Left = 0
         Top = 0

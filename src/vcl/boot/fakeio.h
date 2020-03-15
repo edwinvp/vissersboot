@@ -35,6 +35,10 @@ extern volatile unsigned int k1_pulse_duration; // left motor (in)
 extern volatile unsigned int k2_pulse_duration; // right motor (in)
 extern volatile unsigned int k3_pulse_duration; // Pos (RX channel 3)
 extern volatile unsigned int k4_pulse_duration; // Man/auto (RX channel 4)
+extern volatile unsigned char k1_alive;
+extern volatile unsigned char k2_alive;
+extern volatile unsigned char k3_alive;
+extern volatile unsigned char k4_alive;
 //---------------------------------------------------------------------------
 extern uint8_t PORTB;
 extern AnsiString prog_op;
