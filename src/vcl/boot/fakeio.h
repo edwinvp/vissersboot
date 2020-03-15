@@ -55,7 +55,6 @@ extern int16_t ext_compass_z;
 int b_printf(const char * fmt, ... );
 int printf_P(const char * fmt, ... );
 //---------------------------------------------------------------------------
-TCompassRawValue read_hmc5843(char reg_adr);
 void m8n_set_reg_addr(int d);
 //---------------------------------------------------------------------------
 int main_init (void);
@@ -86,6 +85,18 @@ void eeprom_write_word(uint16_t* addr, uint16_t data);
 
 class CFakeCompass : public CBaseMag
 {
+public:
+	virtual bool detect() { return true; };
+	virtual bool init() { return true; };
+
+	virtual void sample() {
+		compass_raw.x.value = ext_compass_x; // 3
+		compass_raw.y.value = ext_compass_y; // 5
+		compass_raw.z.value = ext_compass_z; // 7
+		compass_raw.x.valid=true;
+		compass_raw.y.valid=true;
+		compass_raw.z.valid=true;
+	};
 };
 
 #endif

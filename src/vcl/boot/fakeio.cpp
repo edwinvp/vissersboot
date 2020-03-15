@@ -74,24 +74,6 @@ int b_printf(const char * format, ... )
 	return c;
 }
 //---------------------------------------------------------------------------
-TCompassRawValue read_hmc5843(char reg_adr)
-{
-	TCompassRawValue v;
-
-	switch (reg_adr) {
-	case 0x03:
-		v.value=ext_compass_x;
-	case 0x05:
-		v.value=ext_compass_y;
-	case 0x07:
-		v.value=ext_compass_z;
-	};
-
-	v.valid=true;
-
-	return v;
-}
-//---------------------------------------------------------------------------
 void m8n_set_reg_addr(int d)
 {
 	//
