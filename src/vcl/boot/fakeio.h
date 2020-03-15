@@ -27,11 +27,9 @@
 #define _BV(x) (1 << x)
 //---------------------------------------------------------------------------
 // motor left + motor right PWM
-extern uint16_t OCR1A; // motor right (out)
-extern uint16_t OCR1B; // motor left (out)
-extern uint16_t OCR3A;
-extern uint16_t OCR4D;
-extern uint8_t TC4H;
+extern uint16_t OCR3A; // right motor
+extern uint16_t OCR4D; // left motor (1/2)
+extern uint8_t TC4H; // left motor (2/2)
 //---------------------------------------------------------------------------
 extern volatile unsigned int k1_pulse_duration; // left motor (in)
 extern volatile unsigned int k2_pulse_duration; // right motor (in)
@@ -60,7 +58,7 @@ void m8n_set_reg_addr(int d);
 int main_init (void);
 void process();
 void Fake_UART_ISR(unsigned UDR0);
-void multi_read_m8n(TinyGPS & gps);
+void process_gps_bytes(TinyGPS & gps);
 
 extern volatile unsigned long global_ms_timer;
 //---------------------------------------------------------------------------
@@ -98,6 +96,8 @@ public:
 		compass_raw.z.valid=true;
 	};
 };
+
+extern TinyGPS gps;
 
 #endif
 

@@ -324,6 +324,7 @@ void __fastcall TMainFrm::SendVesselPosToAtmel()
 	// Send as fake UART message
 	for (int i(1);i<=sRMC.Length();++i) {
 		gps_buffer.push(sRMC[i]);
+		process_gps_bytes(gps);
 		process();
 	}
 }

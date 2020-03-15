@@ -36,8 +36,6 @@ void eeprom_write_word(uint16_t* addr, uint16_t data)
 };
 
 //---------------------------------------------------------------------------
-uint16_t OCR1A;
-uint16_t OCR1B;
 uint16_t OCR3A;
 uint16_t OCR4D;
 uint8_t PORTB;
@@ -79,7 +77,7 @@ void m8n_set_reg_addr(int d)
 	//
 }
 //---------------------------------------------------------------------------
-void multi_read_m8n(TinyGPS & gps)
+void process_gps_bytes(TinyGPS & gps)
 {
 	char c(0xff);
 
