@@ -82,6 +82,7 @@ private:	// User declarations
 	void __fastcall AddLocations();
 	void __fastcall AddRefLocations();
 	void __fastcall AddRefpoint(double lat, double lon, TColor clr);
+	float __fastcall Pwm2MotorFact2(unsigned char hi, unsigned char lo);
 	float __fastcall Pwm2MotorFact(int dc);
 
 	std::string s;

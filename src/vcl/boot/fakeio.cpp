@@ -38,12 +38,17 @@ void eeprom_write_word(uint16_t* addr, uint16_t data)
 //---------------------------------------------------------------------------
 uint16_t OCR1A;
 uint16_t OCR1B;
+uint16_t OCR3A;
+uint16_t OCR4D;
 uint8_t PORTB;
 
 uint8_t DDRC;
+uint8_t DDRD;
 uint8_t PORTC;
 uint8_t PORTD;
 uint8_t PINC;
+uint8_t PINF;
+uint8_t TC4H;
 //---------------------------------------------------------------------------
 std::queue<char> gps_buffer;
 //---------------------------------------------------------------------------
@@ -105,4 +110,15 @@ void multi_read_m8n(TinyGPS & gps)
 	}
 }
 //---------------------------------------------------------------------------
+extern "C" {
+	void USART_SetBaud(int baud)
+	{
+	}
+
+	void redirect_std_out()
+	{
+    }
+}
+//---------------------------------------------------------------------------
+
 
