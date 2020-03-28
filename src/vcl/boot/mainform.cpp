@@ -189,7 +189,8 @@ UnicodeString MainStateToText(TMainState s)
 	case msManualMode: return L"msManualMode";
 	case msAutoModeNormal: return L"msAutoModeNormal";
 	case msReverseThrust: return L"msReverseThrust";
-	case msAutoModeCourse: return L"msAutoModeCourse";
+	case msAutoModeChooseDir: return L"msAutoModeChooseDir";
+	case msAutoModeTurn: return L"msAutoModePointVessel";
 	case msCountJoyGoto: return L"msCountJoyGoto";
 	case msConfirmGotoPosX: return L"msConfirmGotoPosX";
 	case msCountJoyStore: return L"msCountJoyStore";
@@ -354,7 +355,7 @@ void __fastcall TMainFrm::BtnZeroClick(TObject *Sender)
 
 void __fastcall TMainFrm::BtnAutoModeClick(TObject *Sender)
 {
-	stm.ForceStep(msAutoModeCourse);
+	stm.ForceStep(msAutoModeChooseDir);
 }
 //---------------------------------------------------------------------------
 

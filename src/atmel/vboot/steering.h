@@ -23,22 +23,19 @@ public:
 class CSteering
 {
 private:
-    void do_restrict_dir(float & pid_cv);
-
 	float motor_l;
 	float motor_r;
 
+	void CalculatePidError(float pv, float sp);
 	void SetMotorSpeeds(float motor_l, float motor_r);
 
 public:
-    // Auto steering related
-    int restrict_dir;
-    bool arrived; // TRUE when arriving at the waypoint
+	// Auto steering related
+	int choosen_dir;
+	bool arrived; // TRUE when arriving at the waypoint
 
-    float compass_course;
+	float compass_course_pv;
     float bearing_sp; // calculated initial bearing (from Haversine formulas)
-    float pv_used;
-	float sp_used;
 	float cv_clipped;
     
 	// PID controller vars
@@ -77,12 +74,12 @@ public:
 
     float clip_motor(float mtr);
 
-    //!\brief Calculate motor set points as a factor (-1.0 ... +1.0)
-    void calc_motor_setpoints(float & motor_l, float & motor_r, float max_speed, float cv_clipped);
+	//!\brief Calculate motor set points as a factor (-1.0 ... +1.0)
+	void calc_motor_setpoints(float & motor_l, float & motor_r, float max_speed, float cv_clipped);
 
 	void toggle_dont_stop();
 	void reset_i_action();
-    void manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc);
+	void manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc);
 	bool motor_running();
 	void do_reverse_thrust();
 	float get_motor_L_perc();
@@ -91,7 +88,8 @@ public:
 
 	void load_calibration();
 	void save_calibration();
-    
+	void choose_direction();
+
     static void SetPwm(float ml, float mr);
 };
 

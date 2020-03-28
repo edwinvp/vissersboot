@@ -10,12 +10,15 @@
 #include "waypoints.h"
 #include "led_control.h"
 #include "fifo.h"
+#ifndef _WIN32
 #include "usb.h"
+#endif
 #include "redirector.h"
 
 #ifdef _WIN32
 // Simulator running under Windows
 #include "fakeio.h"
+#include "mag_base.h"
 #else
 // Atmel target
 #include <avr/io.h>
@@ -137,8 +140,12 @@ CJoystick joystick;
 CWayPoints waypoints;
 CLedControl ledctrl;
 
+#ifndef _WIN32
 CIST8310 mag_ist8310;
 CHMC5843 mag_hmc5843;
+#else
+CFakeCompass mag_fake;
+#endif
 CBaseMag * mag = 0;
 
 // GPS input related
@@ -222,14 +229,16 @@ ISR(TIMER1_OVF_vect)
 	// Timer 1 overflow
 }
 // ----------------------------------------------------------------------------
+#ifndef _WIN32
+// ----------------------------------------------------------------------------
 ISR(TIMER3_OVF_vect)
 {
 	global_ms_timer += 20;	// timer was set to overflow each 20 [ms]
 
 	// Reset timer 4
 	TC4H = 0;
-	TCNT4 = 0x00;	
-	
+	TCNT4 = 0x00;
+
 	// Force waveform generator to '1'
 	// Set on compare match
 	TCCR4C |= _BV(COM4D1);
@@ -243,7 +252,6 @@ ISR(TIMER3_OVF_vect)
 
 }
 // ----------------------------------------------------------------------------
-#ifndef _WIN32
 ISR(PCINT0_vect)
 {
 	// Capture timer value
@@ -362,20 +370,22 @@ void setup_timer_3()
 	// So 20 [ms] servo period will be 40000 timer ticks.
 	TCCR3B &= ~_BV(CS32);
 	TCCR3B |= _BV(CS31);
-	TCCR3B &= ~_BV(CS30);	
-	
+	TCCR3B &= ~_BV(CS30);
+
 	ICR3 = 40000; // gives a 20 [ms] period
 #endif
 }
 // ----------------------------------------------------------------------------
 void setup_timer_4()
 {
+#ifndef _WIN32
 	// Note: high speed timer must be disconnected from USB PLL!
 	clear_bit(PLLFRQ,PLLTM1);
 	clear_bit(PLLFRQ,PLLTM0);
 
 	// Set CK/64 --> f=250 [kHz]
 	TCCR4B = 0b00000111;
+#endif
 }
 // ----------------------------------------------------------------------------
 void setup_pwm()
@@ -452,7 +462,8 @@ TLedMode Step2LedMode(TMainState step)
 			lm = lmGpsStatus;
         	break;
     	case msAutoModeNormal:
-		case msAutoModeCourse: // deliberate fall-through
+		case msAutoModeChooseDir: // deliberate fall-through
+		case msAutoModeTurn: // deliberate fall-through
 		case msReverseThrust:  // deliberate fall-through
             lm = lmArriveStatus;
     	    break;
@@ -581,9 +592,9 @@ void process_100ms()
 	TMainState step = stm.Step();
 	if (step == msReverseThrust)
 		steering.do_reverse_thrust();
-	else if (step == msAutoModeCourse || step == msAutoModeNormal)
+	else if (stm.IsAutoModeStep(step))
 		steering.auto_steer();
-	else {	
+	else {
 		steering.manual_steering(k1_pulse_duration,k2_pulse_duration);
 	}
 
@@ -654,13 +665,13 @@ void process_500ms()
 	check_rc();
 
     TMainState step = stm.Step();
-    if (step == msAutoModeCourse || step == msAutoModeNormal) {       
-        b_printf(PSTR("(auto) sp=%04d  pv=%04d  \r\n"),
+	if (stm.IsAutoModeStep(step)) {
+		b_printf(PSTR("(auto) sp=%04d  pv=%04d  \r\n"),
             int(steering.bearing_sp),
-            int(steering.compass_course));
+            int(steering.compass_course_pv));
     } else if (step == msManualMode) {
         b_printf(PSTR("(man) pv=%04d \r\n"),
-        int(steering.compass_course));
+        int(steering.compass_course_pv));
     }
 
 	gps_valid_prev = gps_valid;
@@ -692,7 +703,7 @@ void read_compass_and_gps()
 		if (cc.calibration_mode)
 			cc.calibrate(mag->compass_raw);
 		
-		steering.compass_course = cc.calc_course(mag->compass_raw);
+		steering.compass_course_pv = cc.calc_course(mag->compass_raw);
 		
 		bad_compass_smp=0;
 		good_compass_smp++;
@@ -758,20 +769,21 @@ void process()
 		process_500ms();
 	}
 
+#ifndef _WIN32
 	switch (us) {
 	case usDisconnected:
 		if ((USBSTA & (1 << VBUS))) {
 			printf_P(PSTR("Plugged in!\r\n"));
 			// connected
 			UDCON &= ~(1 << DETACH);
-					
+
 			//end of reset interrupts
 			UDIEN |= (1<<EORSTE);//enable the end of reset interrupt
-					
+
 			us = usDone;
 		}
 		break;
-				
+
 	case usDone:
 		// TODO / BUG: This condition never seems to be met, at least with my Arduino Leonardo board
 		if (!((USBSTA & (1 << VBUS)))) {
@@ -790,10 +802,11 @@ void process()
 
 	// Receive bytes from USB host (laptop/pc)
 	handle_incoming_bytes();
-			
+
 	// Send bytes to USB host (laptop/pc)
-	handle_outgoing_bytes();	
-	
+	handle_outgoing_bytes();
+#endif
+
 }
 
 void delay_ms(uint16_t x)
@@ -812,6 +825,7 @@ void delay_ms(uint16_t x)
 // USB
 // ----------------------------------------------------------------------------
 
+#ifndef _WIN32
 void oops(int a, char * v)
 {	
 	if (!a) {
@@ -938,7 +952,7 @@ uint8_t USB_get_desc(void)
     uint8_t len, idx = head.wValue;
     switch(head.wValue>>8)
     {
-    case usb_desc_device:
+	case usb_desc_device:
         if(idx!=0) return 0;
         addr = &devdesc; len = sizeof(devdesc);
         break;
@@ -980,7 +994,7 @@ static inline void setupusb(void)
     set_bit(UDCON, DETACH); /* redundant? */
 
     /* toggle USB reset */
-    clear_bit(USBCON, USBE);
+	clear_bit(USBCON, USBE);
     set_bit(USBCON, USBE);
 
     /* No required.
@@ -1022,7 +1036,7 @@ static void setupEP0(void)
 
     EP_select(0);
 
-    /* un-configure EP 0 */
+	/* un-configure EP 0 */
     clear_bit(UECONX, EPEN);
     clear_bit(UECFG1X, ALLOC);
 
@@ -1064,11 +1078,11 @@ static void setup_other_ep()
 
     // configure EP 1
     set_bit(UECONX, EPEN);
-    UECFG0X = 0x81; // BULK, IN
+	UECFG0X = 0x81; // BULK, IN
     UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC
 
 	if(bit_is_clear(UESTA0X, CFGOK)) {
-		putchar('1!');
+		putchar('!');
 		while(1) {} /* oops */
 	}
 
@@ -1084,7 +1098,7 @@ static void setup_other_ep()
     UECFG1X = 0b00110010; // EPSIZE=64B, 1 bank, ALLOC
 
     if(bit_is_clear(UESTA0X, CFGOK)) {
-	    putchar('1!');
+	    putchar('!');
 	    while(1) {} /* oops */
     }
 
@@ -1106,8 +1120,8 @@ ISR(USB_GEN_vect, ISR_BLOCK)
         clear_bit(UDIEN, SUSPE);
         set_bit(UDIEN, WAKEUPE);
 
-        set_bit(USBCON, FRZCLK); /* freeze */
-    }
+		set_bit(USBCON, FRZCLK); /* freeze */
+	}
     if(bit_is_set(status, WAKEUPI))
     {
         ack |= _BV(WAKEUPI);
@@ -1275,7 +1289,7 @@ static void usb_control_in(void)
             loop_until_bit_is_set(UEINTX, TXINI);
             EP_write8(USB_config);
             clear_bit(UEINTX, TXINI);
-            ok = 1;
+			ok = 1;
         }
         break;
     case usb_req_set_iface:
@@ -1443,7 +1457,7 @@ static void usb_control_out(void)
                 set_bit(UECONX, STALLRQ);
                 putchar('S');
             } else {
-                clear_bit(UEINTX, RXOUTI);
+				clear_bit(UEINTX, RXOUTI);
                 clear_bit(UEINTX, TXINI);
             }
         } else {
@@ -1485,20 +1499,21 @@ void handle_outgoing_bytes(void)
 		do_send_char=false;
 
 		if (bit_is_set(UEINTX,TXINI)) {
-			clear_bit(UEINTX,TXINI);			
+			clear_bit(UEINTX,TXINI);
 			send_reserved_bytes();
 			// Send one char
-			UEDATX = usb_char;			
-			clear_bit(UEINTX,FIFOCON);		
+			UEDATX = usb_char;
+			clear_bit(UEINTX,FIFOCON);
 		}
 	}
-	
+
 	if (usb_out_data_pending) {
-		clear_bit(UEINTX,FIFOCON);		
+		clear_bit(UEINTX,FIFOCON);
 		usb_out_data_pending=false;
 	}
-	
+
 }
+#endif
 
 static unsigned long testreg = 0;
 
@@ -1509,16 +1524,16 @@ RO 0001 '42'
 
 double cast_long_to_double(unsigned long data)
 {
-    float * pDbl = reinterpret_cast<float*>(&data);
-    float f = *pDbl;
-    return f;
+	float * pDbl = reinterpret_cast<float*>(&data);
+	float f = *pDbl;
+	return f;
 }
 
 long cast_double_to_long(double data)
 {
-    float f = data;
-    long * pLong = reinterpret_cast<long*>(&f);
-    return *pLong;
+	float f = data;
+	long * pLong = reinterpret_cast<long*>(&f);
+	return *pLong;
 }
 
 unsigned long read_var(int reg)
@@ -1570,10 +1585,10 @@ unsigned long read_var(int reg)
         data = OCR3A;
         break;
     case urSteeringSP:
-        data = *reinterpret_cast<long*>(&steering.sp_used);
-        break;
-    case urSteeringPV:
-        data = *reinterpret_cast<long*>(&steering.pv_used);
+		data = *reinterpret_cast<long*>(&steering.bearing_sp);
+		break;
+	case urSteeringPV:
+        data = *reinterpret_cast<long*>(&steering.compass_course_pv);
         break;
     case urSteeringPID_ERR:
         data = *reinterpret_cast<long*>(&steering.pid_err);
@@ -1723,28 +1738,31 @@ void handle_command(void)
 		    sprintf(cmd_response,"ERR W\r\n");
         break;
 	}
-	
+
+#ifndef _WIN32
 	if (cmd_response[0]) {
 		EP_select(1);
 
 		if (!usb_out_data_pending)
 			send_reserved_bytes();
-				
-        char * p = cmd_response;	
+
+		char * p = cmd_response;
 		while (*p) {
-		    UEDATX = *p;
-            ++p;
+			UEDATX = *p;
+			++p;
 		}
-		
+
 		EP_select(0);
-        cmd_response[0]=0;
+		cmd_response[0]=0;
 		usb_out_data_pending=true;
 	}
+#endif
 }
 
 // Possibly receive bytes from the pc/laptop
 void handle_incoming_bytes(void)
 {
+#ifndef _WIN32
 	// Turn attention to the bulk OUT endpoint, because that's were bytes
 	// sent from the pc/laptop end up in.
 	EP_select(2);
@@ -1780,14 +1798,16 @@ void handle_incoming_bytes(void)
 		}
 		
 		clear_bit(UEINTX,FIFOCON);
-	}	
+	}
+#endif
 }
 
 // Called when the pc/laptop is quizzing/configuring the Atmel
 static
 void handle_CONTROL(void)
 {
-    uint8_t ok = 0;
+#ifndef _WIN32
+	uint8_t ok = 0;
     /* SETUP message */
     head.bmReqType = EP_read8();
     head.bReq = EP_read8();
@@ -1810,9 +1830,11 @@ void handle_CONTROL(void)
 	if (head.bmReqType & USB_REQ_TYPE_IN)
 		usb_control_in();
 	else
-		usb_control_out();	
+		usb_control_out();
+#endif
 }
 
+#ifndef _WIN32
 ISR(USB_COM_vect)
 {
 	// This USB interrupt isn't used.
@@ -1845,25 +1867,26 @@ void setup_usb()
 	PLLFRQ = (1<<PDIV3) | (1<<PDIV1) | (1<<PLLUSB) | (1 << PLLTM0);
 	// Enable PLL
 	PLLCSR |= (1<<PLLE);
-	
+
 	// Wait for PLL lock
 	while (!(PLLCSR & (1<<PLOCK)))
 		;
-			
+
 	// Enable USB
 	USBCON |= (1<<USBE)|(1<<OTGPADE);
 	// Clear freeze clock bit
 	USBCON &= ~(1<<FRZCLK);
-	
+
 	// configure USB interface (speed, endpoints, etc.)
 	UDCON &= ~(1 << LSM);     // full speed 12 Mbit/s
-	
+
 	// disable rest of endpoints
 	for (uint8_t i = 1; i <= 6; i++) {
 		UENUM = (UENUM & 0xF8) | i;   // select endpoint i
 		UECONX &= ~(1 << EPEN);
-	}	
+	}
 }
+#endif
 
 // ----------------------------------------------------------------------------
 // Main loop (AVR only, do not use within simulator)
@@ -1918,8 +1941,10 @@ int main (void)
 	redirect_std_out();
 
 	b_printf(PSTR("Boot!\r\n"));
-	
+
+#ifndef _WIN32
 	setup_usb();
+#endif
 
 	cc.reset_compass_calibration();
 
@@ -1954,7 +1979,7 @@ int main (void)
 	int retries(50);
 	const char * msgMagStatus = PSTR("(not found)\r\n");
 
-    mag_type = 255;
+	mag_type = 255;
 
 	do {
 		b_printf(PSTR("Probing for magnetometer..."));
@@ -1983,6 +2008,8 @@ int main (void)
 		delay_ms(25);
 		mag->init();
 	}
+#else
+	mag = &mag_fake;
 #endif
 
     b_printf(PSTR("main_loop\r\n"));

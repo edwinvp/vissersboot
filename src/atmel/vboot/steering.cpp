@@ -19,14 +19,12 @@ extern CStateMachine stm;
 #define NUM_EEPROM_WORDS 15
 
 CSteering::CSteering() :
-    motor_l(0),
-    motor_r(0),
-    restrict_dir(0),
+	motor_l(0),
+	motor_r(0),
+    choosen_dir(1),
     arrived(false),
-    compass_course(0.0f),
-    bearing_sp(0.0f),
-    pv_used(0.0f),
-    sp_used(0.0f),
+    compass_course_pv(0.0f),
+	bearing_sp(0.0f),
 	p_add(0),
 	i_add(0),
 	d_add(0),
@@ -38,19 +36,31 @@ CSteering::CSteering() :
 	// Auto steer PID-tune parameters
 
 	// PID settings for initial vessel pointing (more agressive)
-	pid_aggressive.TUNE_P=5.0; // P-action
-	pid_aggressive.TUNE_I=0.75; // I-action
+	pid_aggressive.TUNE_P=5e-3; // P-action
+	pid_aggressive.TUNE_I=1e-5; // I-action
 	pid_aggressive.TUNE_D=0.0;  // D-action
 	// Max steering action done by controller
 	pid_aggressive.max_steering = 0.9*global_max_speed;
 
 	// PID settings for 'normal' sailing (calmer)
 	pid_normal.TUNE_P=0.6;
-	pid_normal.TUNE_I=0.0000001;
+	pid_normal.TUNE_I=1e-5;
 	pid_normal.TUNE_D=0.0;
 	// Max steering action done by controller
 	pid_normal.max_steering = 0.3*global_max_speed;
 
+}
+
+// ----------------------------------------------------------------------------
+void CSteering::CalculatePidError(float pv, float sp)
+{
+	bool bBigDiff = fabs(sp-pv) > 180;
+	if (sp > 180 && bBigDiff)
+		sp -= 360;
+	if (pv > 180 && bBigDiff)
+		pv -= 360;
+
+	pid_err = sp - pv;
 }
 
 // ----------------------------------------------------------------------------
@@ -59,16 +69,9 @@ bool enable_p, float Kp,
 bool enable_i, float Ki,
 bool enable_d, float Kd)
 {
-    float cv(0.0);
+	float cv(0.0);
 
-    bool bBigDiff = fabs(sp-pv) > 180;
-
-    if (sp > 180 && bBigDiff)
-        sp -= 360;
-    if (pv > 180 && bBigDiff)
-        pv -= 360;
-
-    pid_err = sp - pv;
+	CalculatePidError(pv,sp);
 
     p_add = Kp * pid_err;
     i_add += Ki * pid_err;
@@ -88,46 +91,34 @@ bool enable_d, float Kd)
     return cv;
 }
 // ----------------------------------------------------------------------------
-void CSteering::do_restrict_dir(float & pid_cv)
+void CSteering::choose_direction()
 {
-    // It doesn't matter to turn CW or CCW if the error is that big,
-    // insist on maintaining either CW or CCW
-    if (restrict_dir==0) {
-        if (pid_err > 135.0) {
-            b_printf(PSTR("Restrict dir -1\r\n"));
-            restrict_dir = -1;
-        } else if (pid_err < -135) {
-            b_printf(PSTR("Restrict dir +1\r\n"));
-            restrict_dir = 1;
-        }   
-    } else {
-            if (restrict_dir==1)
-                pid_cv = fabs(pid_cv);
-            else
-                pid_cv = -fabs(pid_cv);
-        
-            if ( fabs(pid_err) < 90) {
-                b_printf(PSTR("Cancel dir restrict\r\n"));
-                restrict_dir=0;
-            }
-    }
+	choosen_dir=1;
+
+	CalculatePidError(compass_course_pv,bearing_sp);
+
+	if (pid_err > 135.0) {
+		b_printf(PSTR("Restrict dir CW/1\r\n"));
+		choosen_dir=1;
+	} else if (pid_err < -135) {
+		b_printf(PSTR("Restrict dir CCW/-1\r\n"));
+		choosen_dir=-1;
+	}
 }
 // ----------------------------------------------------------------------------
 void CSteering::auto_steer()
 {
 	float max_correct(0.0);
 
-	bool bPointingTheVessel = (stm.Step() == msAutoModeCourse);
+	bool bPointingTheVessel = (stm.Step() == msAutoModeChooseDir ||
+		stm.Step() == msAutoModeTurn);
 
 	if (bPointingTheVessel)
 		max_correct = pid_aggressive.max_steering;
 	else
 		max_correct = pid_normal.max_steering;
 
-    sp_used = bearing_sp;
-    pv_used = compass_course;
-
-    // Only enable I-action when in normal auto mode (not course mode)
+	// Only enable I-action when in normal auto mode (not course mode)
 	CPidParams * params(0);
 	if (bPointingTheVessel)
 		params = &pid_aggressive; // use agressive settings when pointing vessel
@@ -136,14 +127,17 @@ void CSteering::auto_steer()
 
 	// Run PI-controller (D-action not implemented yet)
 	float pid_cv = simple_pid(
-		pv_used, // process-value (GPS course)
-		sp_used, // set point (bearing from Haversine)
+		compass_course_pv, // process-value (GPS course)
+		bearing_sp, // set point (bearing from Haversine)
 		params->p_enable, params->TUNE_P, // P-action
 		params->i_enable, params->TUNE_I, // I-action
 		params->d_enable, params->TUNE_D  // D-action
 		);
 
-	do_restrict_dir(pid_cv);
+	if (bPointingTheVessel) {
+		// Restrict turn direction to what was decided earlier.
+		pid_cv = fabs(pid_cv) * (float)choosen_dir;
+	}
 
 	// Clip the PID control variable (CV)
 	cv_clipped=0.0f;

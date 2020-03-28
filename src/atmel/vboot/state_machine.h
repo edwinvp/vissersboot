@@ -6,7 +6,8 @@
 // Main state machine state definitions
 enum TMainState {
 	msManualMode=0, // manual control mode
-	msAutoModeCourse, // 'course' adjustments
+	msAutoModeChooseDir, // 'course' adjustments (choose direction CW or CCW)
+	msAutoModeTurn, // 'course' adjustments (point the vessel in the right direction)
 	msAutoModeNormal, // automatic waypoint mode
 	msReverseThrust, // reverse thrust after arriving at wp
 	msCountJoyGoto, // count joystick 'up' command
@@ -38,7 +39,8 @@ private:
 
 	// Steps / actions
 	void step_manual_mode();
-    void step_auto_mode_course();
+	void step_auto_mode_course1();
+	void step_auto_mode_course2();
 	void step_auto_mode_normal();
 	void step_reverse_thrust();
     void step_clear1();
@@ -71,6 +73,7 @@ public:
 	static void print_step_name(TMainState st);
 	unsigned long TimeInStep();
 	void ForceStep(TMainState ns);
+	bool IsAutoModeStep(TMainState step) const;
 };
 
 

@@ -27,13 +27,13 @@ void store_waypoint(int memory_no);
 #include <stdio.h>
 #endif
 
-CStateMachine::CStateMachine() : 
-    main_state(msManualMode),next_state(msManualMode),
-    state_time(0),
-    shown_stats(false),
-    straight_to_auto(false), joy_pulses(0),
+CStateMachine::CStateMachine() :
+	main_state(msManualMode),next_state(msManualMode),
+	state_time(0),
+	shown_stats(false),
+	straight_to_auto(false), joy_pulses(0),
 	rc_ignore_first_command(false)
-{	
+{
 }
 
 TMainState CStateMachine::Step()
@@ -53,17 +53,32 @@ void CStateMachine::ForceStep(TMainState ns)
 	main_state = ns;
 }
 
+bool CStateMachine::IsAutoModeStep(TMainState step) const
+{
+	switch (step) {
+	case msAutoModeChooseDir:
+	case msAutoModeTurn:
+	case msAutoModeNormal:
+		return true;
+		break;
+	}
+	return false;
+}
+
 void CStateMachine::Run()
 {
 	// next state defaults to current state (unchanged)
 	next_state = Step();
 
 	switch (Step()) {
-    case msManualMode: // manual control mode
+	case msManualMode: // manual control mode
 		step_manual_mode();
-	    break;
-    case msAutoModeCourse: // automatic waypoint mode (course)
-		step_auto_mode_course();
+		break;
+	case msAutoModeChooseDir: // automatic waypoint mode (course)
+		step_auto_mode_course1();
+		break;
+	case msAutoModeTurn: // automatic waypoint mode (course)
+		step_auto_mode_course2();
 		break;
 	case msAutoModeNormal: // automatic waypoint mode (normal)
 		step_auto_mode_normal();
@@ -138,7 +153,8 @@ void CStateMachine::print_step_name(TMainState st)
 	const char * pMsg = PSTR("?");
 	
 	switch (st) {
-		case msAutoModeCourse: pMsg=PSTR("msAutoModeCourse"); break;
+		case msAutoModeChooseDir: pMsg=PSTR("msAutoModeChooseDir"); break;
+		case msAutoModeTurn: pMsg=PSTR("msAutoModePointVessel"); break;
 		case msAutoModeNormal: pMsg=PSTR("msAutoModeNormal"); break;
 		case msReverseThrust: pMsg=PSTR("msReverseThrust"); break;
 		case msManualMode: pMsg=PSTR("msManualMode"); break;
@@ -214,28 +230,38 @@ void CStateMachine::step_manual_mode()
 		next_state = msClear1;
 	} else if (straight_to_auto) {
 		straight_to_auto = false;
-		next_state = msAutoModeCourse;
+		next_state = msAutoModeChooseDir;
 	}
 }
 // ----------------------------------------------------------------------------
-void CStateMachine::step_auto_mode_course()
+void CStateMachine::step_auto_mode_course1()
 {
-    if (state_time > 2000) {
-		if (fabs(steering.pid_err) < 20) {
-			steering.reset_i_action();
-			next_state = msAutoModeNormal;
-		}
-    }
+	steering.choose_direction();
 
+	next_state = msAutoModeTurn;
 
     abort_auto_if();
     check_arrived();
 }
 // ----------------------------------------------------------------------------
+void CStateMachine::step_auto_mode_course2()
+{
+	if (state_time > 2000) {
+		if (fabs(steering.pid_err) < 20) {
+			steering.reset_i_action();
+			next_state = msAutoModeNormal;
+		}
+	}
+
+
+	abort_auto_if();
+	check_arrived();
+}
+// ----------------------------------------------------------------------------
 void CStateMachine::step_auto_mode_normal()
 {
     if (fabs(steering.pid_err) > 90)
-		next_state = msAutoModeCourse;
+		next_state = msAutoModeChooseDir;
     
     abort_auto_if();
     check_arrived();
@@ -293,7 +319,7 @@ void CStateMachine::step_cmd_error_auto()
     bool bLetGoOfJoyStick = joystick.in_goto_store_center() && !joystick.in_clear();
 
     if (state_time > 1000 || bLetGoOfJoyStick) {
-        next_state = msAutoModeCourse;
+        next_state = msAutoModeChooseDir;
 	}
 }
 // ----------------------------------------------------------------------------
@@ -304,7 +330,7 @@ void CStateMachine::step_confirm_goto_pos_x()
     else if (ledctrl.done_blinking()) {
         if (waypoints.set_finish(joy_pulses)) {
             b_printf(PSTR("Set finish to # %d\r\n"), joy_pulses);
-            next_state = msAutoModeCourse;
+            next_state = msAutoModeChooseDir;
         } else
             next_state = msCmdErrorMan;
 	}

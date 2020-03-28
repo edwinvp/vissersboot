@@ -7,7 +7,9 @@
 
 #include "settings.h"
 #include "compass_rawvalues.h"
+#ifndef WIN32
 #include "i2c.h"
+#endif
 
 class CResult
 {
