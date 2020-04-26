@@ -744,8 +744,15 @@ void process()
 	read_uart(); // also happens with this disabled
 
 	// Calculate initial bearing with Haversine function
+#if 1
 	steering.bearing_sp = waypoints.gp_current.bearingTo(waypoints.gp_finish);
-
+#else
+	steering.bearing_sp = gps.course_to(
+		waypoints.gp_current.lat,
+		waypoints.gp_current.lon,
+		waypoints.gp_finish.lat,
+		waypoints.gp_finish.lon);
+#endif
 
 	distance_m =
 		TinyGPS::distance_between (waypoints.gp_finish.lat, waypoints.gp_finish.lon,
