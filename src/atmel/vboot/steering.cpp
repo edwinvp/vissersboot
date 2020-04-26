@@ -43,8 +43,8 @@ CSteering::CSteering() :
 	pid_aggressive.max_steering = 0.9*global_max_speed;
 
 	// PID settings for 'normal' sailing (calmer)
-	pid_normal.TUNE_P=0.6;
-	pid_normal.TUNE_I=1e-5;
+	pid_normal.TUNE_P=0.7;
+	pid_normal.TUNE_I=1e-3;
 	pid_normal.TUNE_D=0.0;
 	// Max steering action done by controller
 	pid_normal.max_steering = 0.3*global_max_speed;
