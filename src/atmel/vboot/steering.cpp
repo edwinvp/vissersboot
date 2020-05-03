@@ -29,7 +29,7 @@ CSteering::CSteering() :
 	i_add(0),
 	d_add(0),
 	pid_err(0),
-	global_max_speed(1.0f),
+	global_max_speed(0.3f),
 	dont_stop_steering(false),
 	m_output_enable(false)
 {
@@ -168,10 +168,10 @@ void CSteering::auto_steer()
 // ----------------------------------------------------------------------------
 float CSteering::clip_motor(float mtr)
 {
-	if (mtr>1.0)
-		return 1.0;
-    else if (mtr<-1.0)
-        return -1.0;
+	if (mtr>global_max_speed)
+		return global_max_speed;
+    else if (mtr<-global_max_speed)
+        return -global_max_speed;
     else
         return mtr;
 }
@@ -220,6 +220,9 @@ void CSteering::manual_steering(unsigned int mot_L_dc,unsigned int mot_R_dc)
 {
 	motor_l = CJoystick::to_perc(mot_L_dc)/100.0f;
 	motor_r = CJoystick::to_perc(mot_R_dc)/100.0f;
+    
+    motor_l = clip_motor(motor_l);
+    motor_r = clip_motor(motor_r);
 
 	// Pass through motor left and right setpoints to PWM module
     SetMotorSpeeds(motor_l,motor_r);
