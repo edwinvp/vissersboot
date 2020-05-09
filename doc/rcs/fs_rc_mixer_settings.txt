@@ -1,0 +1,29 @@
+
+CH1 = Left Motor
+CH2 = Right Motor
+
+Reversed channels: none
+
+The first mix causes that...
+- steering left would increase right motor.
+- steering right would increase left motor
+
+Mix #1:
+Mix is: On
+Master: CH1
+Slave: CH2
+Pos. mix: -100%
+Neg. mix: -100%
+Offset: 0%
+
+The second mix causes that...
+- steering up would increase not only the right motor but also the left motor.
+- steering down would decrease not only the right motor but also the left motor.
+
+Mix #2:
+Mix is: On
+Master: Ch2
+Slave: Ch1
+Pos. mix: 100%
+Neg. mix: 100%
+Offset: 0%
