@@ -97,12 +97,12 @@ void CSteering::choose_direction()
 
 	CalculatePidError(compass_course_pv,bearing_sp);
 
-	if (pid_err > 135.0) {
-		b_printf(PSTR("Restrict dir CW/1\r\n"));
-		choosen_dir=1;
-	} else if (pid_err < -135) {
-		b_printf(PSTR("Restrict dir CCW/-1\r\n"));
-		choosen_dir=-1;
+	if (pid_err >= 0) {
+    	b_printf(PSTR("Turn CW/1\r\n"));
+    	choosen_dir=1;
+    } else if (pid_err < 0) {
+        b_printf(PSTR("Turn CCW/-1\r\n"));
+        choosen_dir=-1;
 	}
 }
 // ----------------------------------------------------------------------------
