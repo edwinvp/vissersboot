@@ -130,7 +130,8 @@ int cmd_ptr = 0;
 
 #define MAX_CMD_SIZE 24
 char cmd_buf[MAX_CMD_SIZE+1];
-char cmd_response[MAX_CMD_SIZE+1];
+#define MAX_RESP_SIZE 128
+char cmd_response[MAX_RESP_SIZE+1];
 
 // ----------------------------------------------------------------------------
 // VARIABLES
@@ -1729,6 +1730,7 @@ void handle_command(void)
 {
     int fields=0;
     unsigned int addr = 0;
+    unsigned int numregs = 0;
     unsigned long data = 0;
 
 	cmd_response[0]=0;
@@ -1736,14 +1738,19 @@ void handle_command(void)
 	char cc = cmd_buf[0];
 	switch (cc) {
     case 'R':        
-        fields = sscanf(&cmd_buf[1],"%04x",&addr);
-        if (fields == 1) {
-            data = read_var(addr);
-		    sprintf(cmd_response,"ROK %04x,%08lx\r\n",addr,data);
-        }
-        else
-		    sprintf(cmd_response,"ERR R\r\n");
-        break;
+        fields = sscanf(&cmd_buf[1],"%04x,%04x",&addr,&numregs);
+        if (fields == 2 && numregs >=1 && numregs <= 12) {
+                
+            sprintf(cmd_response,"ROK %04x",addr);
+                
+            for (int idx(0); idx<numregs; idx++) {
+                data = read_var(addr+idx);
+                sprintf(&cmd_response[8+(idx*9)],",%08lx\r\n",data);
+            }                               
+                
+        } else
+		    sprintf(cmd_response,"ERR R\r\n");            
+        break;        
     case 'W':
         putchar('W');
         fields = sscanf(&cmd_buf[1],"%04x,%08lx",&addr,&data);

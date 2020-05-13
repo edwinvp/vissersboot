@@ -252,9 +252,20 @@ namespace QBBConfig
                 string sLine = _serialPort.ReadLine().Trim();
 
                 int iAddr = Convert.ToInt32(sLine.Substring(4, 4), 16);
-                uint uiData = Convert.ToUInt32(sLine.Substring(9, 8), 16);
 
-                SetFromRaw((USB_VAR)iAddr, uiData);
+
+                int offs = 9;
+
+                while (offs < sLine.Length)
+                {
+                    uint uiData = Convert.ToUInt32(sLine.Substring(offs, 8), 16);
+                    SetFromRaw((USB_VAR)iAddr, uiData);
+
+                    ++iAddr;
+                    offs += 9;
+                }
+
+
 
             }
             catch (Exception)
@@ -263,16 +274,19 @@ namespace QBBConfig
             return;
         }
 
-        public void SendReadCommand(USB_VAR uv)
+        public void SendReadCommand(USB_VAR uv, int count = 1)
         {
             int iv = (int)uv;
-            String sHex = iv.ToString("X4");
-            String sReadCmd = "R" + sHex;
+            String sHexAddr = iv.ToString("X4");
+            String sHexCount = count.ToString("X4");
+            String sReadCmd = "R" + sHexAddr + "," + sHexCount;
             _serialPort.WriteLine(sReadCmd);
         }
 
         public void Run(object data)
         {
+            int counter = 0;
+
             try
             {
 
@@ -303,24 +317,14 @@ namespace QBBConfig
                 {
                     m_counter++;
 
-                    if (!do_stop)
-                    {
-                        SendReadCommand(USB_VAR.urGpsLat);
-                        SendReadCommand(USB_VAR.urGpsLon);
-                        SendReadCommand(USB_VAR.urGpsAge);
-                        ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                    }
+                    bool bSlow = (m_counter&7)==0;
 
                     if (!do_stop)
                     {
-                        SendReadCommand(USB_VAR.urRcK1);
-                        SendReadCommand(USB_VAR.urRcK2);
-                        SendReadCommand(USB_VAR.urRcK3);
-                        SendReadCommand(USB_VAR.urRcK4);
-                        ReadResponse();
-                        ReadResponse();
+                        // Read gps lat & lon (2 registers)
+                        SendReadCommand(USB_VAR.urGpsLat,2);
+                        // Read K1 ... K4 (4 registers)
+                        SendReadCommand(USB_VAR.urRcK1, 4);
                         ReadResponse();
                         ReadResponse();
                     }
@@ -328,47 +332,36 @@ namespace QBBConfig
                     if (!do_stop)
                     {
                         SendReadCommand(USB_VAR.urMainSeqStep);
-                        SendReadCommand(USB_VAR.urMotorL);
-                        SendReadCommand(USB_VAR.urMotorR);
-                        SendReadCommand(USB_VAR.urGlobalMaxSpeed);
+                        // Read motor L and R (2 registers)
+                        SendReadCommand(USB_VAR.urMotorL,2);
+                        ReadResponse();
+                        ReadResponse();
+                    }
+
+                    if (!do_stop)
+                    {
+                        // Read steering SP & PV and PID_ERR (3 registers)
+                        SendReadCommand(USB_VAR.urSteeringSP,3);
+                        SendReadCommand(USB_VAR.urBtnState);
+                        // Read magnetometer raw X, Y, Z and course (4 registers)
+                        SendReadCommand(USB_VAR.urMagRawX, 4);
                         ReadResponse();
                         ReadResponse();
                         ReadResponse();
                     }
-                    if (!do_stop)
+
+                    if (!do_stop && bSlow)
                     {
-                        SendReadCommand(USB_VAR.urSteeringSP);
-                        SendReadCommand(USB_VAR.urSteeringPV);
-                        SendReadCommand(USB_VAR.urSteeringPID_ERR);
-                        SendReadCommand(USB_VAR.urBtnState);
+                        // Magnetometer calibration state
+                        SendReadCommand(USB_VAR.urMagCalState);
+                        // GPS age reading
+                        SendReadCommand(USB_VAR.urGpsAge);
+                        // Read normal PID P & I and agressive P & I settings (4 registers)
+                        SendReadCommand(USB_VAR.urPidNormalP,4);
+
+                        SendReadCommand(USB_VAR.urGlobalMaxSpeed);
                         SendReadCommand(USB_VAR.urMagType);
                         ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                    }
-
-                    if (!do_stop)
-                    {
-                        SendReadCommand(USB_VAR.urMagRawX);
-                        SendReadCommand(USB_VAR.urMagRawY);
-                        SendReadCommand(USB_VAR.urMagRawZ);
-                        SendReadCommand(USB_VAR.urMagCourse);
-                        SendReadCommand(USB_VAR.urMagCalState);
-                        ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                        ReadResponse();
-                    }
-
-                    if (!do_stop)
-                    {
-                        SendReadCommand(USB_VAR.urPidNormalP);
-                        SendReadCommand(USB_VAR.urPidNormalI);
-                        SendReadCommand(USB_VAR.urPidAggresiveP);
-                        SendReadCommand(USB_VAR.urPidAggresiveI);
                         ReadResponse();
                         ReadResponse();
                         ReadResponse();
@@ -410,6 +403,7 @@ namespace QBBConfig
                     }                    
 
                     Thread.Sleep(50);
+                    counter++;
                 }
 
                 Debug.Print("Stopping. Closing COM-port.");
