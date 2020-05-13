@@ -16,7 +16,7 @@
 
 extern CStateMachine stm;
 
-#define NUM_EEPROM_WORDS 15
+#define NUM_EEPROM_WORDS 17
 
 CSteering::CSteering() :
 	motor_l(0),
@@ -313,7 +313,8 @@ void CSteering::load_calibration()
 	// 8      agressive pid P parameter
 	// 10     agressive pid I parameter
 	// 12     agressive pid D parameter
-	// 14     CRC-16 checksum
+    // 14     global max (motor) speed
+	// 16     CRC-16 checksum
 
 	uint16_t rec[NUM_EEPROM_WORDS];
 
@@ -339,7 +340,8 @@ void CSteering::load_calibration()
 		pid_normal.TUNE_D = fp[2];
 		pid_aggressive.TUNE_P = fp[3];
 		pid_aggressive.TUNE_I = fp[4];
-		pid_aggressive.TUNE_D = fp[5];
+		pid_aggressive.TUNE_D = fp[5];        
+        global_max_speed = fp[6];
 
 		b_printf(PSTR("OK\r\n"));
 
@@ -365,6 +367,7 @@ void CSteering::save_calibration()
 	fp[3] = pid_aggressive.TUNE_P;
 	fp[4] = pid_aggressive.TUNE_I;
 	fp[5] = pid_aggressive.TUNE_D;
+    fp[6] = global_max_speed;
 
 	// Calculate checksum over those 13 words
     rec[NUM_EEPROM_WORDS-1]=crc16((unsigned char*)rec,(NUM_EEPROM_WORDS-1)*2);

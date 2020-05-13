@@ -102,6 +102,8 @@ namespace QBBConfig
                 Paggr.Text = m_task.Status.get_pid_aggr_p().ToString();
                 IAggr.Text = m_task.Status.get_pid_aggr_i().ToString();
 
+                GlobalMaxSpeed.Text = m_task.Status.get_global_max_speed().ToString();
+
                 set_need_angle(m_task.Status.get_mag_course());
 
                 TMainState stm = (TMainState)m_task.Status.get_mainseq_step();
@@ -282,6 +284,11 @@ namespace QBBConfig
         private void BtnChangeIAggr_Click(object sender, RoutedEventArgs e)
         {
             ChangeCalibrationSetting(USB_VAR.urPidAggresiveI);
+        }
+
+        private void BtnChangeGlobalMaxSpeed_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeCalibrationSetting(USB_VAR.urGlobalMaxSpeed);
         }
     }
 }

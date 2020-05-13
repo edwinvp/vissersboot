@@ -45,6 +45,7 @@ namespace QBBConfig
         urMainSeqStep = 20,
         urMotorL = 30,
         urMotorR = 31,
+        urGlobalMaxSpeed = 32,
         urSteeringSP = 40,
         urSteeringPV = 41,
         urSteeringPID_ERR = 42,
@@ -193,6 +194,9 @@ namespace QBBConfig
                 case USB_VAR.urMotorR:
                     Status.set_motor_r((int)uiData);
                     break;
+                case USB_VAR.urGlobalMaxSpeed:
+                    Status.set_global_max_speed(UintToFloat(uiData));
+                    break;
                 case USB_VAR.urMagRawX:
                     Status.set_mag_raw_x((int)uiData);
                     break;
@@ -326,6 +330,7 @@ namespace QBBConfig
                         SendReadCommand(USB_VAR.urMainSeqStep);
                         SendReadCommand(USB_VAR.urMotorL);
                         SendReadCommand(USB_VAR.urMotorR);
+                        SendReadCommand(USB_VAR.urGlobalMaxSpeed);
                         ReadResponse();
                         ReadResponse();
                         ReadResponse();

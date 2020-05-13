@@ -37,6 +37,7 @@ namespace QBBConfig
         private float m_pid_normal_i = 0;
         private float m_pid_aggr_p = 0;
         private float m_pid_aggr_i = 0;
+        private float m_global_max_speed = 0;
 
         private Object Lck = new Object();
 
@@ -231,6 +232,14 @@ namespace QBBConfig
                 m_pid_aggr_i = f;
             }
         }
+        
+        public void set_global_max_speed(float f)
+        {
+            lock (Lck)
+            {
+                m_global_max_speed = f;
+            }
+        }
 
         public float get_lat()
         {
@@ -423,5 +432,14 @@ namespace QBBConfig
                 return m_pid_aggr_i;
             }
         }
+
+        public float get_global_max_speed()
+        {
+            lock (Lck)
+            {
+                return m_global_max_speed;
+            }
+        }
+
     }
 }

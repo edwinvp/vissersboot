@@ -174,9 +174,9 @@
                 <MenuItem Name="MnuItemDisconnect" Header="Disconnect" Click="MenuItem_Disconnect"/>
             </MenuItem>
         </Menu>
-        <TextBox x:Name="TextAddr" HorizontalAlignment="Left" Height="26" Margin="615,195,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
-        <TextBox x:Name="TextNewValue" HorizontalAlignment="Left" Height="26" Margin="691,195,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
-        <Button x:Name="BtnWriteVar" Content="Write Var" HorizontalAlignment="Left" Height="25" Margin="615,226,0,0" VerticalAlignment="Top" Width="147" Click="BtnWriteVar_Click"/>
+        <TextBox x:Name="TextAddr" HorizontalAlignment="Left" Height="26" Margin="596,194,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
+        <TextBox x:Name="TextNewValue" HorizontalAlignment="Left" Height="26" Margin="672,194,0,0" TextWrapping="Wrap" Text="0" VerticalAlignment="Top" Width="71"/>
+        <Button x:Name="BtnWriteVar" Content="Write Var" HorizontalAlignment="Left" Height="25" Margin="596,225,0,0" VerticalAlignment="Top" Width="147" Click="BtnWriteVar_Click"/>
 
         <StackPanel HorizontalAlignment="Left" Width="170" Height="130" Margin="550,270,0,0" VerticalAlignment="Top" >
             <Label Content="Compass Calibration" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
@@ -186,11 +186,12 @@
         <Label x:Name="LblFreq" Content="FF" HorizontalAlignment="Left" Height="33" Margin="542,200,0,0" VerticalAlignment="Top" Width="42"/>
 
 
-        <StackPanel HorizontalAlignment="Left" Height="150" Margin="750,30,0,0" VerticalAlignment="Top" Width="190">
+        <StackPanel HorizontalAlignment="Left" Height="170" Margin="750,30,0,0" VerticalAlignment="Top" Width="190">
             <Label Content="PI Controller" FontFamily="Segoe UI Semibold" FontSize="16" HorizontalAlignment="Stretch" Height="32" Margin="0,0,0,0" />
 
-            <Grid HorizontalAlignment="Stretch" Height="110" Margin="5,5,5,5" VerticalAlignment="Top" >
+            <Grid HorizontalAlignment="Stretch" Height="150" Margin="5,5,5,5" VerticalAlignment="Top" >
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="25" />
                     <RowDefinition Height="25" />
                     <RowDefinition Height="25" />
                     <RowDefinition Height="25" />
@@ -212,10 +213,14 @@
                 <Label Content="Iaggressive" HorizontalAlignment="Left" Grid.Row="3" Grid.Column="0" />
                 <TextBox Name="IAggr" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="3" Grid.Column="1" />
 
+                <Label Content="Max Speed" HorizontalAlignment="Left" Grid.Row="4" Grid.Column="0" />
+                <TextBox Name="GlobalMaxSpeed" HorizontalAlignment="Stretch" TextWrapping="Wrap" Text="-" Grid.Row="4" Grid.Column="1" />
+
                 <Button x:Name="BtnChangePNormal" Grid.Row="0" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangePNormal_Click"/>
                 <Button x:Name="BtnChangeINormal" Grid.Row="1" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangeINormal_Click"/>
                 <Button x:Name="BtnChangePAggr" Grid.Row="2" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangePAggr_Click"/>
                 <Button x:Name="BtnChangeIAggr" Grid.Row="3" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangeIAggr_Click"/>
+                <Button x:Name="BtnChangeGlobalMaxSpeed" Grid.Row="4" Grid.Column="2" Content="Chg" HorizontalAlignment="Left" Margin="2,2,2,2"  Height="20" VerticalAlignment="Top" Width="40" Click="BtnChangeGlobalMaxSpeed_Click"/>
             </Grid>
 
         </StackPanel>

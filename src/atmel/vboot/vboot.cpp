@@ -98,6 +98,8 @@ enum USB_VAR { urInvalid=0,
     urMainSeqStep = 20,
     urMotorL = 30,
     urMotorR = 31,
+    urGlobalMaxSpeed = 32,
+
     urSteeringSP = 40,
     urSteeringPV = 41,
     urSteeringPID_ERR = 42,
@@ -1591,6 +1593,9 @@ unsigned long read_var(int reg)
     case urMotorR:
         data = OCR3A;
         break;
+    case urGlobalMaxSpeed:
+        data = *reinterpret_cast<long*>(&steering.global_max_speed);
+        break;
     case urSteeringSP:
 		data = *reinterpret_cast<long*>(&steering.bearing_sp);
 		break;
@@ -1708,6 +1713,10 @@ void write_var(int reg, unsigned long d)
     case urPidAggresiveI:
         steering.pid_aggressive.TUNE_I = cast_long_to_double(d);
         break;
+        
+    case urGlobalMaxSpeed:
+        steering.global_max_speed = cast_long_to_double(d);
+        break;        
         
     case urPidSaveCal:        
         steering.save_calibration();
